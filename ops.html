@@ -862,7 +862,7 @@ function rowHtml(r, first, single, storeName, isTotal){
   h += '<td>'+(isTotal ? '' : esc(single ? ((r.has_activity==='是' ? (r.activity_content||'有') : (r.has_activity||'否'))) : '—'))+'</td>';
   if(isTotal) h += '<td></td>';
   else if(!single) h += '<td></td>';   // 周期区间合计行：非真实记录，不提供编辑/删除
-  else h += '<td><button class="sm" onclick="openEdit('+r.id+')">编辑</button> <button class="sm danger" onclick="delRow('+r.id+')">删</button></td>';
+  else h += '<td><button class="sm" onclick="openEdit('+r.id+')">编辑</button>'+(isAdmin?' <button class="sm danger" onclick="delRow('+r.id+')">删</button>':'')+'</td>';
   h += '</tr>';
   return h;
 }
