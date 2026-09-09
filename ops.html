@@ -33,6 +33,8 @@
     backdrop-filter: blur(8px);
   }
   .card-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #c4b5fd; }
+  .fill-dot { color: #4ade80; font-weight: 700; }
+  .fill-note { color: rgba(255,255,255,0.55); font-size: 12px; font-weight: 400; margin-left: 8px; }
 
   /* ---------- 表单 ---------- */
   .field { margin-bottom: 12px; }
@@ -703,6 +705,9 @@ function renderCharts(rows, s, e){
   const names = Object.keys(byStore);
   // 核销对比：按美+抖合计降序
   const namesSort = names.slice().sort((a,b)=>(byStore[b].mt+byStore[b].dy)-(byStore[a].mt+byStore[a].dy));
+  // 单日视图：已填报门店集合（当天有记录行 = 已交表；无行 = 漏填，即便显示 0 也不可信）
+  const filled = (s===e) ? new Set(rows.map(r=>r.store_name)) : null;
+  if(filled) $('storeChartTitle').innerHTML = esc($('storeChartTitle').textContent) + '<span class="fill-note"><span class="fill-dot">●</span> 已填报 · 无点 = 未交表</span>';
 
   // 门店数据汇总表（顶部，与图同序降序）
   const dtEl = $('dashStoreTable');
@@ -740,10 +745,10 @@ function renderCharts(rows, s, e){
     return w===6 ? '#ff5fd7' : (w===0 ? '#7dff5a' : 'rgba(255,255,255,0.6)');
   });
 
-  mkBar('chStore', namesSort.map(shortName), [
+  mkBar('chStore', namesSort.map(n=>shortName(n)+(filled&&filled.has(n)?' ●':'')), [
     {label:'核销合计', data:namesSort.map(n=>round2(byStore[n].mt+byStore[n].dy)), bg:'#8b5cf6',
      _split:namesSort.map(n=>({mt:byStore[n].mt, dy:byStore[n].dy}))}
-  ]);
+  ], false, filled ? namesSort.map(n=>filled.has(n)?'#4ade80':'rgba(255,255,255,0.45)') : null);
   // 核销金额明细表（与图同序，金额四舍五入取整）
   const stEl = $('storeAmtTable');
   if(!namesSort.length){ if(stEl) stEl.innerHTML=''; }
@@ -753,7 +758,7 @@ function renderCharts(rows, s, e){
   let th = '<tr><th style="width:48px">排名</th><th class="store">门店</th><th>核销合计</th><th class="mei">美团</th><th class="dou">抖音</th></tr>';
   let tb = namesSort.map((n,i)=>{
     const mt = Math.round(byStore[n].mt), dy = Math.round(byStore[n].dy);
-    return '<tr><td>'+(i+1)+'</td><td class="store">'+esc(shortName(n))+'</td><td style="font-weight:700">'+(mt+dy).toLocaleString()+'</td><td class="mei">'+mt.toLocaleString()+'</td><td class="dou">'+dy.toLocaleString()+'</td></tr>';
+    return '<tr><td>'+(i+1)+'</td><td class="store">'+(filled&&filled.has(n)?'<span class="fill-dot">●</span> ':'')+esc(shortName(n))+'</td><td style="font-weight:700">'+(mt+dy).toLocaleString()+'</td><td class="mei">'+mt.toLocaleString()+'</td><td class="dou">'+dy.toLocaleString()+'</td></tr>';
   }).join('');
   tb += '<tr class="total"><td></td><td class="store">合计</td><td>'+Math.round(totM+totD).toLocaleString()+'</td><td class="mei">'+Math.round(totM).toLocaleString()+'</td><td class="dou">'+Math.round(totD).toLocaleString()+'</td></tr>';
   if(stEl) stEl.innerHTML = '<div class="tbl-wrap"><table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table></div>';
@@ -766,7 +771,7 @@ function renderCharts(rows, s, e){
     {label:'客单数', data:names.map(n=>Math.round(byStore[n].ppl)), bg:'#8b5cf6'}
   ], true);
 }
-function mkBar(id, labels, sets, intY){
+function mkBar(id, labels, sets, intY, xTickColors){
   if(charts[id]) charts[id].destroy();
   const el = $(id); if(!el) return;
   charts[id] = new Chart(el, {
@@ -781,7 +786,7 @@ function mkBar(id, labels, sets, intY){
           if(sp && sp[ctx.dataIndex]) return ' 合计: ¥'+v+'（美 '+round2(sp[ctx.dataIndex].mt).toFixed(2)+' · 抖 '+round2(sp[ctx.dataIndex].dy).toFixed(2)+'）';
           return ' '+ctx.dataset.label+': ¥'+v;
         }}} },
-      scales:{ x:{ticks:{color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}},
+      scales:{ x:{ticks:{color: xTickColors || 'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}},
                y:(intY?{beginAtZero:true,ticks:{precision:0,color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}}:{ticks:{color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}}) } }
   });
 }
