@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>書荀每日数据填报</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #1a1730 0%, #241b3f 50%, #1b2440 100%);
+    color: #fff;
+    min-height: 100vh;
+    padding: 16px 14px 40px;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  .header { text-align: center; padding: 8px 0 18px; }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 1px; margin: 0; }
+  .header p { font-size: 13px; color: rgba(255,255,255,0.55); margin: 6px 0 0; }
+  .card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(8px);
+  }
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field-label { font-size: 14px; color: rgba(255,255,255,0.78); margin-bottom: 8px; display: block; }
+  input[type=date], select, input[type=number], input[type=text] {
+    width: 100%;
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+    font-size: 15px;
+    padding: 0 12px;
+    outline: none;
+  }
+  input::placeholder { color: rgba(255,255,255,0.4); }
+  select option { color: #111; }
+  .pf-name { font-size: 16px; font-weight: 700; color: #c4b5fd; margin-bottom: 12px; }
+  .row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .row .lbl { width: 60px; flex-shrink: 0; display: flex; flex-direction: column; line-height: 1.1; }
+  .row .lbl .l1 { font-size: 14px; }
+  .row .lbl .l2 { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+  .btns { display: flex; gap: 6px; flex: 1; flex-wrap: nowrap; }
+  .btn {
+    flex: 1; min-width: 0; height: 42px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85);
+    font-size: 15px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn.selected { background: #8b5cf6; border-color: #8b5cf6; color: #fff; font-weight: 700; }
+  .manual {
+    width: 64px; flex-shrink: 0; height: 42px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05);
+    color: #fff; font-size: 15px; padding: 0 8px; text-align: center;
+  }
+  .amt {
+    width: 110px; flex-shrink: 0; height: 42px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05);
+    color: #fff; font-size: 15px; padding: 0 10px;
+  }
+  .amt-wrap { display: flex; align-items: center; gap: 6px; flex: 1; }
+  .amt-wrap .unit { font-size: 12px; color: rgba(255,255,255,0.5); }
+  input[type=range] { flex: 1; accent-color: #a78bfa; }
+  .slider-val {
+    width: 40px; text-align: center; font-size: 15px; font-weight: 700; color: #c4b5fd;
+  }
+  .act-row { display: flex; align-items: center; gap: 10px; }
+  .act-row input[type=checkbox] { width: 20px; height: 20px; accent-color: #8b5cf6; }
+  .submit {
+    width: 100%; height: 50px; border: none; border-radius: 14px;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff;
+    font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 4px;
+  }
+  .submit:disabled { opacity: .6; }
+  .status {
+    text-align: center; font-size: 14px; margin-top: 14px; min-height: 20px; padding: 8px;
+    border-radius: 10px;
+  }
+  .status.ok { background: rgba(34,197,94,0.15); color: #86efac; }
+  .status.err { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .hint { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>書荀每日数据填报</h1>
+    <p>直营门店 · 每日营业数据</p>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label class="field-label">填表日期</label>
+      <input type="date" id="formDate" />
+    </div>
+    <div class="field">
+      <label class="field-label">门店名称</label>
+      <select id="store"></select>
+    </div>
+    <div class="hint" id="prefillHint"></div>
+  </div>
+
+  <div class="card" id="pf美团">
+    <div class="pf-name">美团</div>
+    <div id="美团-body"></div>
+  </div>
+
+  <div class="card" id="pf抖音">
+    <div class="pf-name">抖音</div>
+    <div id="抖音-body"></div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label class="field-label">今日店内是否有做品项活动</label>
+      <div class="act-row">
+        <input type="checkbox" id="hasActivity" />
+        <span style="font-size:14px;color:rgba(255,255,255,0.78)">有做品项活动</span>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <input type="text" id="activityContent" placeholder="请输入品项名称" />
+    </div>
+  </div>
+
+  <button class="submit" id="submitBtn">提交</button>
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
+const ANON_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
+// 2026-09-08 起统一使用标准名称（与门店主表 stores.std_name 一致），历史口径名已迁移
+const STORES = ['佛山顺联店','佛山印象城','佛山国金店','佛山恒福店','佛山新塘店','佛山绿地店','佛山高明店','佛山星耀店','佛山万科店','佛山水城店'];
+
+// ---------------------------------------------------------------------------
+// 匿名登录：RLS 收紧后，必须带上「已登录」身份才能读写。
+// 门店端完全无感知（不填邮箱密码），拿到的会话存在 localStorage，过期自动续。
+// ---------------------------------------------------------------------------
+const SESSION_KEY = 'sb_anon_session';
+
+async function authPost(path, body) {
+  const r = await fetch(SUPABASE_URL + path, {
+    method: 'POST',
+    headers: { 'apikey': ANON_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {})
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error_description || d.msg || ('HTTP ' + r.status));
+  return d;
+}
+function saveSession(d) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({
+    access_token: d.access_token,
+    refresh_token: d.refresh_token || '',
+    expires_at: (Date.now() / 1000) + (d.expires_in || 3600) - 300
+  }));
+}
+function loadSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    return (s && s.access_token) ? s : null;
+  } catch (e) { return null; }
+}
+let pendingAuth = null;
+async function ensureAuth() {
+  const s = loadSession();
+  if (s && (!s.expires_at || s.expires_at > Date.now() / 1000)) return s.access_token;
+  if (s && s.refresh_token) {
+    try { const d = await authPost('/auth/v1/token?grant_type=refresh_token', { refresh_token: s.refresh_token }); saveSession(d); return d.access_token; }
+    catch (e) { /* 续期失败 → 重新匿名登录 */ }
+  }
+  if (!pendingAuth) {
+    pendingAuth = authPost('/auth/v1/signup', {}).then(d => { pendingAuth = null; saveSession(d); return d.access_token; })
+      .catch(e => { pendingAuth = null; throw e; });
+  }
+  return pendingAuth;
+}
+async function authHeaders() {
+  const t = await ensureAuth();
+  return { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' };
+}
+
+// 每个平台的字段定义（与小程序 report.js 完全对应）
+const PLATFORMS = ['美团','抖音'];
+const NUM_OPTIONS = [0,1,2,3,4,5];
+
+// 运行时表单状态
+const state = {}; // state[平台] = { visitors, verify, inner_orders, inner_amount, unable }
+
+const fmt = (d) => {
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+};
+function todayStr() { return fmt(new Date()); }
+
+function buildPlatformBody(pf) {
+  const body = document.getElementById(pf+'-body');
+  state[pf] = { visitors:null, verify:'', inner_orders:null, inner_amount:'', unable:0 };
+  body.innerHTML = '';
+
+  // 真实客数
+  body.appendChild(makeRow(pf, 'visitors', '真实','客数', true));
+  // 核销金额
+  body.appendChild(makeAmountRow(pf, 'verify', '核销','金额'));
+  // 内购数量
+  body.appendChild(makeRow(pf, 'inner_orders', '内购','数量', true));
+  // 内购金额
+  body.appendChild(makeAmountRow(pf, 'inner_amount', '内购','金额'));
+  // 约不上 滑块
+  body.appendChild(makeSliderRow(pf, 'unable', '约不上'));
+}
+
+function makeRow(pf, key, l1, l2, withManual) {
+  const row = document.createElement('div'); row.className = 'row';
+  row.innerHTML = `<div class="lbl"><span class="l1">${l1}</span><span class="l2">${l2}</span></div>`;
+  const btns = document.createElement('div'); btns.className = 'btns';
+  NUM_OPTIONS.forEach(opt => {
+    const b = document.createElement('div'); b.className = 'btn'; b.textContent = opt;
+    b.onclick = () => {
+      state[pf][key] = opt;
+      btns.querySelectorAll('.btn').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      manualInput.value = '';
+    };
+    btns.appendChild(b);
+  });
+  row.appendChild(btns);
+  let manualInput;
+  if (withManual) {
+    manualInput = document.createElement('input');
+    manualInput.type = 'number'; manualInput.className = 'manual'; manualInput.placeholder = '>';
+    manualInput.oninput = () => {
+      if (manualInput.value !== '') {
+        state[pf][key] = parseInt(manualInput.value,10);
+        btns.querySelectorAll('.btn').forEach(x => x.classList.remove('selected'));
+      }
+    };
+    row.appendChild(manualInput);
+  }
+  return row;
+}
+
+function makeAmountRow(pf, key, l1, l2) {
+  const row = document.createElement('div'); row.className = 'row';
+  row.innerHTML = `<div class="lbl"><span class="l1">${l1}</span><span class="l2">${l2}</span></div>`;
+  const wrap = document.createElement('div'); wrap.className = 'amt-wrap';
+  const input = document.createElement('input');
+  input.type = 'number'; input.className = 'amt'; input.placeholder = '¥'; input.step = '0.01';
+  input.oninput = () => { state[pf][key] = input.value; };
+  const unit = document.createElement('span'); unit.className = 'unit'; unit.textContent = '元';
+  wrap.appendChild(input); wrap.appendChild(unit);
+  row.appendChild(wrap);
+  // 保存引用以便回填
+  row._input = input;
+  return row;
+}
+
+function makeSliderRow(pf, key, label) {
+  const row = document.createElement('div'); row.className = 'row';
+  row.innerHTML = `<div class="lbl"><span class="l1">${label}</span></div>`;
+  const slider = document.createElement('input');
+  slider.type = 'range'; slider.min = 0; slider.max = 20; slider.step = 1; slider.value = 0;
+  const val = document.createElement('span'); val.className = 'slider-val'; val.textContent = '0';
+  slider.oninput = () => { state[pf][key] = parseInt(slider.value,10); val.textContent = slider.value; };
+  row.appendChild(slider); row.appendChild(val);
+  return row;
+}
+
+// 回填已存在数据
+function applyExisting(rec) {
+  PLATFORMS.forEach(pf => {
+    const prefix = pf === '美团' ? 'meituan' : 'douyin';
+    const body = document.getElementById(pf+'-body');
+    const rows = body.children;
+    // visitors (row0), verify (row1), inner_orders (row2), inner_amount (row3), unable (row4)
+    setBtnOrManual(rows[0], rec[prefix+'_visitors']);
+    rows[1]._input.value = rec[prefix+'_verify_amount'] != null ? rec[prefix+'_verify_amount'] : '';
+    state[pf].verify = rows[1]._input.value;
+    setBtnOrManual(rows[2], rec[prefix+'_inner_orders']);
+    rows[3]._input.value = rec[prefix+'_inner_amount'] != null ? rec[prefix+'_inner_amount'] : '';
+    state[pf].inner_amount = rows[3]._input.value;
+    // slider row4
+    const sliderRow = rows[4];
+    const slider = sliderRow.querySelector('input[type=range]');
+    const val = sliderRow.querySelector('.slider-val');
+    const uv = rec[prefix+'_unable_to_book'] != null ? rec[prefix+'_unable_to_book'] : 0;
+    slider.value = uv; val.textContent = uv; state[pf].unable = uv;
+  });
+  document.getElementById('hasActivity').checked = (rec.has_activity === '是');
+  document.getElementById('activityContent').value = rec.activity_content || '';
+}
+
+function setBtnOrManual(rowEl, value) {
+  if (value == null) return;
+  const btns = rowEl.querySelector('.btns');
+  const btn = Array.from(btns.children).find(b => b.textContent == String(value));
+  if (btn) {
+    btns.querySelectorAll('.btn').forEach(x => x.classList.remove('selected'));
+    btn.classList.add('selected');
+    const manual = rowEl.querySelector('.manual'); if (manual) manual.value = '';
+  } else {
+    const manual = rowEl.querySelector('.manual');
+    if (manual) { manual.value = value; btns.querySelectorAll('.btn').forEach(x => x.classList.remove('selected')); }
+  }
+}
+
+function loadExisting() {
+  const date = document.getElementById('formDate').value;
+  const store = document.getElementById('store').value;
+  const hint = document.getElementById('prefillHint');
+  if (!date || !store) { hint.textContent = ''; return; }
+  const url = `${SUPABASE_URL}/rest/v1/daily_reports?select=*&form_date=eq.${date}&store_name=eq.${encodeURIComponent(store)}&limit=1`;
+  authHeaders()
+    .then(h => fetch(url, { headers: h }))
+    .then(r => r.json())
+    .then(rows => {
+      if (rows && rows.length) {
+        applyExisting(rows[0]);
+        hint.textContent = '已载入该门店 '+date+' 的已填数据，可直接修改后重新提交。';
+      } else {
+        hint.textContent = '该门店 '+date+' 暂无记录，提交将新建。';
+      }
+    })
+    .catch(() => { hint.textContent = ''; });
+}
+
+function submit() {
+  const date = document.getElementById('formDate').value;
+  const store = document.getElementById('store').value;
+  const status = document.getElementById('status');
+  const btn = document.getElementById('submitBtn');
+  if (!date || !store) { status.className='status err'; status.textContent='请先选择填表日期和门店'; return; }
+
+  const payload = { form_date: date, store_name: store };
+  for (const pf of PLATFORMS) {
+    const prefix = pf === '美团' ? 'meituan' : 'douyin';
+    const s = state[pf];
+    if (s.visitors == null) { status.className='status err'; status.textContent=`请填写${pf}真实客数`; return; }
+    if (s.verify === '' || s.verify == null) { status.className='status err'; status.textContent=`请填写${pf}核销金额（没核销填 0）`; return; }
+    if (s.inner_orders == null) { status.className='status err'; status.textContent=`请填写${pf}内购数量`; return; }
+    if (s.inner_amount === '' || s.inner_amount == null) { status.className='status err'; status.textContent=`请填写${pf}内购金额（没内购填 0）`; return; }
+    payload[prefix+'_visitors'] = s.visitors;
+    payload[prefix+'_verify_amount'] = parseFloat(s.verify);
+    payload[prefix+'_inner_orders'] = s.inner_orders;
+    payload[prefix+'_inner_amount'] = parseFloat(s.inner_amount);
+    payload[prefix+'_unable_to_book'] = s.unable;
+  }
+  payload.has_activity = document.getElementById('hasActivity').checked ? '是' : '否';
+  payload.activity_content = document.getElementById('activityContent').value.trim();
+
+  btn.disabled = true; status.className='status'; status.textContent='提交中…';
+  authHeaders().then(h => fetch(`${SUPABASE_URL}/rest/v1/daily_reports?on_conflict=form_date,store_name`, {
+    method: 'POST',
+    headers: Object.assign({}, h, { 'Prefer':'resolution=merge-duplicates,return=representation' }),
+    body: JSON.stringify(payload)
+  }))
+  .then(r => { if (!r.ok) return r.text().then(t => Promise.reject(t)); return r.json(); })
+  .then(() => { status.className='status ok'; status.textContent='✓ 提交成功！数据已保存到書荀每日数据表。'; })
+  .catch(e => { status.className='status err'; status.textContent='提交失败：'+e; })
+  .finally(() => { btn.disabled = false; });
+}
+
+// 初始化
+const dateEl = document.getElementById('formDate');
+// 与小程序一致：只能填「今天 + 昨天」，更早的联系运营在网页后台改
+dateEl.max = todayStr();
+dateEl.min = fmt(new Date(Date.now() - 864e5));
+dateEl.value = todayStr();
+const storeSel = document.getElementById('store');
+STORES.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; storeSel.appendChild(o); });
+PLATFORMS.forEach(buildPlatformBody);
+document.getElementById('formDate').addEventListener('change', loadExisting);
+storeSel.addEventListener('change', loadExisting);
+document.getElementById('submitBtn').addEventListener('click', submit);
+</script>
+</body>
+</html>
