@@ -476,6 +476,8 @@ const round2 = (v) => Math.round(v*100)/100;
 const fmtAmt = (v) => Number(round2(Number(v)||0)).toLocaleString('zh-CN');
 // 同 fmtAmt 但不带千分位（数据明细用，如 1234.56）
 const fmtPlain = (v) => String(Number(round2(Number(v)||0)));
+// UTC 时间戳 → 浏览器本地时间（北京时间），如 2026-09-09 12:42
+const fmtTime = (iso) => { const d = new Date(iso); return isNaN(d) ? (iso||'') : d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes()); };
 const esc = (s) => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function msg(html, cls){ $('globalMsg').innerHTML = '<div class="msg '+cls+'">'+html+'</div>'; }
 function clearMsg(){ $('globalMsg').innerHTML = ''; }
@@ -990,7 +992,7 @@ async function loadLogs(){
       if(r.action==='DELETE') detail = '<div class="d">删除：'+esc(JSON.stringify(r.before_data||{}).slice(0,160))+'</div>';
       h += '<div class="log-item"><div class="h">'+act+' · '+esc(r.store_name||'')+' · '+
            esc(r.form_date||'')+' · '+esc(r.actor_email||'未知')+' · '+
-           esc((r.created_at||'').slice(0,16).replace('T',' '))+'</div>'+detail+'</div>';
+           esc(fmtTime(r.created_at))+'</div>'+detail+'</div>';
     });
     $('lBody').innerHTML = h;
   }catch(err){ msg(esc(err.message),'err'); }
