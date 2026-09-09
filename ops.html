@@ -460,8 +460,25 @@ const EDITABLE  = FLAT_COLS.map(c=>c.k).concat(['has_activity','activity_content
 
 const TOL = 1;          // 金额容差：差 ≤1 元算对
 let session = null;
-const ADMIN_EMAIL = '411249585@qq.com';   // 主账号：独享 操作日志 / 新增门店 / 操作列
+const ADMIN_EMAIL = '411249585@qq.com';   // 主账号：独享 操作日志 / 新增门店 / 删除 / 改状态
 let isAdmin = false;
+let myName = '';          // 当前登录运营人中文名（主账号=admin）
+let isXiaoai = false;     // 小艾：编辑范围=全部门店（仅次于主账号），但无删除权
+// 登录邮箱 → 运营人中文名（与 stores.operator 字段对应）
+const OPS_MAP = {
+  '411249585@qq.com': 'admin',
+  '2574274699@qq.com': '琦琦',
+  '2313287385@qq.com': '琳琳',
+  '1654954776@qq.com': '慧慧',
+  '3197640163@qq.com': '小梅',
+  '516265753@qq.com': '小艾',
+  '3263073614@qq.com': '夏夏',
+};
+// 是否有权编辑某门店：主账号+小艾=全部；其他运营=仅自己名下
+function canEditStore(x){ return isAdmin || isXiaoai || !!(myName && x.operator === myName); }
+const canDeleteStore = () => isAdmin;                 // 删除仅主账号
+const statusLocked   = () => !isAdmin;               // 状态/闭店日期/运营人：非主账号锁定
+const storeOpsShown  = () => isAdmin || isXiaoai || !!myName;  // 是否显示「操作」列
 let charts = {};
 
 /* ---------------- 工具 ---------------- */
@@ -567,6 +584,8 @@ function enterApp(){
   $('whoAmI').textContent = '已登录：'+email;
   isAdmin = String(email).toLowerCase() === ADMIN_EMAIL;   // 管理类按钮仅主账号可见
   userEmail = email;
+  myName = OPS_MAP[String(email).toLowerCase()] || '';
+  isXiaoai = myName === '小艾';
   applyPerms();
   initDefaults();
   loadInnerIds();
@@ -1040,9 +1059,10 @@ function renderStores(){
     (!st || x.status===st) && (!ty || x.store_type===ty) &&
     (!kw || [x.std_name,x.short_name,x.aliases,x.meituan_name,x.douyin_name,x.meituan_id,x.douyin_id,x.operator]
       .some(v=>String(v==null?'':v).toLowerCase().indexOf(kw)>=0)));
+  const stColShown = storeOpsShown();
   let h = '<div class="tbl-wrap"><table><thead><tr>'+
     '<th>状态</th><th class="store">标准名称</th><th>性质</th>'+
-    '<th>运营人</th><th>上线日期</th>'+(isAdmin?'<th>操作</th>':'')+'</tr></thead><tbody>';
+    '<th>运营人</th><th>上线日期</th>'+(stColShown?'<th>操作</th>':'')+'</tr></thead><tbody>';
   const stColor = {'在营':'#4ade80','闭店':'#f87171','待上线':'#fbbf24'};
   list.forEach(x=>{
     h += '<tr>'+
@@ -1051,8 +1071,8 @@ function renderStores(){
       '<td>'+esc(x.store_type||'')+'</td>'+
       '<td>'+esc(x.operator||'')+'</td>'+
       '<td>'+esc(x.launch_date||'—')+'</td>'+
-      (isAdmin?'<td><button class="sm" onclick="openStoreEdit('+x.id+')">编辑</button> '+
-      '<button class="sm danger" onclick="delStore('+x.id+',\''+esc(x.std_name).replace(/'/g,'')+'\')">删</button></td>':'')+
+      (stColShown?'<td>'+(canEditStore(x)?'<button class="sm" onclick="openStoreEdit('+x.id+')">编辑</button> ':'')+
+      (canDeleteStore()?'<button class="sm danger" onclick="delStore('+x.id+',\''+esc(x.std_name).replace(/'/g,'')+'\')">删</button>':'')+'</td>':'')+
       '</tr>';
   });
   const activeCnt = storeRows.filter(x=>x.status==='在营').length;
@@ -1087,6 +1107,10 @@ function openStoreEdit(id){
   });
   h += '</div>';
   $('smBody').innerHTML = h;
+  if(statusLocked()){   // 非主账号：状态/闭店日期/运营人 锁定，防误改影响报表口径
+    ['sm_status','sm_closed_date','sm_operator'].forEach(id=>{ const el=$(id); if(el){ el.disabled=true; el.style.opacity=.5; el.title='该字段仅主账号可修改'; } });
+    $('smBody').insertAdjacentHTML('beforeend','<div style="margin-top:8px;font-size:12px;color:#fbbf24">⚠️ 状态 / 闭店日期 / 运营人 由主账号锁定，不可修改</div>');
+  }
   $('storeMask').classList.remove('hide');
 }
 function closeStoreEdit(){ $('storeMask').classList.add('hide'); }
@@ -1096,6 +1120,9 @@ async function saveStore(){
     const el = $('sm_'+f[0]);
     if(!el) continue;
     body[f[0]] = el.value === '' ? null : el.value;
+  }
+  if(statusLocked()){   // 非主账号：即使前端被绕过，也不允许改状态/闭店日期/运营人
+    delete body.status; delete body.closed_date; delete body.operator;
   }
   if(!body.std_name) return msg('公司内部标准名称为必填','err');
   if(!body.status) body.status = '在营';
