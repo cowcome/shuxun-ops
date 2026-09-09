@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>書荀运营后台 · 每日数据</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #1a1730 0%, #241b3f 50%, #1b2440 100%);
+    color: #fff;
+    min-height: 100vh;
+    padding: 16px 14px 48px;
+    font-size: 14px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  .hide { display: none !important; }
+
+  /* ---------- 登录 ---------- */
+  .login-box { max-width: 380px; margin: 12vh auto 0; }
+  .login-box h1 { font-size: 24px; text-align: center; margin: 0 0 6px; letter-spacing: 1px; }
+  .login-box .sub { text-align: center; font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 24px; }
+
+  /* ---------- 卡片 ---------- */
+  .card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(8px);
+  }
+  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #c4b5fd; }
+
+  /* ---------- 表单 ---------- */
+  .field { margin-bottom: 12px; }
+  .field-label { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 6px; display: block; }
+  input[type=text], input[type=password], input[type=date], input[type=number], select {
+    width: 100%; height: 42px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05); color: #fff;
+    font-size: 14px; padding: 0 12px; outline: none;
+  }
+  input::placeholder { color: rgba(255,255,255,0.35); }
+  select option { color: #111; }
+  .inline { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .inline > div { flex: 1; min-width: 140px; }
+
+  /* ---------- 按钮 ---------- */
+  button {
+    height: 42px; border-radius: 10px; padding: 0 18px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.07); color: #fff;
+    font-size: 14px; cursor: pointer; transition: all .15s;
+    font-family: inherit;
+  }
+  button:hover { background: rgba(255,255,255,0.12); }
+  button.primary { background: #8b5cf6; border-color: #8b5cf6; font-weight: 600; }
+  button.primary:hover { background: #7c4ded; }
+  button.danger { background: rgba(239,68,68,0.85); border-color: rgba(239,68,68,0.9); }
+  button.danger:hover { background: #dc2626; }
+  button.sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 8px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ---------- 顶部 ---------- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+  .topbar h1 { font-size: 20px; margin: 0; letter-spacing: .5px; }
+  .topbar .who { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+  /* ---------- Tab ---------- */
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tab {
+    padding: 8px 14px; border-radius: 10px; font-size: 13px; cursor: pointer;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.7);
+  }
+  .tab.active { background: #8b5cf6; border-color: #8b5cf6; color: #fff; font-weight: 600; }
+  .quick {
+    font-size: 12px; padding: 4px 10px; border-radius: 14px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.55);
+    user-select: none; white-space: nowrap;
+  }
+  .quick:hover { color: rgba(255,255,255,0.85); }
+  .quick.on { background: rgba(139,92,246,0.35); border-color: rgba(139,92,246,0.65); color: #fff; font-weight: 600; }
+
+  /* ---------- 统计卡 ---------- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .stat {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px; padding: 14px;
+  }
+  .stat .k { font-size: 12px; color: rgba(255,255,255,0.55); margin-bottom: 6px; }
+  .stat .v { font-size: 22px; font-weight: 700; }
+  .stat .s { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+
+  /* ---------- 表格 ---------- */
+  .tbl-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; white-space: nowrap; }
+  th, td { padding: 8px 10px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  thead th { background: rgba(255,255,255,0.08); font-weight: 600; font-size: 12px; }
+  thead tr:first-child th { border-bottom: 1px solid rgba(255,255,255,0.12); }
+  tbody tr:hover { background: rgba(255,255,255,0.04); }
+  td.store, th.store {
+    text-align: left; position: sticky; left: 0;
+    background: #241f3d; font-weight: 600; z-index: 2;
+  }
+  thead th.store { background: #2c2650; z-index: 3; }
+  tr.total td { font-weight: 800; font-size: 1.1em; background: rgba(139,92,246,0.16); }
+  .mei { color: #fbbf24; }
+  .dou { color: #a78bfa; }
+  .bad { color: #f87171; font-weight: 700; }
+  .ok { color: #4ade80; }
+  .warn { color: #fbbf24; }
+
+  /* ---------- 核对 ---------- */
+  .diff-pos { color: #f87171; font-weight: 700; }
+  .diff-neg { color: #60a5fa; font-weight: 700; }
+  .file-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .file-row .nm { width: 100px; font-size: 13px; color: rgba(255,255,255,0.7); flex-shrink: 0; }
+  .file-row .st { font-size: 12px; color: rgba(255,255,255,0.5); }
+
+  .msg { padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 12px; }
+  .msg.err { background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.3); }
+  .msg.ok { background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.3); }
+  .msg.info { background: rgba(96,165,250,0.15); border: 1px solid rgba(96,165,250,0.3); }
+
+  .chart-box { position: relative; height: 280px; }
+  .empty { text-align: center; padding: 30px; color: rgba(255,255,255,0.4); font-size: 13px; }
+
+  /* 编辑弹窗 */
+  .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal {
+    background: #241f3d; border: 1px solid rgba(255,255,255,0.15); border-radius: 16px;
+    padding: 18px; max-width: 480px; width: 100%; max-height: 86vh; overflow-y: auto;
+  }
+  .modal h3 { margin: 0 0 14px; font-size: 16px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-btns { display: flex; gap: 10px; margin-top: 16px; }
+  .modal-btns button { flex: 1; }
+  .log-item { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 12px; }
+  .log-item .h { color: rgba(255,255,255,0.85); margin-bottom: 3px; }
+  .log-item .d { color: rgba(255,255,255,0.5); font-family: monospace; font-size: 11px; word-break: break-all; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ 登录 ============ -->
+  <div id="loginView" class="login-box">
+    <h1>書荀运营后台</h1>
+    <div class="sub">每日数据 · 查看 / 核对 / 管理</div>
+    <div class="card">
+      <div id="loginErr"></div>
+      <div class="field">
+        <label class="field-label">邮箱</label>
+        <input type="text" id="lgEmail" placeholder="运营账号邮箱" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label class="field-label">密码</label>
+        <input type="password" id="lgPwd" placeholder="密码" autocomplete="current-password" />
+      </div>
+      <button class="primary" style="width:100%" id="lgBtn" onclick="doLogin()">登 录</button>
+    </div>
+  </div>
+
+  <!-- ============ 主界面 ============ -->
+  <div id="mainView" class="hide">
+    <div class="topbar">
+      <div>
+        <h1>書荀运营后台</h1>
+        <div class="who" id="whoAmI"></div>
+      </div>
+      <button class="sm" onclick="doLogout()">退出登录</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="dash" onclick="switchTab('dash')">总览看板</div>
+      <div class="tab" data-tab="query" onclick="switchTab('query')">查询与导出</div>
+      <div class="tab" data-tab="recon" onclick="switchTab('recon')">数据核对</div>
+      <div class="tab" data-tab="logs" id="tabBtnLogs" onclick="switchTab('logs')">操作日志</div>
+      <div class="tab" data-tab="stores" onclick="switchTab('stores')">门店管理</div>
+    </div>
+
+    <div id="globalMsg"></div>
+
+    <!-- ---------- 总览看板 ---------- -->
+    <div id="tab-dash">
+      <div class="card">
+        <div class="inline">
+          <div>
+            <label class="field-label">开始日期</label>
+            <input type="date" id="dashStart" />
+          </div>
+          <div>
+            <label class="field-label">结束日期</label>
+            <input type="date" id="dashEnd" />
+          </div>
+          <div style="flex:0 0 auto; display:flex; gap:6px; align-items:center" id="dashQuick">
+            <span class="quick" data-r="yest" onclick="onQuick('dash','yest')">昨日</span>
+            <span class="quick" data-r="7d" onclick="onQuick('dash','7d')">近七天</span>
+            <span class="quick" data-r="month" onclick="onQuick('dash','month')">本月</span>
+            <span class="quick" data-r="lastmonth" onclick="onQuick('dash','lastmonth')">上月</span>
+          </div>
+          <div style="flex:0 0 auto">
+            <button class="primary" onclick="loadDash()">查看</button>
+          </div>
+        </div>
+      </div>
+      <div class="stats" id="dashStats"></div>
+      <div class="card">
+        <div class="card-title" id="dashTableTitle">门店数据汇总</div>
+        <div id="dashStoreTable"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" id="storeChartTitle">各门店核销金额对比（美+抖合计 · 降序）</div>
+        <div class="chart-box"><canvas id="chStore"></canvas></div>
+        <div id="storeAmtTable" style="margin-top:12px"></div>
+      </div>
+      <div class="card hide" id="cardTrend">
+        <div class="card-title" id="trendTitle">每日核销金额趋势</div>
+        <div class="chart-box"><canvas id="chTrend"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">各门店客单数</div>
+        <div class="chart-box"><canvas id="chPeople"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ---------- 查询与导出 ---------- -->
+    <div id="tab-query" class="hide">
+      <div class="card">
+        <div class="inline">
+          <div>
+            <label class="field-label">开始日期</label>
+            <input type="date" id="qStart" />
+          </div>
+          <div>
+            <label class="field-label">结束日期</label>
+            <input type="date" id="qEnd" />
+          </div>
+          <div>
+            <label class="field-label">门店（不选=全部）</label>
+            <select id="qStore"></select>
+          </div>
+          <div style="flex:0 0 auto; display:flex; gap:6px; align-items:center" id="queryQuick">
+            <span class="quick" data-r="yest" onclick="onQuick('query','yest')">昨日</span>
+            <span class="quick" data-r="7d" onclick="onQuick('query','7d')">近七天</span>
+            <span class="quick" data-r="month" onclick="onQuick('query','month')">本月</span>
+            <span class="quick" data-r="lastmonth" onclick="onQuick('query','lastmonth')">上月</span>
+          </div>
+          <div style="flex:0 0 auto; display:flex; gap:8px">
+            <button class="primary" onclick="loadQuery()">查询</button>
+            <button onclick="exportXlsx()">导出 Excel</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" id="qTitle">数据明细</div>
+        <div id="qBody"><div class="empty">请选择日期范围后查询</div></div>
+      </div>
+    </div>
+
+    <!-- ---------- 数据核对 ---------- -->
+    <div id="tab-recon" class="hide">
+      <div class="card">
+        <div class="card-title">1 · 选择数据日期</div>
+        <div class="inline">
+          <div>
+            <label class="field-label">核对日期</label>
+            <input type="date" id="rDate" />
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">核对配置 · 内购商品ID</div>
+        <div class="inline" style="align-items:flex-end">
+          <div style="flex:1 1 320px">
+            <label class="field-label">抖音明细按此清单剔除内购（逗号分隔，可多个）</label>
+            <input type="text" id="innerIdsInput" placeholder="如：1810245175321659" autocomplete="off" />
+          </div>
+          <div style="flex:0 0 auto">
+            <button class="primary" onclick="saveInnerIds()">保存配置</button>
+          </div>
+        </div>
+        <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,0.4)">
+          更换内购商品后在这里加上新 ID 即可，旧 ID 不用删（历史明细仍要能识别）。保存后全后台共用。
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">2 · 导入平台明细（xlsx）</div>
+        <div class="file-row">
+          <span class="nm">美团收益明细 <span style="color:#f87171">*</span></span>
+          <input type="file" id="fMt" accept=".xlsx,.xls" onchange="onFile('mt', this)" />
+          <span class="st" id="stMt">未选择（必填）</span>
+        </div>
+        <div class="file-row">
+          <span class="nm">抖音核销明细 <span style="color:#f87171">*</span></span>
+          <input type="file" id="fDy" accept=".xlsx,.xls" onchange="onFile('dy', this)" />
+          <span class="st" id="stDy">未选择（必填）</span>
+        </div>
+        <div class="file-row">
+          <span class="nm">内购登记表 <span style="color:#f87171">*</span></span>
+          <input type="file" id="fNg" accept=".xlsx,.xls" onchange="onFile('ng', this)" />
+          <span class="st" id="stNg">未选择（必填：用于剔除双平台订单中的内购）</span>
+        </div>
+        <div class="file-row" style="cursor:pointer">
+          <input type="checkbox" id="noInner" style="width:auto; flex:0 0 auto" />
+          <span class="st" style="color:rgba(255,255,255,0.55)">今日全品牌确无内购（勾选后可不传内购表，按内购=0 核对）</span>
+        </div>
+        <div class="file-row">
+          <span class="nm">有赞订单汇总</span>
+          <input type="file" id="fYz" accept=".xlsx,.xls" onchange="onFile('yz', this)" />
+          <span class="st" id="stYz">未选择（选填，仅作交叉校验）</span>
+        </div>
+        <div style="margin-top:14px">
+          <button class="primary" onclick="runRecon()" id="rBtn">开始核对</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">3 · 核对结果</div>
+        <div id="rBody"><div class="empty">导入文件后点击「开始核对」</div></div>
+      </div>
+    </div>
+
+    <!-- ---------- 操作日志 ---------- -->
+    <div id="tab-logs" class="hide">
+      <div class="card">
+        <div class="inline">
+          <div>
+            <label class="field-label">开始日期（按数据日期）</label>
+            <input type="date" id="lStart" />
+          </div>
+          <div>
+            <label class="field-label">结束日期</label>
+            <input type="date" id="lEnd" />
+          </div>
+          <div>
+            <label class="field-label">门店（不选=全部）</label>
+            <select id="lStore"></select>
+          </div>
+          <div style="flex:0 0 auto">
+            <button class="primary" onclick="loadLogs()">查询</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">改动记录（谁 / 何时 / 改前 → 改后）</div>
+        <div id="lBody"><div class="empty">请选择范围后查询</div></div>
+      </div>
+    </div>
+
+    <!-- ---------- 门店管理 ---------- -->
+    <div id="tab-stores" class="hide">
+      <div class="card">
+        <div class="inline">
+          <div>
+            <label class="field-label">状态</label>
+            <select id="stStatus" onchange="renderStores()">
+              <option value="">全部</option><option selected>在营</option><option>闭店</option><option>待上线</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">性质（快捷筛选）</label>
+            <div id="stTypeChips" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; height:38px">
+              <button class="sm" onclick="setStType('')">全部</button>
+              <button class="sm" onclick="setStType('直营')">直营</button>
+              <button class="sm" onclick="setStType('连锁')">连锁</button>
+              <button class="sm" onclick="setStType('陪跑')">陪跑</button>
+              <button class="sm" onclick="setStType('共管')">共管</button>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">搜索（名称 / 别名 / ID）</label>
+            <input type="text" id="stSearch" oninput="renderStores()" placeholder="如：顺联 / 十亩地" />
+          </div>
+          <div style="flex:0 0 auto; display:flex; gap:8px; align-items:flex-end">
+            <button onclick="loadStores()">刷新</button>
+            <button class="primary" id="btnAddStore" onclick="openStoreEdit()">+ 新增门店</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">门店主数据（Supabase stores 主表 · 唯一权威源）</div>
+        <div id="stBody"><div class="empty">加载中…</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 编辑弹窗（日报） -->
+<div id="editMask" class="mask hide">
+  <div class="modal">
+    <h3 id="edTitle">编辑记录</h3>
+    <div id="edBody"></div>
+    <div class="modal-btns">
+      <button class="primary" onclick="saveEdit()">保存</button>
+      <button onclick="closeEdit()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 门店编辑弹窗 -->
+<div id="storeMask" class="mask hide">
+  <div class="modal">
+    <h3 id="smTitle">门店</h3>
+    <div id="smBody"></div>
+    <div class="modal-btns">
+      <button class="primary" onclick="saveStore()">保存</button>
+      <button onclick="closeStoreEdit()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 删除确认弹窗（手动输入「确认删除」） -->
+<div id="delMask" class="mask hide">
+  <div class="modal">
+    <h3 id="delTitle" style="color:#f87171">删除确认</h3>
+    <div id="delInfo" style="margin-bottom:10px;font-size:13px;color:rgba(255,255,255,0.75)"></div>
+    <div class="field">
+      <label class="field-label" style="color:#f87171">请输入「<b>确认删除</b>」四个字以继续</label>
+      <input type="text" id="delInput" placeholder="输入：确认删除" autocomplete="off" onkeydown="if(event.key==='Enter')doDelete()" />
+    </div>
+    <div class="modal-btns">
+      <button class="danger" id="delBtn" onclick="doDelete()">确认删除</button>
+      <button onclick="closeDel()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/chart.umd.min.js"></script>
+<script>
+/* ============================================================================
+   書荀运营后台
+   与小程序共用 Supabase 同一张 daily_reports 表 —— 天然同步，无需额外同步逻辑
+   ========================================================================== */
+
+const SB_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
+const SB_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
+
+// 2026-09-08 起统一使用标准名称（与门店主表 stores.std_name 一致），历史口径名已迁移
+const STORES = ['佛山顺联店','佛山印象城','佛山国金店','佛山恒福店','佛山新塘店',
+                '佛山绿地店','佛山高明店','佛山星耀店','佛山万科店','佛山水城店'];
+
+// 双层表头：大指标 → 美 / 抖 子列
+const COL_GROUPS = [
+  { g:'客单数', items:[{k:'meituan_visitors',s:'美'},{k:'douyin_visitors',s:'抖'}] },
+  { g:'核销金', items:[{k:'meituan_verify_amount',s:'美'},{k:'douyin_verify_amount',s:'抖'}] },
+  { g:'内购数', items:[{k:'meituan_inner_orders',s:'美'},{k:'douyin_inner_orders',s:'抖'}] },
+  { g:'内购金', items:[{k:'meituan_inner_amount',s:'美'},{k:'douyin_inner_amount',s:'抖'}] },
+  { g:'约不上', items:[{k:'meituan_unable_to_book',s:'美'},{k:'douyin_unable_to_book',s:'抖'}] }
+];
+const FLAT_COLS = COL_GROUPS.reduce((a,g)=>a.concat(g.items),[]);
+const EDITABLE  = FLAT_COLS.map(c=>c.k).concat(['has_activity','activity_content']);
+
+const TOL = 1;          // 金额容差：差 ≤1 元算对
+let session = null;
+const ADMIN_EMAIL = '411249585@qq.com';   // 主账号：独享 操作日志 / 新增门店 / 操作列
+let isAdmin = false;
+let charts = {};
+
+/* ---------------- 工具 ---------------- */
+const $ = (id) => document.getElementById(id);
+const pad = (n) => String(n).padStart(2,'0');
+const fmtDate = (d) => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today = () => fmtDate(new Date());
+const daysAgo = (n) => fmtDate(new Date(Date.now()-n*864e5));
+const num = (v) => { const x = parseFloat(v); return isNaN(x) ? 0 : x; };
+const round2 = (v) => Math.round(v*100)/100;
+const esc = (s) => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function msg(html, cls){ $('globalMsg').innerHTML = '<div class="msg '+cls+'">'+html+'</div>'; }
+function clearMsg(){ $('globalMsg').innerHTML = ''; }
+
+/* ---------------- 登录 / 会话 ---------------- */
+async function authPost(path, body){
+  const r = await fetch(SB_URL+path, {
+    method:'POST',
+    headers:{ 'apikey':SB_KEY, 'Content-Type':'application/json' },
+    body: JSON.stringify(body||{})
+  });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.error_description || d.msg || d.message || ('HTTP '+r.status));
+  return d;
+}
+function saveSession(d){
+  session = d;
+  localStorage.setItem('ops_session', JSON.stringify(d));
+}
+async function doLogin(){
+  const email = $('lgEmail').value.trim();
+  const pwd = $('lgPwd').value;
+  $('loginErr').innerHTML = '';
+  if(!email || !pwd){ $('loginErr').innerHTML = '<div class="msg err">请填写邮箱和密码</div>'; return; }
+  $('lgBtn').disabled = true; $('lgBtn').textContent = '登录中…';
+  try{
+    const d = await authPost('/auth/v1/token?grant_type=password', { email, password: pwd });
+    // 仅 ops 角色允许进入
+    const role = await fetchRole(d.access_token);
+    if(role !== 'ops'){
+      $('loginErr').innerHTML = '<div class="msg err">该账号没有运营权限（role='+(role||'无')+'）</div>';
+      localStorage.removeItem('ops_session'); session = null;
+      $('lgBtn').disabled = false; $('lgBtn').textContent = '登 录';
+      return;
+    }
+    saveSession(d);
+    enterApp();
+  }catch(e){
+    $('loginErr').innerHTML = '<div class="msg err">登录失败：'+esc(e.message)+'</div>';
+  }
+  $('lgBtn').disabled = false; $('lgBtn').textContent = '登 录';
+}
+async function fetchRole(token){
+  try{
+    const uid = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub;
+    const r = await fetch(SB_URL+'/rest/v1/user_roles?user_id=eq.'+uid+'&select=role', {
+      headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+token }
+    });
+    const d = await r.json();
+    return (d && d[0] && d[0].role) || null;
+  }catch(e){ return null; }
+}
+async function ensureSession(){
+  if(!session) throw new Error('未登录');
+  const exp = session.expires_at || 0;
+  if(exp*1000 - Date.now() < 120000){      // 2 分钟内过期就续
+    try{
+      const d = await authPost('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+      saveSession(d);
+    }catch(e){ throw new Error('登录已过期，请重新登录'); }
+  }
+}
+async function sb(path, opts){
+  opts = opts || {};
+  await ensureSession();
+  const h = Object.assign({
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer '+session.access_token,
+    'Content-Type': 'application/json'
+  }, opts.headers||{});
+  let r = await fetch(SB_URL+path, Object.assign({}, opts, { headers:h }));
+  if(r.status === 401){
+    try{
+      const d = await authPost('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+      saveSession(d);
+    }catch(e){ doLogout(true); throw new Error('登录已过期，请重新登录'); }
+    h['Authorization'] = 'Bearer '+session.access_token;
+    r = await fetch(SB_URL+path, Object.assign({}, opts, { headers:h }));
+  }
+  return r;
+}
+function enterApp(){
+  $('loginView').classList.add('hide');
+  $('mainView').classList.remove('hide');
+  let email = '运营';
+  try{ email = JSON.parse(atob(session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email || '运营'; }catch(e){}
+  $('whoAmI').textContent = '已登录：'+email;
+  isAdmin = String(email).toLowerCase() === ADMIN_EMAIL;   // 管理类按钮仅主账号可见
+  userEmail = email;
+  applyPerms();
+  initDefaults();
+  loadInnerIds();
+  loadStoreMaster().then(()=>loadDash());   // 先加载主表（停业剔除/别名依赖），再画看板
+}
+let userEmail = '';
+/* 权限可见性：主账号 411249585@qq.com 才显示 操作日志 tab / 新增门店 / 操作列 */
+function applyPerms(){
+  const t = $('tabBtnLogs'); if(t) t.classList.toggle('hide', !isAdmin);
+  const b = $('btnAddStore'); if(b) b.classList.toggle('hide', !isAdmin);
+}
+function doLogout(silent){
+  localStorage.removeItem('ops_session');
+  session = null;
+  $('mainView').classList.add('hide');
+  $('loginView').classList.remove('hide');
+  if(!silent) { $('loginErr').innerHTML = ''; }
+}
+
+/* ---------------- 初始化 ---------------- */
+// 已停业门店：档案保留在库里，但界面（看板/查询/导出）一律不展示
+// ★ 权威来源 = stores 主表的 status 字段；下方硬编码仅作主表加载失败时的兜底
+const EXCLUDED_STORES = new Set(['佛山万悦店', '佛山彩虹店']);
+let storeMaster = [];   // stores 主表缓存（全字段），登录后加载、门店管理编辑后同步
+async function loadStoreMaster(){
+  try{
+    const r = await sb('/rest/v1/stores?select=*&order=store_type.asc,std_name.asc&limit=500');
+    if(r.ok) storeMaster = await r.json();
+  }catch(e){ /* 读取失败时退回硬编码兜底，不影响页面其他功能 */ }
+}
+function closedStores(){
+  if(storeMaster.length){
+    return new Set(storeMaster.filter(x=>x.status==='闭店').map(x=>x.std_name));
+  }
+  return EXCLUDED_STORES;
+}
+
+function initDefaults(){
+  $('dashStart').value = daysAgo(1); $('dashEnd').value = daysAgo(1);   // 默认昨日
+  $('qStart').value = daysAgo(1);   $('qEnd').value = daysAgo(1);       // 默认昨日
+  markQuick('dash','yest'); markQuick('query','yest');
+  $('rDate').value = daysAgo(1);
+  $('lStart').value = daysAgo(6); $('lEnd').value = today();
+  const opts = '<option value="">全部门店</option>' + STORES.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+  $('qStore').innerHTML = opts; $('lStore').innerHTML = opts;
+}
+
+/* ---------------- 快捷日期（昨日 / 近七天 / 本月 / 上月） ---------------- */
+function rangeFor(r){
+  const n = new Date();
+  if(r==='yest'){ const y = daysAgo(1); return [y, y]; }
+  if(r==='7d')  { return [daysAgo(6), today()]; }   // 近七天含今天，与「本月」口径一致
+  if(r==='month'){
+    const y = n.getFullYear(), m = pad(n.getMonth()+1);
+    return [y+'-'+m+'-01', today()];
+  }
+  if(r==='lastmonth'){
+    const d = new Date(n.getFullYear(), n.getMonth()-1, 1);
+    const y = d.getFullYear(), m = pad(d.getMonth()+1);
+    const last = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+    return [y+'-'+m+'-01', y+'-'+m+'-'+pad(last)];
+  }
+  return null;
+}
+function markQuick(prefix, r){
+  document.querySelectorAll('#'+(prefix==='dash'?'dashQuick':'queryQuick')+' .quick')
+    .forEach(x=>x.classList.toggle('on', x.dataset.r===r));
+}
+function onQuick(prefix, r){
+  const range = rangeFor(r); if(!range) return;
+  $(prefix+'Start').value = range[0]; $(prefix+'End').value = range[1];
+  markQuick(prefix, r);
+  if(prefix==='dash') loadDash(); else loadQuery();
+}
+function switchTab(t){
+  if(t==='logs' && !isAdmin) t='dash';          // 操作日志仅主账号可见
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active', el.dataset.tab===t));
+  ['dash','query','recon','logs','stores'].forEach(x=>{
+    $('tab-'+x).classList.toggle('hide', x!==t);
+  });
+  if(t==='stores') loadStores();
+  clearMsg();
+}
+
+/* ---------------- 数据加载 ---------------- */
+async function fetchRows(start, end, store){
+  let p = '/rest/v1/daily_reports?form_date=gte.'+start+'&form_date=lte.'+end+'&select=*&order=form_date.asc,store_name.asc&limit=2000';
+  if(store) p += '&store_name=eq.'+encodeURIComponent(store);
+  const r = await sb(p);
+  if(!r.ok) throw new Error('读取失败 HTTP '+r.status+'：'+await r.text());
+  const rows = await r.json();
+  // 已停业门店（status=闭店，读 stores 主表）档案保留，但一律不展示
+  const closed = closedStores();
+  return rows.filter(x=>!closed.has(x.store_name));
+}
+
+/* ---------------- 总览看板 ---------------- */
+async function loadDash(){
+  clearMsg();
+  const s = $('dashStart').value, e = $('dashEnd').value;
+  if(!s || !e) return msg('请选择日期范围','err');
+  try{
+    const rows = await fetchRows(s, e, '');
+    $('storeChartTitle').textContent = '各门店核销金额对比（美+抖合计 · 降序）· ' + s + (s===e?'':' ~ '+e);
+    $('dashTableTitle').textContent = '门店数据汇总 · ' + s + (s===e?'':' ~ '+e);
+    if(!rows.length){ $('dashStats').innerHTML=''; $('dashStoreTable').innerHTML=''; $('dashTableTitle').textContent='门店数据汇总'; renderCharts([], s, e); msg('该时间段没有数据','info'); return; }
+
+    const sum = (k) => rows.reduce((a,r)=>a+num(r[k]),0);
+    const mtV = sum('meituan_verify_amount'), dyV = sum('douyin_verify_amount');
+    const ppl = sum('meituan_visitors') + sum('douyin_visitors');
+    const inner = sum('meituan_inner_amount') + sum('douyin_inner_amount');
+    $('dashStats').innerHTML = [
+      card('核销金额合计', '¥'+Math.round(mtV+dyV).toLocaleString(), '美团 ¥'+Math.round(mtV).toLocaleString()+' · 抖音 ¥'+Math.round(dyV).toLocaleString()),
+      card('到店客数', Math.round(ppl)+' 人', '美 '+Math.round(sum('meituan_visitors'))+' · 抖 '+Math.round(sum('douyin_visitors'))),
+      card('内购金额', '¥'+Math.round(inner).toLocaleString(), '内购数 '+Math.round(sum('meituan_inner_orders')+sum('douyin_inner_orders'))),
+      card('约不上', Math.round(sum('meituan_unable_to_book')+sum('douyin_unable_to_book'))+' 单', '美 '+Math.round(sum('meituan_unable_to_book'))+' · 抖 '+Math.round(sum('douyin_unable_to_book')))
+    ].join('');
+    renderCharts(rows, s, e);
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+function card(k,v,s){ return '<div class="stat"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>'; }
+
+// 门店短名（2 字）：优先取 stores 主表 short_name，主表未加载时按「佛山」前缀兜底裁剪
+function shortName(n){
+  const x = (typeof storeMaster!=='undefined' ? storeMaster : []).find(v=>v.std_name===n);
+  if(x && x.short_name) return x.short_name;
+  return String(n==null?'':n).replace(/^佛山/,'').slice(0,2) || n;
+}
+
+function renderCharts(rows, s, e){
+  // 各门店核销（美/抖）
+  const byStore = {};
+  STORES.forEach(x=>byStore[x]={mt:0,dy:0,ppl:0,unable:0,inner:0});
+  rows.forEach(r=>{
+    if(!byStore[r.store_name]) byStore[r.store_name]={mt:0,dy:0,ppl:0,unable:0,inner:0};
+    byStore[r.store_name].mt += num(r.meituan_verify_amount);
+    byStore[r.store_name].dy += num(r.douyin_verify_amount);
+    byStore[r.store_name].ppl += num(r.meituan_visitors)+num(r.douyin_visitors);
+    byStore[r.store_name].unable += num(r.meituan_unable_to_book)+num(r.douyin_unable_to_book);
+    byStore[r.store_name].inner += num(r.meituan_inner_amount)+num(r.douyin_inner_amount);
+  });
+  const names = Object.keys(byStore);
+  // 核销对比：按美+抖合计降序
+  const namesSort = names.slice().sort((a,b)=>(byStore[b].mt+byStore[b].dy)-(byStore[a].mt+byStore[a].dy));
+
+  // 门店数据汇总表（顶部，与图同序降序）
+  const dtEl = $('dashStoreTable');
+  if(!namesSort.length){ if(dtEl) dtEl.innerHTML=''; }
+  else{
+    let th = '<tr><th class="store">门店</th><th>核销合计</th><th>客单数</th><th>约不上</th><th>内购金额</th></tr>';
+    let tb = namesSort.map(n=>{
+      const x = byStore[n], mt = Math.round(x.mt), dy = Math.round(x.dy);
+      return '<tr><td class="store">'+esc(shortName(n))+'</td>'+
+        '<td style="font-weight:700">'+(mt+dy).toLocaleString()+'</td>'+
+        '<td>'+Math.round(x.ppl).toLocaleString()+'</td>'+
+        '<td>'+Math.round(x.unable).toLocaleString()+'</td>'+
+        '<td class="dou">'+Math.round(x.inner).toLocaleString()+'</td></tr>';
+    }).join('');
+    const tM = namesSort.reduce((a,n)=>a+byStore[n].mt,0), tD = namesSort.reduce((a,n)=>a+byStore[n].dy,0);
+    const tP = namesSort.reduce((a,n)=>a+byStore[n].ppl,0), tU = namesSort.reduce((a,n)=>a+byStore[n].unable,0), tI = namesSort.reduce((a,n)=>a+byStore[n].inner,0);
+    tb += '<tr class="total"><td class="store">合计</td><td>'+Math.round(tM+tD).toLocaleString()+'</td><td>'+Math.round(tP).toLocaleString()+'</td><td>'+Math.round(tU).toLocaleString()+'</td><td>'+Math.round(tI).toLocaleString()+'</td></tr>';
+    if(dtEl) dtEl.innerHTML = '<div class="tbl-wrap"><table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table></div>';
+  }
+
+  // 每日趋势：仅多日区间显示；日期标签 2026-09-01 → 1；周六荧光粉 / 周日荧光绿
+  const byDay = {};
+  rows.forEach(r=>{
+    if(!byDay[r.form_date]) byDay[r.form_date]={mt:0,dy:0};
+    byDay[r.form_date].mt += num(r.meituan_verify_amount);
+    byDay[r.form_date].dy += num(r.douyin_verify_amount);
+  });
+  const days = Object.keys(byDay).sort();
+  const trendCard = $('cardTrend');
+  if(trendCard) trendCard.classList.toggle('hide', s===e);
+  $('trendTitle').textContent = '每日核销金额趋势 · ' + s + (s===e?'':' ~ '+e);
+  const dayLbls = days.map(d=>String(parseInt(d.slice(8),10)));
+  const dayColors = days.map(d=>{
+    const w = new Date(d+'T00:00:00').getDay();
+    return w===6 ? '#ff5fd7' : (w===0 ? '#7dff5a' : 'rgba(255,255,255,0.6)');
+  });
+
+  mkBar('chStore', namesSort.map(shortName), [
+    {label:'核销合计', data:namesSort.map(n=>round2(byStore[n].mt+byStore[n].dy)), bg:'#8b5cf6',
+     _split:namesSort.map(n=>({mt:byStore[n].mt, dy:byStore[n].dy}))}
+  ]);
+  // 核销金额明细表（与图同序，金额四舍五入取整）
+  const stEl = $('storeAmtTable');
+  if(!namesSort.length){ if(stEl) stEl.innerHTML=''; }
+  else{
+  const totM = namesSort.reduce((a,n)=>a+byStore[n].mt,0);
+  const totD = namesSort.reduce((a,n)=>a+byStore[n].dy,0);
+  let th = '<tr><th style="width:48px">排名</th><th class="store">门店</th><th>核销合计</th><th class="mei">美团</th><th class="dou">抖音</th></tr>';
+  let tb = namesSort.map((n,i)=>{
+    const mt = Math.round(byStore[n].mt), dy = Math.round(byStore[n].dy);
+    return '<tr><td>'+(i+1)+'</td><td class="store">'+esc(shortName(n))+'</td><td style="font-weight:700">'+(mt+dy).toLocaleString()+'</td><td class="mei">'+mt.toLocaleString()+'</td><td class="dou">'+dy.toLocaleString()+'</td></tr>';
+  }).join('');
+  tb += '<tr class="total"><td></td><td class="store">合计</td><td>'+Math.round(totM+totD).toLocaleString()+'</td><td class="mei">'+Math.round(totM).toLocaleString()+'</td><td class="dou">'+Math.round(totD).toLocaleString()+'</td></tr>';
+  if(stEl) stEl.innerHTML = '<div class="tbl-wrap"><table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table></div>';
+  }
+  mkLine('chTrend', dayLbls, [
+    {label:'美团', data:days.map(d=>round2(byDay[d].mt)), bc:'#fbbf24'},
+    {label:'抖音', data:days.map(d=>round2(byDay[d].dy)), bc:'#a78bfa'}
+  ], dayColors);
+  mkBar('chPeople', names.map(shortName), [
+    {label:'客单数', data:names.map(n=>Math.round(byStore[n].ppl)), bg:'#8b5cf6'}
+  ], true);
+}
+function mkBar(id, labels, sets, intY){
+  if(charts[id]) charts[id].destroy();
+  const el = $(id); if(!el) return;
+  charts[id] = new Chart(el, {
+    type:'bar',
+    data:{ labels, datasets: sets.map(x=>Object.assign({borderRadius:4, backgroundColor:x.bg}, x)) },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:'rgba(255,255,255,0.7)',font:{size:11}}},
+        tooltip:{callbacks:{label:(ctx)=>{
+          if(intY) return ' '+ctx.dataset.label+': '+Math.round(ctx.parsed.y);
+          const sp = ctx.chart.data.datasets[ctx.datasetIndex]._split;
+          const v = round2(ctx.parsed.y).toFixed(2);
+          if(sp && sp[ctx.dataIndex]) return ' 合计: ¥'+v+'（美 '+round2(sp[ctx.dataIndex].mt).toFixed(2)+' · 抖 '+round2(sp[ctx.dataIndex].dy).toFixed(2)+'）';
+          return ' '+ctx.dataset.label+': ¥'+v;
+        }}} },
+      scales:{ x:{ticks:{color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}},
+               y:(intY?{beginAtZero:true,ticks:{precision:0,color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}}:{ticks:{color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}}) } }
+  });
+}
+function mkLine(id, labels, sets, tickColors){
+  if(charts[id]) charts[id].destroy();
+  const el = $(id); if(!el) return;
+  charts[id] = new Chart(el, {
+    type:'line',
+    data:{ labels, datasets: sets.map(x=>({label:x.label,data:x.data,borderColor:x.bc,backgroundColor:x.bc,tension:0.3,borderWidth:2,pointRadius:2})) },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:'rgba(255,255,255,0.7)',font:{size:11}}} },
+      scales:{ x:{ticks:{color: tickColors || 'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}},
+               y:{ticks:{color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}} } }
+  });
+}
+
+/* ---------------- 查询与导出 ---------------- */
+let queryData = [];
+async function loadQuery(){
+  clearMsg();
+  const s = $('qStart').value, e = $('qEnd').value, st = $('qStore').value;
+  if(!s || !e) return msg('请选择日期范围','err');
+  try{
+    const rows = await fetchRows(s, e, st);
+    queryData = rows;
+    $('qTitle').textContent = '数据明细（'+s+(s===e?'':' ~ '+e)+'）· '+rows.length+' 条';
+    $('qBody').innerHTML = rows.length ? buildTable(rows) : '<div class="empty">该条件下没有数据</div>';
+    bindEditButtons();
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+function buildTable(rows){
+  // 单日 → 直接展示；跨日 → 按门店合计
+  const dates = Array.from(new Set(rows.map(r=>r.form_date))).sort();
+  const single = dates.length === 1;
+  let body = '';
+  if(single){
+    rows.forEach(r=>{ body += rowHtml(r, r.form_date, single); });
+  }else{
+    const by = {};
+    rows.forEach(r=>{
+      if(!by[r.store_name]) by[r.store_name] = {};
+      FLAT_COLS.forEach(c=>{ by[r.store_name][c.k] = num(by[r.store_name][c.k]) + num(r[c.k]); });
+    });
+    Object.keys(by).sort().forEach(n=>{ body += rowHtml(by[n], n, single, n); });
+  }
+  // 合计
+  const tot = {};
+  FLAT_COLS.forEach(c=>tot[c.k]=0);
+  rows.forEach(r=>FLAT_COLS.forEach(c=>tot[c.k]+=num(r[c.k])));
+  const totRow = Object.assign({id:'', store_name:'合计'}, tot);
+
+  let head1 = '<tr><th class="store" rowspan="2">'+(single?'门店':'门店（区间合计）')+'</th>';
+  COL_GROUPS.forEach(g=>{ head1 += '<th colspan="2">'+g.g+'</th>'; });
+  head1 += '<th rowspan="2">活动</th><th rowspan="2">操作</th></tr>';
+  let head2 = '<tr class="sub">';
+  COL_GROUPS.forEach(g=>{ g.items.forEach(it=>{ head2 += '<th class="'+(it.s==='美'?'mei':'dou')+'">'+it.s+'</th>'; }); });
+  head2 += '</tr>';
+
+  return '<div class="tbl-wrap"><table><thead>'+head1+head2+'</thead><tbody>'+body+
+         rowHtml(totRow, '合计', single, '合计', true)+
+         '</tbody></table></div>';
+}
+function rowHtml(r, first, single, storeName, isTotal){
+  // 左列一律显示门店名（单日的日期已由标题展示，不重复）
+  let h = '<tr'+(isTotal?' class="total"':'')+'><td class="store">'+esc(storeName || r.store_name || '')+'</td>';
+  FLAT_COLS.forEach((c, i)=>{
+    const v = num(r[c.k]);
+    const cls = (c.s==='美'?'mei':'dou');
+    const isAmt = /amount$/.test(c.k);
+    h += '<td class="'+cls+'">'+(isAmt ? round2(v).toFixed(2) : Math.round(v))+'</td>';
+  });
+  h += '<td>'+(isTotal ? '' : esc(single ? ((r.has_activity==='是' ? (r.activity_content||'有') : (r.has_activity||'否'))) : '—'))+'</td>';
+  if(isTotal) h += '<td></td>';
+  else h += '<td><button class="sm" onclick="openEdit('+r.id+')">编辑</button> <button class="sm danger" onclick="delRow('+r.id+')">删</button></td>';
+  h += '</tr>';
+  return h;
+}
+function bindEditButtons(){}
+
+/* ---------------- 编辑 / 删除 ---------------- */
+let editingId = null;
+function openEdit(id){
+  const r = queryData.find(x=>x.id===id);
+  if(!r) return;
+  editingId = id;
+  $('edTitle').textContent = '编辑 · '+r.store_name+' · '+r.form_date+
+    (r.revision ? '（已修改 '+r.revision+' 次）' : '');
+  let h = '<div class="grid2">';
+  const labels = {
+    meituan_visitors:'真实客数 美', douyin_visitors:'真实客数 抖',
+    meituan_verify_amount:'核销金额 美', douyin_verify_amount:'核销金额 抖',
+    meituan_inner_orders:'内购数量 美', douyin_inner_orders:'内购数量 抖',
+    meituan_inner_amount:'内购金额 美', douyin_inner_amount:'内购金额 抖',
+    meituan_unable_to_book:'约不上 美', douyin_unable_to_book:'约不上 抖'
+  };
+  FLAT_COLS.forEach(c=>{
+    h += '<div class="field"><label class="field-label">'+labels[c.k]+'</label>'+
+         '<input type="number" step="0.01" id="ed_'+c.k+'" value="'+(r[c.k]==null?'':r[c.k])+'" /></div>';
+  });
+  h += '</div>';
+  h += '<div class="field"><label class="field-label">是否有活动</label><select id="ed_has_activity">'+
+       '<option value="否"'+(r.has_activity==='否'?' selected':'')+'>否</option>'+
+       '<option value="是"'+(r.has_activity==='是'?' selected':'')+'>是</option></select></div>';
+  h += '<div class="field"><label class="field-label">活动内容</label>'+
+       '<input type="text" id="ed_activity_content" value="'+esc(r.activity_content||'')+'" placeholder="如：光电 / 眉眼唇" /></div>';
+  $('edBody').innerHTML = h;
+  $('editMask').classList.remove('hide');
+}
+function closeEdit(){ $('editMask').classList.add('hide'); editingId = null; }
+async function saveEdit(){
+  if(!editingId) return;
+  const body = {};
+  EDITABLE.forEach(k=>{
+    const el = $('ed_'+k);
+    if(!el) return;
+    body[k] = (el.type === 'number') ? (el.value === '' ? null : parseFloat(el.value)) : el.value;
+  });
+  try{
+    const r = await sb('/rest/v1/daily_reports?id=eq.'+editingId, {
+      method:'PATCH',
+      headers:{ 'Prefer':'return=representation' },
+      body: JSON.stringify(body)
+    });
+    if(!r.ok) throw new Error('保存失败 HTTP '+r.status+'：'+await r.text());
+    closeEdit();
+    msg('已保存，改动已记入操作日志','ok');
+    loadQuery();
+  }catch(e){ msg(esc(e.message),'err'); }
+}
+async function delRow(id){
+  const r0 = queryData.find(x=>x.id===id);
+  if(!r0) return;
+  if(!confirm('确定删除这条记录？\n'+r0.store_name+' · '+r0.form_date+'\n删除后可在操作日志中查到记录，但数据不可恢复。')) return;
+  try{
+    const r = await sb('/rest/v1/daily_reports?id=eq.'+id, { method:'DELETE' });
+    if(!r.ok) throw new Error('删除失败 HTTP '+r.status+'：'+await r.text());
+    msg('已删除','ok');
+    loadQuery();
+  }catch(e){ msg(esc(e.message),'err'); }
+}
+
+/* ---------------- 导出 ---------------- */
+function exportXlsx(){
+  if(!queryData.length) return msg('当前没有可导出的数据','err');
+  const head = ['日期','门店'].concat(FLAT_COLS.map(c=>{
+    const lb = {meituan_visitors:'真实客数-美',douyin_visitors:'真实客数-抖',
+      meituan_verify_amount:'核销金额-美',douyin_verify_amount:'核销金额-抖',
+      meituan_inner_orders:'内购数量-美',douyin_inner_orders:'内购数量-抖',
+      meituan_inner_amount:'内购金额-美',douyin_inner_amount:'内购金额-抖',
+      meituan_unable_to_book:'约不上-美',douyin_unable_to_book:'约不上-抖'};
+    return lb[c.k];
+  })).concat(['是否有活动','活动内容','提交时间','最后修改','修改次数']);
+  const aoa = [head];
+  queryData.forEach(r=>{
+    aoa.push([r.form_date, r.store_name].concat(
+      FLAT_COLS.map(c=>(r[c.k]==null?'':r[c.k]))
+    ).concat([r.has_activity||'', r.activity_content||'', r.created_at||'', r.updated_at||'', r.revision||0]));
+  });
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '每日数据');
+  const ds = queryData.reduce((a,r)=>a<r.form_date?a:r.form_date, queryData[0].form_date);
+  const de = queryData.reduce((a,r)=>a>r.form_date?a:r.form_date, queryData[0].form_date);
+  XLSX.writeFile(wb, '書荀每日数据_'+ds+'_'+de+'.xlsx');
+  msg('已导出 '+queryData.length+' 条','ok');
+}
+
+/* ---------------- 操作日志 ---------------- */
+async function loadLogs(){
+  clearMsg();
+  const s = $('lStart').value, e = $('lEnd').value, st = $('lStore').value;
+  let p = '/rest/v1/audit_logs?form_date=gte.'+s+'&form_date=lte.'+e+
+          '&select=*&order=created_at.desc&limit=500';
+  if(st) p += '&store_name=eq.'+encodeURIComponent(st);
+  try{
+    const r = await sb(p);
+    if(!r.ok) throw new Error('读取失败 HTTP '+r.status+'：'+await r.text());
+    const rows = await r.json();
+    if(!rows.length){ $('lBody').innerHTML = '<div class="empty">没有改动记录</div>'; return; }
+    const lb = {meituan_visitors:'真实客数-美',douyin_visitors:'真实客数-抖',
+      meituan_verify_amount:'核销金额-美',douyin_verify_amount:'核销金额-抖',
+      meituan_inner_orders:'内购数量-美',douyin_inner_orders:'内购数量-抖',
+      meituan_inner_amount:'内购金额-美',douyin_inner_amount:'内购金额-抖',
+      meituan_unable_to_book:'约不上-美',douyin_unable_to_book:'约不上-抖'};
+    let h = '';
+    rows.forEach(r=>{
+      const act = r.action==='UPDATE'?'修改':(r.action==='INSERT'?'新增':'删除');
+      let detail = '';
+      (r.changed_fields||[]).forEach(k=>{
+        const b = r.before_data ? r.before_data[k] : '';
+        const a = r.after_data ? r.after_data[k] : '';
+        detail += '<div class="d">'+(lb[k]||k)+'：'+esc(String(b==null?'空':b))+' → '+esc(String(a==null?'空':a))+'</div>';
+      });
+      if(r.action==='INSERT') detail = '<div class="d">新建记录</div>';
+      if(r.action==='DELETE') detail = '<div class="d">删除：'+esc(JSON.stringify(r.before_data||{}).slice(0,160))+'</div>';
+      h += '<div class="log-item"><div class="h">'+act+' · '+esc(r.store_name||'')+' · '+
+           esc(r.form_date||'')+' · '+esc(r.actor_email||'未知')+' · '+
+           esc((r.created_at||'').slice(0,16).replace('T',' '))+'</div>'+detail+'</div>';
+    });
+    $('lBody').innerHTML = h;
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+
+/* ---------------- 门店管理（stores 主表 · 唯一权威源） ---------------- */
+let storeRows = [];
+let editingStoreId = null;
+let stTypeFilter = '';
+const STORE_FIELDS = [
+  ['std_name','公司内部标准名称 *','text',''],
+  ['short_name','2 字缩写','text',''],
+  ['meituan_id','美团门店ID','text',''],
+  ['meituan_name','美团门店名称','text',''],
+  ['douyin_id','抖音门店ID','text',''],
+  ['douyin_name','抖音门店名称','text',''],
+  ['douyin_account_id','抖音门店号id','text',''],
+  ['province','省份','text',''],
+  ['city','城市','text',''],
+  ['district','行政区','text',''],
+  ['store_type','门店性质','select','直营|连锁|陪跑|共管'],
+  ['operator','运营人','text',''],
+  ['launch_date','上线日期','date',''],
+  ['status','状态','select','在营|闭店|待上线'],
+  ['closed_date','闭店日期','date',''],
+  ['aliases','核对别名（逗号分隔）','text',''],
+  ['note','备注','text','']
+];
+async function loadStores(){
+  try{
+    const r = await sb('/rest/v1/stores?select=*&order=store_type.asc,std_name.asc&limit=500');
+    if(!r.ok) throw new Error('读取失败 HTTP '+r.status+'：'+await r.text());
+    storeRows = await r.json();
+    storeMaster = storeRows;      // 门店管理编辑后，停业剔除/核对别名立即同步
+    setStType(stTypeFilter);
+    $('stBody').innerHTML = storeRows.length ? renderStores() : '<div class="empty">主表为空，请先执行 stores_master_setup.sql</div>';
+  }catch(err){
+    $('stBody').innerHTML = '<div class="empty">加载失败：'+esc(err.message)+'</div>';
+  }
+}
+function renderStores(){
+  const st = $('stStatus').value, ty = stTypeFilter;
+  const kw = ($('stSearch').value||'').trim().toLowerCase();
+  const list = storeRows.filter(x=>
+    (!st || x.status===st) && (!ty || x.store_type===ty) &&
+    (!kw || [x.std_name,x.short_name,x.aliases,x.meituan_name,x.douyin_name,x.meituan_id,x.douyin_id,x.operator]
+      .some(v=>String(v==null?'':v).toLowerCase().indexOf(kw)>=0)));
+  let h = '<div class="tbl-wrap"><table><thead><tr>'+
+    '<th>状态</th><th class="store">标准名称</th><th>性质</th>'+
+    '<th>运营人</th><th>上线日期</th>'+(isAdmin?'<th>操作</th>':'')+'</tr></thead><tbody>';
+  const stColor = {'在营':'#4ade80','闭店':'#f87171','待上线':'#fbbf24'};
+  list.forEach(x=>{
+    h += '<tr>'+
+      '<td style="color:'+(stColor[x.status]||'#fff')+';font-weight:700">'+esc(x.status)+'</td>'+
+      '<td class="store">'+esc(x.std_name)+'</td>'+
+      '<td>'+esc(x.store_type||'')+'</td>'+
+      '<td>'+esc(x.operator||'')+'</td>'+
+      '<td>'+esc(x.launch_date||'—')+'</td>'+
+      (isAdmin?'<td><button class="sm" onclick="openStoreEdit('+x.id+')">编辑</button> '+
+      '<button class="sm danger" onclick="delStore('+x.id+',\''+esc(x.std_name).replace(/'/g,'')+'\')">删</button></td>':'')+
+      '</tr>';
+  });
+  const activeCnt = storeRows.filter(x=>x.status==='在营').length;
+  h += '</tbody></table></div><div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.55)">在营门店 <b style="color:#4ade80;font-size:15px">'+activeCnt+'</b> 家 ｜ 当前显示 '+list.length+' / '+storeRows.length+' 家（美团ID / 抖音ID / 别名 在「编辑」里查看；增删改自动写入操作日志）</div>';
+  return h;
+}
+function setStType(t){
+  stTypeFilter = t;
+  const chips = $('stTypeChips').children;
+  for(const c of chips){
+    const on = (t==='' && c.textContent==='全部') || (t!=='' && c.textContent===t);
+    c.style.background = on ? '#8b5cf6' : '';
+    c.style.color = on ? '#fff' : '';
+    c.style.borderColor = on ? '#8b5cf6' : '';
+  }
+  renderStores();
+}
+function openStoreEdit(id){
+  editingStoreId = id || null;
+  const x = id ? storeRows.find(v=>v.id===id) : null;
+  $('smTitle').textContent = x ? '编辑门店 · '+x.std_name : '新增门店';
+  let h = '<div class="grid2">';
+  STORE_FIELDS.forEach(f=>{
+    const v = x ? (x[f[0]]==null?'':x[f[0]]) : '';
+    if(f[2]==='select'){
+      h += '<div class="field"><label class="field-label">'+f[1]+'</label><select id="sm_'+f[0]+'">'+
+        f[3].split('|').map(o=>'<option'+(o===v?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';
+    }else{
+      h += '<div class="field"><label class="field-label">'+f[1]+'</label>'+
+        '<input type="'+f[2]+'" id="sm_'+f[0]+'" value="'+esc(v)+'" /></div>';
+    }
+  });
+  h += '</div>';
+  $('smBody').innerHTML = h;
+  $('storeMask').classList.remove('hide');
+}
+function closeStoreEdit(){ $('storeMask').classList.add('hide'); }
+async function saveStore(){
+  const body = {};
+  for(const f of STORE_FIELDS){
+    const el = $('sm_'+f[0]);
+    if(!el) continue;
+    body[f[0]] = el.value === '' ? null : el.value;
+  }
+  if(!body.std_name) return msg('公司内部标准名称为必填','err');
+  if(!body.status) body.status = '在营';
+  if(!body.store_type) body.store_type = '直营';
+  try{
+    const id = editingStoreId;
+    const r = await sb('/rest/v1/stores'+(id?'?id=eq.'+id:''), {
+      method: id ? 'PATCH' : 'POST',
+      headers:{ 'Prefer':'return=representation' },
+      body: JSON.stringify(body)
+    });
+    if(!r.ok) throw new Error('保存失败 HTTP '+r.status+'：'+await r.text());
+    editingStoreId = null;
+    closeStoreEdit(); await loadStores();
+    msg(id?'门店已更新（已写入操作日志）':'门店已新增（已写入操作日志）','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+let pendingDel = null; // {id, name}
+function delStore(id, name){
+  pendingDel = { id: id, name: name };
+  $('delTitle').textContent = '删除门店：' + name;
+  $('delInfo').textContent = '⚠️ 删除后需手工恢复，操作会写入操作日志。';
+  $('delInput').value = '';
+  $('delMask').classList.remove('hide');
+  setTimeout(()=>{ const el=$('delInput'); if(el) el.focus(); }, 50);
+}
+function closeDel(){
+  pendingDel = null;
+  $('delMask').classList.add('hide');
+}
+async function doDelete(){
+  const typed = ($('delInput').value||'').trim();
+  if(typed !== '确认删除'){
+    $('delInfo').textContent = '❌ 输入不匹配（需输入：确认删除），请重新输入。';
+    return;
+  }
+  if(!pendingDel) return closeDel();
+  const { id, name } = pendingDel;
+  $('delBtn').disabled = true;
+  try{
+    const r = await sb('/rest/v1/stores?id=eq.'+id, { method:'DELETE' });
+    if(!r.ok) throw new Error('删除失败 HTTP '+r.status+'：'+await r.text());
+    closeDel();
+    await loadStores();
+    msg('门店「'+esc(name)+'」已删除','ok');
+  }catch(err){
+    closeDel();
+    msg(esc(err.message),'err');
+  }
+  $('delBtn').disabled = false;
+}
+
+/* ============================================================================
+   数据核对：导入平台明细 → 算真值 → 比对门店填报 → 标出差异
+   ---------------------------------------------------------------------------
+   口径（已用 2026-09-06 真实数据验证，10/10 门店全部吻合）：
+     美团真值金额 = Σ(结算价 − 平台技术服务费) − 该店「美团」内购消费金额
+     美团真值人数 = Σ(双人套餐2人 / 其余1人) − 该店「美团」内购券张数
+     抖音真值金额 = Σ(订单实收)，剔除内购券（按 app_config 配置的商品ID清单识别）
+     抖音真值人数 = 剔除内购券后 Σ(双人套餐2人 / 其余1人)
+     内购金额口径 = 内购登记表「报销金额」（门店实际填的是报销额，不是消费额）
+     双人套餐ID：美团 1131977141；抖音 1806531014302739
+   ========================================================================== */
+// ⚠️ 兜底映射：仅在 stores 主表未加载成功时使用；日常以主表 aliases 为准（见 matchStore）
+const ALIAS = [
+  ['佛山顺联店',  ['顺联公园里','顺联']],
+  ['佛山印象城',  ['印象城']],
+  ['佛山国金店',  ['嘉邦国金','国金']],
+  ['佛山恒福店',  ['恒福']],
+  ['佛山新塘店',  ['新塘万达','新塘']],
+  ['佛山绿地店',  ['绿地缤纷城','绿地']],
+  ['佛山高明店',  ['高明文华路','高明']],
+  ['佛山星耀店',  ['十亩地','星耀']],
+  ['佛山万科店',  ['南海万科','万科']],
+  ['佛山水城店',  ['保利水城','水城']]
+];
+const MT_DOUBLE = '1131977141';          // 美团双人套餐
+const DY_INNER  = '1810245175321659';    // 抖音 198 内购券（默认兜底，实际以 app_config 配置为准）
+const DY_DOUBLE = '1806531014302739';    // 抖音双人套餐（秋日双人行）
+
+// 内购商品ID清单：登录后从 app_config 加载，读不到时回退 localStorage / 默认值
+let innerIdList = null;
+function getInnerIds(){
+  if(innerIdList && innerIdList.length) return innerIdList;
+  return [DY_INNER];
+}
+function getInnerIdSet(){ return new Set(getInnerIds().map(x=>String(x).trim())); }
+
+async function loadInnerIds(){
+  let ids = null;
+  try{
+    const r = await sb("/rest/v1/app_config?select=value&key=eq.dy_inner_ids");
+    if(r.ok){
+      const arr = await r.json();
+      if(arr && arr.length && arr[0].value) ids = String(arr[0].value).split(/[,，、\s]+/).map(x=>x.trim()).filter(Boolean);
+    }
+  }catch(e){ /* 主表未建时静默回退 */ }
+  if(!ids){
+    try{ ids = JSON.parse(localStorage.getItem('dy_inner_ids')||'null'); }catch(e){}
+  }
+  if(!ids || !ids.length) ids = [DY_INNER];
+  innerIdList = ids;
+  const el = $('innerIdsInput');
+  if(el) el.value = ids.join(',');
+}
+async function saveInnerIds(){
+  const raw = ($('innerIdsInput').value||'');
+  const ids = raw.split(/[,，、\s]+/).map(x=>x.trim()).filter(Boolean);
+  if(!ids.length) return msg('请至少填一个内购商品ID','err');
+  const dup = ids.filter((x,i)=>ids.indexOf(x)!==i);
+  if(dup.length) return msg('有重复 ID：'+esc(dup.join(', ')),'err');
+  innerIdList = ids;
+  try{ localStorage.setItem('dy_inner_ids', JSON.stringify(ids)); }catch(e){}
+  try{
+    const r = await sb('/rest/v1/app_config?key=eq.dy_inner_ids', {
+      method:'PATCH',
+      headers:{ 'Prefer':'resolution=merge-duplicates' },
+      body: JSON.stringify({ value: ids.join(','), updated_by: userEmail, updated_at: new Date().toISOString() })
+    });
+    if(!r.ok){
+      const t = await r.text();
+      if(r.status===404 || /relation .* does not exist/i.test(t)){
+        msg('已存本机（浏览器），但线上配置表还没建——请在 Supabase 执行 app_config_setup.sql 后重存，其他电脑才能同步','info');
+        return;
+      }
+      throw new Error('HTTP '+r.status+'：'+t);
+    }
+    msg('内购ID配置已保存并同步全后台（共 '+ids.length+' 个）','ok');
+  }catch(e){ msg('保存失败：'+esc(e.message),'err'); }
+}
+
+let reconFiles = { mt:null, dy:null, ng:null, yz:null };
+
+// 平台明细店名 → 标准名：★ 权威来源 = stores 主表的 aliases（逗号分隔）+ std_name + short_name
+// 匹配策略：所有候选别名里取「命中且最长」的，避免短别名抢先误配；主表未加载时退回 ALIAS 硬编码
+function matchStore(name){
+  const n = String(name==null?'':name).replace(/\s/g,'');
+  if(!n) return null;
+  const pairs = [];
+  if(storeMaster.length){
+    for(const x of storeMaster){
+      if(!x.std_name) continue;
+      const als = String(x.aliases||'').split(',').map(a=>a.trim()).filter(Boolean);
+      als.push(x.std_name);
+      if(x.short_name) als.push(x.short_name);
+      for(const a of als) pairs.push([a, x.std_name]);
+    }
+  }else{
+    for(const [std, als] of ALIAS){ for(const a of als) pairs.push([a, std]); }
+  }
+  let best=null, bestLen=0;
+  for(const [a, std] of pairs){
+    if(n.indexOf(a) >= 0 && a.length > bestLen){ best = std; bestLen = a.length; }
+  }
+  return best;
+}
+function onFile(type, input){
+  const f = input.files && input.files[0];
+  const st = $('st'+({mt:'Mt',dy:'Dy',ng:'Ng',yz:'Yz'})[type]);
+  if(!f){ reconFiles[type] = null; st.textContent = '未选择'; return; }
+  const rd = new FileReader();
+  rd.onload = function(e){
+    try{
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      reconFiles[type] = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:false });
+      st.textContent = '已读取：'+f.name+'（'+reconFiles[type].length+' 行）';
+    }catch(err){ st.textContent = '解析失败：'+err.message; reconFiles[type] = null; }
+  };
+  rd.readAsArrayBuffer(f);
+}
+// 找表头所在行（美团表第 1 行是使用提示，真表头在第 2 行）
+function headerRow(aoa, key){
+  for(let i=0;i<Math.min(6, aoa.length);i++){
+    if(aoa[i] && aoa[i].some(c=>String(c==null?'':c).replace(/\s/g,'').indexOf(key)>=0)) return i;
+  }
+  return -1;
+}
+// 定位列索引：先精确匹配，再模糊匹配，且一律跳过「…ID / …Id」这类编号列。
+// ⚠️ 不能直接用 includes：美团表里「消费门店Id」排在「消费门店」前面，
+//    抖音表里「核销门店ID」排在「核销门店」前面，模糊匹配会命中编号列导致全表匹配失败。
+function colIdx(hd, keys){
+  const norm = (s) => String(s==null?'':s).replace(/\s/g,'');
+  const isId = (t) => /(ID|Id|id)$/.test(t) || t.indexOf('Id') >= 0;
+  // 1) 完全相等
+  for(const k of keys){
+    for(let i=0;i<hd.length;i++){ if(norm(hd[i]) === k) return i; }
+  }
+  // 2) 包含，但排除编号列
+  for(const k of keys){
+    for(let i=0;i<hd.length;i++){
+      const t = norm(hd[i]);
+      if(t.indexOf(k) >= 0 && !isId(t)) return i;
+    }
+  }
+  // 3) 兜底：任意包含（含编号列）
+  for(const k of keys){
+    for(let i=0;i<hd.length;i++){ if(norm(hd[i]).indexOf(k) >= 0) return i; }
+  }
+  return -1;
+}
+const toNum = (v) => { const x = parseFloat(String(v==null?'':v).replace(/[,\s¥]/g,'')); return isNaN(x)?0:x; };
+
+// 解析内购登记表 → {门店: {美团:{amt,cnt,rebate}, 抖音:{...}}, codes:Set(券码)}
+function parseInner(aoa){
+  const hr = headerRow(aoa, '门店');
+  if(hr < 0) throw new Error('内购表找不到表头');
+  const hd = aoa[hr];
+  const iPlat = colIdx(hd, ['平台']), iStore = colIdx(hd, ['门店']);
+  const iUse  = colIdx(hd, ['消费金额']), iReb = colIdx(hd, ['报销金额']);
+  const codeIdx = [];
+  for(let i=0;i<hd.length;i++){ if(String(hd[i]==null?'':hd[i]).indexOf('券码')>=0) codeIdx.push(i); }
+  const out = {}, codes = {};
+  for(let r=hr+1;r<aoa.length;r++){
+    const row = aoa[r]; if(!row) continue;
+    const std = matchStore(row[iStore]);
+    if(!std) continue;
+    const plat = String(row[iPlat]==null?'':row[iPlat]).indexOf('美团')>=0 ? '美团' : '抖音';
+    if(!out[std]) out[std] = { '美团':{amt:0,cnt:0,rebate:0}, '抖音':{amt:0,cnt:0,rebate:0} };
+    out[std][plat].amt += toNum(row[iUse]);
+    out[std][plat].rebate += toNum(row[iReb]);
+    codeIdx.forEach(ci=>{
+      const v = row[ci];
+      if(v!=null && String(v).trim()!=='' && String(v)!=='nan'){ out[std][plat].cnt++; codes[String(v).trim()] = std; }
+    });
+  }
+  return { byStore: out, codes: codes };
+}
+
+// 解析美团 → {门店:{amt,ppl,cnt}}
+function parseMt(aoa){
+  const hr = headerRow(aoa, '消费门店');
+  if(hr < 0) throw new Error('美团表找不到表头（应含「消费门店」）');
+  const hd = aoa[hr];
+  const iType = colIdx(hd, ['收益类型']), iStore = colIdx(hd, ['消费门店']);
+  const iGid  = colIdx(hd, ['团购ID','通兑券ID']);
+  let iSettle = -1, iFee = -1;
+  for(let i=0;i<hd.length;i++){
+    const t = String(hd[i]==null?'':hd[i]).replace(/\s/g,'');
+    if(iSettle < 0 && t.indexOf('结算价')>=0) iSettle = i;
+    if(iFee < 0 && t.indexOf('平台技术服务费')>=0) iFee = i;
+  }
+  if(iSettle < 0 || iFee < 0) throw new Error('美团表缺少「结算价」或「平台技术服务费」列');
+  const out = {}, unmatched = {};
+  for(let r=hr+1;r<aoa.length;r++){
+    const row = aoa[r]; if(!row || !row[iStore]) continue;
+    if(String(row[iType]==null?'':row[iType]).indexOf('已核销') < 0) continue;
+    const std = matchStore(row[iStore]);
+    if(!std){ unmatched[String(row[iStore])] = (unmatched[String(row[iStore])]||0)+1; continue; }
+    if(!out[std]) out[std] = { amt:0, ppl:0, cnt:0 };
+    out[std].amt += round2(toNum(row[iSettle]) - toNum(row[iFee]));
+    out[std].cnt += 1;
+    out[std].ppl += (String(row[iGid]==null?'':row[iGid]).trim() === MT_DOUBLE) ? 2 : 1;
+  }
+  return { byStore: out, unmatched: unmatched };
+}
+
+// 解析抖音 → {门店:{amt,ppl,cnt,innerCnt}}（已按配置清单剔除内购券）
+function parseDy(aoa){
+  const hr = headerRow(aoa, '核销门店');
+  if(hr < 0) throw new Error('抖音表找不到表头（应含「核销门店」）');
+  const hd = aoa[hr];
+  const iStore = colIdx(hd, ['核销门店']), iStatus = colIdx(hd, ['核销状态']);
+  const iGid = colIdx(hd, ['商品ID']), iRecv = colIdx(hd, ['订单实收']);
+  const iCode = colIdx(hd, ['券码']);
+  if(iRecv < 0) throw new Error('抖音表缺少「订单实收」列');
+  const innerIdSet = getInnerIdSet();
+  const out = {}, unmatched = {}, innerCodes = [];
+  for(let r=hr+1;r<aoa.length;r++){
+    const row = aoa[r]; if(!row || !row[iStore]) continue;
+    const stt = String(row[iStatus]==null?'':row[iStatus]);
+    if(stt.indexOf('已核销') < 0) continue;
+    const std = matchStore(row[iStore]);
+    const gid = String(row[iGid]==null?'':row[iGid]).trim();
+    if(gid && innerIdSet.has(gid)){
+      // 内购券：不计核销，记下券码用于「内购漏登记」检测
+      innerCodes.push({ code: String(row[iCode]==null?'':row[iCode]).trim(), store: std });
+      continue;
+    }
+    if(!std){ unmatched[String(row[iStore])] = (unmatched[String(row[iStore])]||0)+1; continue; }
+    if(!out[std]) out[std] = { amt:0, ppl:0, cnt:0 };
+    out[std].amt += toNum(row[iRecv]);
+    out[std].cnt += 1;
+    out[std].ppl += (gid === DY_DOUBLE) ? 2 : 1;
+  }
+  return { byStore: out, unmatched: unmatched, innerCodes: innerCodes };
+}
+
+// 解析有赞汇总 → {门店:{mt,dy}, unmatched:{}}（选填，仅交叉校验）
+// 口径：有赞「支付_美团点评验券 / 支付_抖音」本身就是剔内购后的核销金额，
+//       与平台明细算出的真值同口径，可直接比；「支付_二维码收款」按约定忽略。
+function parseYz(aoa){
+  const hr = headerRow(aoa, '门店');
+  if(hr < 0) throw new Error('有赞表找不到表头（应含「门店」列）');
+  const hd = aoa[hr];
+  const iStore = colIdx(hd, ['门店']);
+  const iMt = colIdx(hd, ['美团点评验券']);
+  const iDy = colIdx(hd, ['支付_抖音','支付抖音']);
+  if(iStore < 0) throw new Error('有赞表缺少「门店」列');
+  const out = {}, unmatched = {};
+  for(let r=hr+1;r<aoa.length;r++){
+    const row = aoa[r]; if(!row || row[iStore]==null || String(row[iStore]).trim()==='') continue;
+    const std = matchStore(row[iStore]);
+    if(!std){ unmatched[String(row[iStore])] = (unmatched[String(row[iStore])]||0)+1; continue; }
+    if(!out[std]) out[std] = { mt:0, dy:0 };
+    if(iMt >= 0) out[std].mt = round2(out[std].mt + toNum(row[iMt]));
+    if(iDy >= 0) out[std].dy = round2(out[std].dy + toNum(row[iDy]));
+  }
+  return { byStore: out, unmatched: unmatched };
+}
+
+async function runRecon(){
+  clearMsg();
+  const date = $('rDate').value;
+  if(!date) return msg('请选择核对日期','err');
+  if(!reconFiles.mt || !reconFiles.dy) return msg('美团收益明细和抖音核销明细均为必填：缺了哪一个都无法算出该平台的真值','err');
+  const noInner = $('noInner') && $('noInner').checked;
+  if(!reconFiles.ng && !noInner) return msg('内购登记表为必填：平台明细里的订单必须剔除内购才是真值。若今日全品牌确实没有任何内购，请勾选「今日全品牌确无内购」后再核对','err');
+  $('rBtn').disabled = true; $('rBtn').textContent = '核对中…';
+  try{
+    const mt = reconFiles.mt ? parseMt(reconFiles.mt) : { byStore:{}, unmatched:{} };
+    const dy = reconFiles.dy ? parseDy(reconFiles.dy) : { byStore:{}, unmatched:{}, innerCodes:[] };
+    const ng = reconFiles.ng ? parseInner(reconFiles.ng) : { byStore:{}, codes:{} };
+    const yz = reconFiles.yz ? parseYz(reconFiles.yz) : null;
+
+    // 门店填报
+    const rows = await fetchRows(date, date, '');
+    const fill = {};
+    rows.forEach(r=>fill[r.store_name] = r);
+
+    // 内购漏登记：抖音明细里有内购券（按配置ID识别），但内购表没登记该券码
+    const missingInner = dy.innerCodes.filter(x=>{
+      const c = x.code;
+      return !(c && Object.prototype.hasOwnProperty.call(ng.codes, c));
+    });
+
+    let h = '<div class="tbl-wrap"><table><thead>'+
+      '<tr><th class="store" rowspan="2">门店</th>'+
+      '<th colspan="3">美团核销金</th><th colspan="3">美团客数</th>'+
+      '<th colspan="3">抖音核销金</th><th colspan="3">抖音客数</th>'+
+      '<th colspan="3">内购金额</th><th rowspan="2">判定</th></tr>'+
+      '<tr>'+
+      '<th>真值</th><th>填报</th><th>差</th>'+
+      '<th>真值</th><th>填报</th><th>差</th>'+
+      '<th>真值</th><th>填报</th><th>差</th>'+
+      '<th>真值</th><th>填报</th><th>差</th>'+
+      '<th>真值</th><th>填报</th><th>差</th>'+
+      '</tr></thead><tbody>';
+
+    let bad = 0;
+    const truth = {};   // 门店 → {mt:美团真值金额, dy:抖音真值金额}（供有赞交叉校验用）
+    STORES.forEach(std=>{
+      const f = fill[std] || {};
+      const m = mt.byStore[std] || { amt:0, ppl:0 };
+      const y = dy.byStore[std] || { amt:0, ppl:0 };
+      const innerMt = (ng.byStore[std] && ng.byStore[std]['美团']) || { amt:0, cnt:0, rebate:0 };
+      const innerDy = (ng.byStore[std] && ng.byStore[std]['抖音']) || { amt:0, cnt:0, rebate:0 };
+
+      // 真值：金额 = 平台金额 − 内购消费额；人数 = 平台人数 − 内购券张数（按平台分别扣）
+      const mtTrueAmt = round2(m.amt - innerMt.amt);
+      const mtTruePpl = m.ppl - innerMt.cnt;
+      const dyTrueAmt = round2(y.amt);
+      const dyTruePpl = y.ppl;
+      // 内购金额按「报销金额」口径
+      const innerTrue = round2(innerMt.rebate + innerDy.rebate);
+
+      const fMtA = num(f.meituan_verify_amount), fMtP = num(f.meituan_visitors);
+      const fDyA = num(f.douyin_verify_amount),  fDyP = num(f.douyin_visitors);
+      const fIn  = num(f.meituan_inner_amount) + num(f.douyin_inner_amount);
+
+      const dMtA = round2(fMtA - mtTrueAmt), dMtP = fMtP - mtTruePpl;
+      const dDyA = round2(fDyA - dyTrueAmt), dDyP = fDyP - dyTruePpl;
+      const dIn  = round2(fIn - innerTrue);
+      truth[std] = { mt: mtTrueAmt, dy: dyTrueAmt };
+
+      const isBad = Math.abs(dMtA)>TOL || Math.abs(dDyA)>TOL || Math.abs(dIn)>TOL ||
+                    dMtP !== 0 || dDyP !== 0;
+      if(isBad) bad++;
+
+      h += '<tr><td class="store">'+esc(std)+'</td>'+
+        cell(mtTrueAmt, fMtA, dMtA, true) +
+        cell(mtTruePpl, fMtP, dMtP, false) +
+        cell(dyTrueAmt, fDyA, dDyA, true) +
+        cell(dyTruePpl, fDyP, dDyP, false) +
+        cell(innerTrue, fIn,  dIn,  true) +
+        '<td>'+(isBad?'<span class="bad">异常</span>':'<span class="ok">一致</span>')+'</td></tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // 有赞交叉校验（选填）：有赞「美团验券 / 抖音」金额本身就是剔内购后的口径，
+    // 与平台明细算出的真值直接比对；只覆盖装了有赞收银的门店，未出现不算错。
+    let yzHtml = '';
+    if(yz){
+      const yzStores = Object.keys(yz.byStore);
+      if(yzStores.length){
+        const hasMt = !!reconFiles.mt, hasDy = !!reconFiles.dy;
+        let yzBad = 0;
+        const f2 = (x)=> x==null ? '<span style="opacity:.4">—</span>' : Number(x).toFixed(2);
+        const dcell = (d,b)=> d==null ? '<span style="opacity:.4">—</span>'
+          : (b ? '<span class="bad">'+(d>0?'+':'')+d.toFixed(2)+'</span>'
+               : '<span class="ok">'+(d>0?'+':'')+d.toFixed(2)+'</span>');
+        yzHtml = '<div class="card-title" style="margin-top:20px">有赞交叉校验（有赞 vs 平台明细真值）</div>'+
+          '<div class="tbl-wrap"><table><thead><tr>'+
+          '<th class="store">门店</th><th>有赞美团</th><th>美团真值</th><th>差</th>'+
+          '<th>有赞抖音</th><th>抖音真值</th><th>差</th><th>判定</th>'+
+          '</tr></thead><tbody>';
+        yzStores.forEach(std=>{
+          const v = yz.byStore[std];
+          const t = truth[std] || { mt:0, dy:0 };
+          const dMt = hasMt ? round2(v.mt - t.mt) : null;
+          const dDy = hasDy ? round2(v.dy - t.dy) : null;
+          const badMt = dMt!=null && Math.abs(dMt)>TOL;
+          const badDy = dDy!=null && Math.abs(dDy)>TOL;
+          if(badMt || badDy) yzBad++;
+          yzHtml += '<tr><td class="store">'+esc(std)+'</td>'+
+            '<td>'+f2(v.mt)+'</td><td>'+f2(hasMt?t.mt:null)+'</td>'+dcell(dMt,badMt)+
+            '<td>'+f2(v.dy)+'</td><td>'+f2(hasDy?t.dy:null)+'</td>'+dcell(dDy,badDy)+
+            '<td>'+((badMt||badDy)?'<span class="bad">不符</span>':'<span class="ok">一致</span>')+'</td></tr>';
+        });
+        yzHtml += '</tbody></table></div>';
+        yzHtml = '<div class="msg '+(yzBad?'err':'ok')+'">有赞交叉校验：'+yzStores.length+' 家，'+
+          (yzBad ? '<b>'+yzBad+' 家不符</b>' : '全部一致')+
+          '（「支付_二维码收款」按约定不参与比对）</div>' + yzHtml;
+      }
+    }
+
+    // 提示区
+    let note = '';
+    if(missingInner.length){
+      note += '<div class="msg err"><b>内购漏登记 '+missingInner.length+' 笔</b>（抖音明细里有内购券，但内购表没登记）：<br>'+
+        missingInner.map(x=>'· '+esc(x.store||'未知门店')+' 券码 '+esc(x.code||'(空)')).join('<br>')+
+        '<br>请让门店补登记。</div>';
+    }
+    const um = Object.assign({}, mt.unmatched, dy.unmatched,
+                             yz ? yz.unmatched : {});
+    const umKeys = Object.keys(um);
+    if(umKeys.length){
+      note += '<div class="msg info">以下门店未匹配到系统 10 家在营门店，已忽略：<br>'+
+        umKeys.map(k=>'· '+esc(k)+(um[k]>1?'（'+um[k]+' 条）':'')).join('<br>')+'</div>';
+    }
+    if(yz && !reconFiles.ng && noInner && Object.keys(yz.byStore).length){
+      note += '<div class="msg info">提示：本次按「今日全品牌无内购」核对（未导入内购表，内购按 0 剔除）——若实际有内购，请补传内购表重核。</div>';
+    }
+    const noFill = STORES.filter(s=>!fill[s]);
+    if(noFill.length){
+      note += '<div class="msg err">'+esc(date)+' 以下门店<b>未填报</b>：'+esc(noFill.join('、'))+'</div>';
+    }
+
+    $('rBody').innerHTML = note + h + yzHtml +
+      '<div class="msg '+(bad?'err':'ok')+'">核对完成：共 '+STORES.length+' 家，'+
+      (bad ? '<b>'+bad+' 家存在异常</b>' : '全部一致')+'（金额容差 ±'+TOL+' 元，人数差 1 即标红）</div>';
+  }catch(err){
+    msg('核对失败：'+esc(err.message),'err');
+  }
+  $('rBtn').disabled = false; $('rBtn').textContent = '开始核对';
+}
+function cell(t, f, d, isMoney){
+  const tv = isMoney ? round2(t).toFixed(2) : Math.round(t);
+  const fv = isMoney ? round2(f).toFixed(2) : Math.round(f);
+  const tol = isMoney ? TOL : 0;
+  const okd = Math.abs(d) <= tol;
+  const cls = okd ? '' : (d > 0 ? 'diff-pos' : 'diff-neg');
+  const dv = isMoney ? (d>0?'+':'')+round2(d).toFixed(2) : (d>0?'+':'')+Math.round(d);
+  return '<td>'+tv+'</td><td>'+fv+'</td><td class="'+cls+'">'+(okd?'0':dv)+'</td>';
+}
+
+/* ---------------- 启动 ---------------- */
+(function init(){
+  const saved = localStorage.getItem('ops_session');
+  if(saved){
+    try{
+      const d = JSON.parse(saved);
+      if(d && d.access_token && (d.expires_at||0)*1000 > Date.now()){
+        session = d; enterApp(); return;
+      }
+    }catch(e){}
+    localStorage.removeItem('ops_session');
+  }
+  $('loginErr').innerHTML = '';
+})();
+</script>
+</body>
+</html>
