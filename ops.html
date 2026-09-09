@@ -474,6 +474,8 @@ const num = (v) => { const x = parseFloat(v); return isNaN(x) ? 0 : x; };
 const round2 = (v) => Math.round(v*100)/100;
 // 金额显示：整数不带 .00，有小数才显示（最多 2 位，如 419 / 423.9 / 1234.56）
 const fmtAmt = (v) => Number(round2(Number(v)||0)).toLocaleString('zh-CN');
+// 同 fmtAmt 但不带千分位（数据明细用，如 1234.56）
+const fmtPlain = (v) => String(Number(round2(Number(v)||0)));
 const esc = (s) => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function msg(html, cls){ $('globalMsg').innerHTML = '<div class="msg '+cls+'">'+html+'</div>'; }
 function clearMsg(){ $('globalMsg').innerHTML = ''; }
@@ -859,7 +861,7 @@ function rowHtml(r, first, single, storeName, isTotal){
     const v = num(r[c.k]);
     const cls = (c.s==='美'?'mei':'dou');
     const isAmt = /amount$/.test(c.k);
-    h += '<td class="'+cls+'">'+(isAmt ? fmtAmt(v) : Math.round(v))+'</td>';
+    h += '<td class="'+cls+'">'+(isAmt ? fmtPlain(v) : Math.round(v))+'</td>';
   });
   h += '<td>'+(isTotal ? '' : esc(single ? ((r.has_activity==='是' ? (r.activity_content||'有') : (r.has_activity||'否'))) : '—'))+'</td>';
   if(isTotal) h += '<td></td>';
