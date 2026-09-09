@@ -472,6 +472,8 @@ const today = () => fmtDate(new Date());
 const daysAgo = (n) => fmtDate(new Date(Date.now()-n*864e5));
 const num = (v) => { const x = parseFloat(v); return isNaN(x) ? 0 : x; };
 const round2 = (v) => Math.round(v*100)/100;
+// 金额显示：整数不带 .00，有小数才显示（最多 2 位，如 419 / 423.9 / 1234.56）
+const fmtAmt = (v) => Number(round2(Number(v)||0)).toLocaleString('zh-CN');
 const esc = (s) => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function msg(html, cls){ $('globalMsg').innerHTML = '<div class="msg '+cls+'">'+html+'</div>'; }
 function clearMsg(){ $('globalMsg').innerHTML = ''; }
@@ -783,8 +785,8 @@ function mkBar(id, labels, sets, intY, xTickColors){
         tooltip:{callbacks:{label:(ctx)=>{
           if(intY) return ' '+ctx.dataset.label+': '+Math.round(ctx.parsed.y);
           const sp = ctx.chart.data.datasets[ctx.datasetIndex]._split;
-          const v = round2(ctx.parsed.y).toFixed(2);
-          if(sp && sp[ctx.dataIndex]) return ' 合计: ¥'+v+'（美 '+round2(sp[ctx.dataIndex].mt).toFixed(2)+' · 抖 '+round2(sp[ctx.dataIndex].dy).toFixed(2)+'）';
+          const v = fmtAmt(ctx.parsed.y);
+          if(sp && sp[ctx.dataIndex]) return ' 合计: ¥'+v+'（美 '+fmtAmt(sp[ctx.dataIndex].mt)+' · 抖 '+fmtAmt(sp[ctx.dataIndex].dy)+'）';
           return ' '+ctx.dataset.label+': ¥'+v;
         }}} },
       scales:{ x:{ticks:{color: xTickColors || 'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}},
@@ -857,7 +859,7 @@ function rowHtml(r, first, single, storeName, isTotal){
     const v = num(r[c.k]);
     const cls = (c.s==='美'?'mei':'dou');
     const isAmt = /amount$/.test(c.k);
-    h += '<td class="'+cls+'">'+(isAmt ? round2(v).toFixed(2) : Math.round(v))+'</td>';
+    h += '<td class="'+cls+'">'+(isAmt ? fmtAmt(v) : Math.round(v))+'</td>';
   });
   h += '<td>'+(isTotal ? '' : esc(single ? ((r.has_activity==='是' ? (r.activity_content||'有') : (r.has_activity||'否'))) : '—'))+'</td>';
   if(isTotal) h += '<td></td>';
@@ -1487,10 +1489,10 @@ async function runRecon(){
       if(yzStores.length){
         const hasMt = !!reconFiles.mt, hasDy = !!reconFiles.dy;
         let yzBad = 0;
-        const f2 = (x)=> x==null ? '<span style="opacity:.4">—</span>' : Number(x).toFixed(2);
+        const f2 = (x)=> x==null ? '<span style="opacity:.4">—</span>' : fmtAmt(x);
         const dcell = (d,b)=> d==null ? '<span style="opacity:.4">—</span>'
-          : (b ? '<span class="bad">'+(d>0?'+':'')+d.toFixed(2)+'</span>'
-               : '<span class="ok">'+(d>0?'+':'')+d.toFixed(2)+'</span>');
+          : (b ? '<span class="bad">'+(d>0?'+':'')+fmtAmt(d)+'</span>'
+               : '<span class="ok">'+(d>0?'+':'')+fmtAmt(d)+'</span>');
         yzHtml = '<div class="card-title" style="margin-top:20px">有赞交叉校验（有赞 vs 平台明细真值）</div>'+
           '<div class="tbl-wrap"><table><thead><tr>'+
           '<th class="store">门店</th><th>有赞美团</th><th>美团真值</th><th>差</th>'+
@@ -1547,12 +1549,12 @@ async function runRecon(){
   $('rBtn').disabled = false; $('rBtn').textContent = '开始核对';
 }
 function cell(t, f, d, isMoney){
-  const tv = isMoney ? round2(t).toFixed(2) : Math.round(t);
-  const fv = isMoney ? round2(f).toFixed(2) : Math.round(f);
+  const tv = isMoney ? fmtAmt(t) : Math.round(t);
+  const fv = isMoney ? fmtAmt(f) : Math.round(f);
   const tol = isMoney ? TOL : 0;
   const okd = Math.abs(d) <= tol;
   const cls = okd ? '' : (d > 0 ? 'diff-pos' : 'diff-neg');
-  const dv = isMoney ? (d>0?'+':'')+round2(d).toFixed(2) : (d>0?'+':'')+Math.round(d);
+  const dv = isMoney ? (d>0?'+':'')+fmtAmt(d) : (d>0?'+':'')+Math.round(d);
   return '<td>'+tv+'</td><td>'+fv+'</td><td class="'+cls+'">'+(okd?'0':dv)+'</td>';
 }
 
