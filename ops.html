@@ -472,8 +472,8 @@ const today = () => fmtDate(new Date());
 const daysAgo = (n) => fmtDate(new Date(Date.now()-n*864e5));
 const num = (v) => { const x = parseFloat(v); return isNaN(x) ? 0 : x; };
 const round2 = (v) => Math.round(v*100)/100;
-// 金额显示：整数不带 .00，有小数才显示（最多 2 位，如 419 / 423.9 / 1234.56）
-const fmtAmt = (v) => Number(round2(Number(v)||0)).toLocaleString('zh-CN');
+// 金额显示：整数不带 .00，有小数才显示（最多 2 位），全站不使用千分位（如 419 / 423.9 / 1234.56）
+const fmtAmt = (v) => String(Number(round2(Number(v)||0)));
 // 同 fmtAmt 但不带千分位（数据明细用，如 1234.56）
 const fmtPlain = (v) => String(Number(round2(Number(v)||0)));
 // UTC 时间戳 → 浏览器本地时间（北京时间），如 2026-09-09 12:42
@@ -680,9 +680,9 @@ async function loadDash(){
     const ppl = sum('meituan_visitors') + sum('douyin_visitors');
     const inner = sum('meituan_inner_amount') + sum('douyin_inner_amount');
     $('dashStats').innerHTML = [
-      card('核销金额合计', '¥'+Math.round(mtV+dyV).toLocaleString(), '美团 ¥'+Math.round(mtV).toLocaleString()+' · 抖音 ¥'+Math.round(dyV).toLocaleString()),
+      card('核销金额合计', '¥'+Math.round(mtV+dyV), '美团 ¥'+Math.round(mtV)+' · 抖音 ¥'+Math.round(dyV)),
       card('到店客数', Math.round(ppl)+' 人', '美 '+Math.round(sum('meituan_visitors'))+' · 抖 '+Math.round(sum('douyin_visitors'))),
-      card('内购金额', '¥'+Math.round(inner).toLocaleString(), '内购数 '+Math.round(sum('meituan_inner_orders')+sum('douyin_inner_orders'))),
+      card('内购金额', '¥'+Math.round(inner), '内购数 '+Math.round(sum('meituan_inner_orders')+sum('douyin_inner_orders'))),
       card('约不上', Math.round(sum('meituan_unable_to_book')+sum('douyin_unable_to_book'))+' 单', '美 '+Math.round(sum('meituan_unable_to_book'))+' · 抖 '+Math.round(sum('douyin_unable_to_book')))
     ].join('');
     renderCharts(rows, s, e);
@@ -724,14 +724,14 @@ function renderCharts(rows, s, e){
     let tb = namesSort.map(n=>{
       const x = byStore[n], mt = Math.round(x.mt), dy = Math.round(x.dy);
       return '<tr><td class="store">'+esc(shortName(n))+'</td>'+
-        '<td style="font-weight:700">'+(mt+dy).toLocaleString()+'</td>'+
-        '<td>'+Math.round(x.ppl).toLocaleString()+'</td>'+
-        '<td>'+Math.round(x.unable).toLocaleString()+'</td>'+
-        '<td class="dou">'+Math.round(x.inner).toLocaleString()+'</td></tr>';
+        '<td style="font-weight:700">'+(mt+dy)+'</td>'+
+        '<td>'+Math.round(x.ppl)+'</td>'+
+        '<td>'+Math.round(x.unable)+'</td>'+
+        '<td class="dou">'+Math.round(x.inner)+'</td></tr>';
     }).join('');
     const tM = namesSort.reduce((a,n)=>a+byStore[n].mt,0), tD = namesSort.reduce((a,n)=>a+byStore[n].dy,0);
     const tP = namesSort.reduce((a,n)=>a+byStore[n].ppl,0), tU = namesSort.reduce((a,n)=>a+byStore[n].unable,0), tI = namesSort.reduce((a,n)=>a+byStore[n].inner,0);
-    tb += '<tr class="total"><td class="store">合计</td><td>'+Math.round(tM+tD).toLocaleString()+'</td><td>'+Math.round(tP).toLocaleString()+'</td><td>'+Math.round(tU).toLocaleString()+'</td><td>'+Math.round(tI).toLocaleString()+'</td></tr>';
+    tb += '<tr class="total"><td class="store">合计</td><td>'+Math.round(tM+tD)+'</td><td>'+Math.round(tP)+'</td><td>'+Math.round(tU)+'</td><td>'+Math.round(tI)+'</td></tr>';
     if(dtEl) dtEl.innerHTML = '<div class="tbl-wrap"><table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table></div>';
   }
 
@@ -765,9 +765,9 @@ function renderCharts(rows, s, e){
   let th = '<tr><th style="width:48px">排名</th><th class="store">门店</th><th>核销合计</th><th class="mei">美团</th><th class="dou">抖音</th></tr>';
   let tb = namesSort.map((n,i)=>{
     const mt = Math.round(byStore[n].mt), dy = Math.round(byStore[n].dy);
-    return '<tr><td>'+(i+1)+'</td><td class="store">'+(filled&&filled.has(n)?'<span class="fill-dot">●</span> ':'')+esc(shortName(n))+'</td><td style="font-weight:700">'+(mt+dy).toLocaleString()+'</td><td class="mei">'+mt.toLocaleString()+'</td><td class="dou">'+dy.toLocaleString()+'</td></tr>';
+    return '<tr><td>'+(i+1)+'</td><td class="store">'+(filled&&filled.has(n)?'<span class="fill-dot">●</span> ':'')+esc(shortName(n))+'</td><td style="font-weight:700">'+(mt+dy)+'</td><td class="mei">'+mt+'</td><td class="dou">'+dy+'</td></tr>';
   }).join('');
-  tb += '<tr class="total"><td></td><td class="store">合计</td><td>'+Math.round(totM+totD).toLocaleString()+'</td><td class="mei">'+Math.round(totM).toLocaleString()+'</td><td class="dou">'+Math.round(totD).toLocaleString()+'</td></tr>';
+  tb += '<tr class="total"><td></td><td class="store">合计</td><td>'+Math.round(totM+totD)+'</td><td class="mei">'+Math.round(totM)+'</td><td class="dou">'+Math.round(totD)+'</td></tr>';
   if(stEl) stEl.innerHTML = '<div class="tbl-wrap"><table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table></div>';
   }
   mkLine('chTrend', dayLbls, [
