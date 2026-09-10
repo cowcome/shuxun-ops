@@ -1,152 +1,249 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-page-node-id="SQMGhCt47op8TLJXzuNE5B">
-<head data-page-node-id="ZHS9hmyvWJHtmixTYlExZ2">
-<meta charset="UTF-8" data-page-node-id="YchZZUCdTb0SVqoryefdFD" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" data-page-node-id="uKogrHcrnBdiMxS1RBvZH0" />
+<html lang="zh-CN" data-page-node-id="ICU9nrlJg0ajVa0WhBt8my">
+<head data-page-node-id="prnqZ9B8AxwqrNJezHd0bI">
+<meta charset="UTF-8" data-page-node-id="GCzpmACbfQ7YuBaam8gQys" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" data-page-node-id="o6bMANlgJMmm5qEfggtPj1" />
 <title>書荀每日数据填报</title>
 <style>
+  /* 视觉与结构对齐微信小程序 pages/report/：rpx 按 750 设计稿 /2 换算为 px */
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: linear-gradient(160deg, #1a1730 0%, #241b3f 50%, #1b2440 100%);
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
     color: #fff;
     min-height: 100vh;
-    padding: 16px 14px 40px;
+    padding: 10px 12px 30px;
   }
-  .wrap { max-width: 560px; margin: 0 auto; }
-  .header { text-align: center; padding: 8px 0 18px; }
-  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 1px; margin: 0; }
-  .header p { font-size: 13px; color: rgba(255,255,255,0.55); margin: 6px 0 0; }
-  .card {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 14px;
+  .wrap { max-width: 420px; margin: 0 auto; }
+
+  .glass {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 10px;
     backdrop-filter: blur(8px);
   }
+
+  /* 从运营后台点进来时才显示 */
+  .back-ops {
+    display: none; font-size: 12px; color: #a78bfa; text-decoration: none;
+    margin-bottom: 8px;
+  }
+
+  .header { text-align: center; padding: 8px 0 5px; }
+  .header-title { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
+  .header-sub { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
   .field { margin-bottom: 14px; }
-  .field:last-child { margin-bottom: 0; }
-  .field-label { font-size: 14px; color: rgba(255,255,255,0.78); margin-bottom: 8px; display: block; }
-  input[type=date], select, input[type=number], input[type=text] {
-    width: 100%;
-    height: 44px;
-    border-radius: 10px;
-    border: 1.5px solid rgba(255,255,255,0.28);
-    background: rgba(255,255,255,0.08);
+  .field-label { font-size: 14px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; }
+
+  .date-picker {
+    width: 100%; height: 38px; font-size: 15px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: #fff; padding: 8px 10px; outline: none;
+    -webkit-appearance: none; appearance: none;
+  }
+  .date-picker:focus { border-color: rgba(167,139,250,0.6); }
+  .date-hint { font-size: 10px; color: rgba(255,255,255,0.45); margin-top: 4px; }
+
+  /* 门店网格：5 列，选中紫底+✓，已提交右上角绿点 */
+  .store-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .store-btn {
+    position: relative;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 13px 2px 8px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.8);
+    text-align: center;
+    transition: all .2s;
+    cursor: pointer; user-select: none;
+  }
+  .store-btn.selected {
+    background: rgba(139,92,246,0.5);
+    border-color: rgba(167,139,250,0.8);
+    box-shadow: 0 0 8px rgba(139,92,246,0.5);
     color: #fff;
-    font-size: 16px;
-    padding: 0 12px;
-    outline: none;
   }
-  input::placeholder { color: rgba(255,255,255,0.4); }
-  select option { color: #111; }
-  .pf-name { font-size: 16px; font-weight: 700; color: #c4b5fd; margin-bottom: 12px; }
-  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-  .row .lbl { width: 50px; flex-shrink: 0; display: flex; flex-direction: column; line-height: 1.15; white-space: nowrap; }
-  .row .lbl .l1 { font-size: 14px; }
-  .row .lbl .l2 { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
-  .btns { display: flex; gap: 6px; flex: 1; flex-wrap: nowrap; min-width: 0; }
-  .btn {
-    flex: 1; min-width: 44px; height: 44px; border-radius: 10px;
-    border: 1.5px solid rgba(255,255,255,0.30);
-    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.95);
-    font-size: 16px; font-weight: 600;
+  .store-btn .check { font-size: 11px; color: #a78bfa; margin-right: 2px; }
+  .store-btn.submitted::after {
+    content: ''; position: absolute; top: 3px; right: 3px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #22c55e; box-shadow: 0 0 4px rgba(34,197,94,0.6);
+  }
+
+  /* ===== 平台分组：一行 = 标签 + 数字快捷按钮 + 配对金额框 =====
+     用 grid 3 列固定结构（label / num-row / 金额框），
+     保证金额输入框在小屏（375 / 390）下不被 flex 挤塌 */
+  .pf-group { margin-bottom: 15px; }
+  .pf-name {
+    font-size: 13px; font-weight: 600; color: rgba(167,139,250,0.95);
+    margin-bottom: 7px; padding-left: 2px;
+  }
+  .row-line {
+    display: grid;
+    grid-template-columns: 33px 1fr 88px;
+    align-items: center;
+    column-gap: 4px;
+    margin-bottom: 8px;
+  }
+  .row-label {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; line-height: 14px;
+  }
+  .rl-1 { font-size: 11px; color: rgba(255,255,255,0.72); }
+  .rl-2 { font-size: 9px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+  .row-line .num-row {
+    display: flex; flex-wrap: nowrap; align-items: center;
+    gap: 3px; min-width: 0;
+  }
+  .row-line .num-btn {
+    flex: 1; min-width: 0; height: 30px; border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all .12s; user-select: none;
+    cursor: pointer; transition: all .15s; user-select: none;
   }
-  .btn:hover { background: rgba(255,255,255,0.16); }
-  .btn:active { background: #8b5cf6; border-color: #8b5cf6; color: #fff; }
-  .btn.selected { background: #8b5cf6; border-color: #8b5cf6; color: #fff; font-weight: 700; }
-  .manual { display: none; }  /* 旧手动输入框已废，保留 class 以防历史回填报错 */
-  .amt {
-    flex: 1; min-width: 0; height: 44px; border-radius: 10px;
-    border: 1.5px solid rgba(255,255,255,0.30); background: rgba(255,255,255,0.08);
-    color: #fff; font-size: 16px; padding: 0 12px;
+  .row-line .num-btn.selected {
+    background: rgba(139,92,246,0.6);
+    border-color: rgba(167,139,250,0.9);
+    box-shadow: 0 0 8px rgba(139,92,246,0.6);
+    color: #fff; font-weight: 700;
   }
-  .amt-wrap { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-  .amt-wrap .unit { font-size: 13px; color: rgba(255,255,255,0.6); flex-shrink: 0; font-weight: 500; }
-  input[type=range] { flex: 1; accent-color: #a78bfa; }
+  .row-line .num-input {
+    width: 38px; flex-shrink: 0; height: 30px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: #fff; font-size: 13px; text-align: center;
+    outline: none; padding: 0 2px;
+  }
+  .row-line .num-input:focus { border-color: rgba(167,139,250,0.6); }
+  .row-line .num-input::placeholder { color: rgba(255,255,255,0.4); }
+
+  .amt-input {
+    width: 100%; height: 30px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: #fff; font-size: 13px; padding: 0 6px; outline: none;
+  }
+  .amt-input:focus { border-color: rgba(167,139,250,0.6); }
+  .amt-input::placeholder { color: rgba(255,255,255,0.35); }
+  /* 无配对金额的行（约不上）只占 2 列：label + 滑块+数值 */
+  .row-line--slider { grid-template-columns: 33px 1fr 26px; }
+  .row-line--slider .row-slider { grid-column: 2; }
+  .row-line--slider .slider-val { grid-column: 3; }
+
+  /* 「约不上」滑块 */
+  .row-slider { flex: 1; min-width: 0; margin: 0 6px; accent-color: #a78bfa; }
   .slider-val {
-    width: 40px; text-align: center; font-size: 15px; font-weight: 700; color: #c4b5fd;
+    width: 26px; flex-shrink: 0; text-align: center;
+    font-size: 13px; font-weight: 600; color: #a78bfa;
   }
-  .act-row { display: flex; align-items: center; gap: 10px; }
-  .act-row input[type=checkbox] { width: 20px; height: 20px; accent-color: #8b5cf6; }
-  .submit {
-    width: 100%; height: 50px; border: none; border-radius: 14px;
-    background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff;
-    font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 4px;
+
+  /* 品项活动开关（对应小程序 switch 组件） */
+  .switch { display: inline-flex; align-items: center; cursor: pointer; margin-bottom: 2px; }
+  .switch input { display: none; }
+  .switch-track {
+    width: 46px; height: 26px; border-radius: 13px;
+    background: rgba(255,255,255,0.18);
+    position: relative; transition: background .2s; display: inline-block;
   }
-  .submit:disabled { opacity: .6; }
+  .switch-track::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; transition: transform .2s;
+  }
+  .switch input:checked + .switch-track { background: #8b5cf6; }
+  .switch input:checked + .switch-track::after { transform: translateX(20px); }
+
+  .text-input {
+    width: 100%; height: 38px; font-size: 15px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: #fff; padding: 8px 10px; margin-top: 8px; outline: none;
+  }
+  .text-input:focus { border-color: rgba(167,139,250,0.6); }
+  .text-input::placeholder { color: rgba(255,255,255,0.4); }
+
+  .submit-btn {
+    width: 100%; padding: 13px; border-radius: 8px; border: none;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: #fff; font-size: 16px; font-weight: 700; letter-spacing: 1px;
+    margin-top: 6px; cursor: pointer;
+  }
+  .submit-btn:disabled { opacity: .5; }
+  .submit-btn:active { transform: scale(0.98); }
+
   .status {
-    text-align: center; font-size: 14px; margin-top: 14px; min-height: 20px; padding: 8px;
-    border-radius: 10px;
+    text-align: center; font-size: 12px; margin-top: 7px;
+    min-height: 18px; padding: 4px; border-radius: 5px;
   }
   .status.ok { background: rgba(34,197,94,0.15); color: #86efac; }
   .status.err { background: rgba(239,68,68,0.15); color: #fca5a5; }
-  .hint { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 6px; }
 </style>
 </head>
-<body data-page-node-id="YN9SAaz6m7TrpUbJ1VkbBY">
-<div class="wrap" data-page-node-id="jrZfzBozFAVwtmICbjHwgi">
-  <div class="header" data-page-node-id="skYTSbwWyHnGZC9oNk6D9h">
-    <a id="backToOps" href="ops.html" style="display:none;margin-bottom:10px;font-size:13px;color:#8b5cf6;text-decoration:none">← 返回运营后台</a>
-    <h1 data-page-node-id="bBEjKjIvCrBPonlPoCY2t5">書荀每日数据填报</h1>
-    <p data-page-node-id="t4AxzthXGNLwayoD109mL9">直营门店 · 每日营业数据</p>
+<body data-page-node-id="AOmeBQJDWNnij5T2wUOcV7">
+<div class="wrap" data-page-node-id="rDwsgmGJYfp9U95rT9NCdn">
+  <a id="backToOps" class="back-ops" href="ops.html" data-page-node-id="BOSyt3Z7jYHo09mb9yMniR">← 返回运营后台</a>
+
+  <div class="glass header" data-page-node-id="EggUTABoPc9t9ajdNbPFs0">
+    <div class="header-title" data-page-node-id="qIVGze6CiXpSv3FXVXNWCr">書荀每日数据填报</div>
+    <div class="header-sub" data-page-node-id="zYG9y2SqCWGEzjL2I2XYxt">直营门店 · 每日营业数据</div>
   </div>
 
-  <div class="card" data-page-node-id="9UgCmAot7ehM6GXDOnUYqd">
-    <div class="field" data-page-node-id="XIJxHQfLqHekHsDtlGVkHk">
-      <label class="field-label" data-page-node-id="Z7AaHHrx2BKOsbjLH75ig8">填表日期</label>
-      <input type="date" id="formDate" data-page-node-id="atViu5esiSsaONgWNhYRup" />
+  <div class="glass" data-page-node-id="ffcTJowXaaMwdgG1a3USWt">
+    <div class="field" data-page-node-id="Lar9ISlMbd6kaYgxg8mjdH">
+      <div class="field-label" data-page-node-id="0INKyq553TyyNYJelRsujY">填表日期</div>
+      <input type="date" id="formDate" class="date-picker" data-page-node-id="AFXhL0QM2rXTuaWNn9Eq5C" />
+      <div class="date-hint" data-page-node-id="Y73wnMPIDltp1CTduvgMs5">仅可填写今天 / 昨天，更早请找运营</div>
     </div>
-    <div class="field" data-page-node-id="tFcKZDsq87oqukgrPjNTvE">
-      <label class="field-label" data-page-node-id="rw2FsPweWbfU7ZZHW9pjRu">门店名称</label>
-      <select id="store" data-page-node-id="CiRDZPnJIgMSD2CIVZscAL"></select>
+
+    <div class="field" data-page-node-id="Ng5qcUPXDD3bCdREa3fnay">
+      <div class="field-label" data-page-node-id="0FD5Xd8BxDrn1dHaifTu37">门店名称</div>
+      <div class="store-grid" id="storeGrid" data-page-node-id="lhAfB6bV8aCWc4IfVfiHpO"></div>
     </div>
-    <div class="hint" id="prefillHint" data-page-node-id="4mlVbLZNCLfMxRP15VlnyA"></div>
-  </div>
 
-  <div class="card" id="pf美团" data-page-node-id="xG3UlpEBvAnFONjYZ5qra6">
-    <div class="pf-name" data-page-node-id="CUcOe7HoQdK4FQtp1oRGpm">美团</div>
-    <div id="美团-body" data-page-node-id="OZdihM1NtdO6Bv6fAtu3kd"></div>
-  </div>
+    <div id="groupsBox" data-page-node-id="eKUvtHUJcf4yYan0viaDfM"></div>
 
-  <div class="card" id="pf抖音" data-page-node-id="tFDD4EWKfDzbM30S4QHBOF">
-    <div class="pf-name" data-page-node-id="Ov3fWTI0AUYnpE5OQpIjAs">抖音</div>
-    <div id="抖音-body" data-page-node-id="WNpUCZuP4hI1UQuda2SDZA"></div>
-  </div>
-
-  <div class="card" data-page-node-id="4DRKMbz68ZbAWoQYZ3U4NZ">
-    <div class="field" data-page-node-id="OjfVdxAQT2A1013CA4aPg7">
-      <label class="field-label" data-page-node-id="4V8Pgh8p8fh0B7bOnKDGzh">今日店内是否有做品项活动</label>
-      <div class="act-row" data-page-node-id="FywT2mEPqyd6l34MJEpf44">
-        <input type="checkbox" id="hasActivity" data-page-node-id="mpvxuA43V3NAazcRvvkNBB" />
-        <span style="font-size:14px;color:rgba(255,255,255,0.78)" data-page-node-id="yBgOUU560dVpkEXFc9Kvi6">有做品项活动</span>
-      </div>
+    <div class="field" data-page-node-id="Hfh1DEKWEXrlGdF2VR4BEm">
+      <div class="field-label" data-page-node-id="Hh1Cch5Gt3lW9ZVfKtsMIL">今日店内是否有做品项活动</div>
+      <label class="switch" data-page-node-id="ajpvNj5adUdoBEecjdk3eq">
+        <input type="checkbox" id="hasActivity" data-page-node-id="3SDbugDNBzKzViK4apA8ah" />
+        <span class="switch-track" data-page-node-id="1U5MhSlpq2ng7OiN0tSw3t"></span>
+      </label>
+      <input type="text" id="activityContent" class="text-input" placeholder="请输入品项名称" style="display:none" data-page-node-id="0DfXL1YM9HFDpioNDfXhf2" />
     </div>
-    <div class="field" style="margin-bottom:0" data-page-node-id="VjoFKzZpJ7QNBSu08DyfFa">
-      <input type="text" id="activityContent" placeholder="请输入品项名称" data-page-node-id="0FEdK4m8gOgaKhNUO6WMiz" />
-    </div>
-  </div>
 
-  <button class="submit" id="submitBtn" data-page-node-id="5eAGaSV6bGHRLC3xOxhmh1">提交</button>
-  <div class="status" id="status" data-page-node-id="QsUwbUEhOcnHMmTbKpGfGb"></div>
+    <button class="submit-btn" id="submitBtn" data-page-node-id="f9V1e36Krrz9Emh5BhBtQT">提交</button>
+    <div class="status" id="status" data-page-node-id="DniaO6rDkikaf5jDmLtzn4"></div>
+  </div>
 </div>
 
 <script>
 const SUPABASE_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
 const ANON_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
-// 2026-09-08 起统一使用标准名称（与门店主表 stores.std_name 一致），历史口径名已迁移
+
+// 2026-09-08 起统一使用标准名称（与门店主表 stores.std_name 一致）
 const STORES = ['佛山顺联店','佛山印象城','佛山国金店','佛山恒福店','佛山新塘店','佛山绿地店','佛山高明店','佛山星耀店','佛山万科店','佛山水城店'];
+const SHORT_MAP = {
+  '佛山顺联店':'顺联','佛山彩虹店':'彩虹','佛山印象城':'印象','佛山国金店':'国金',
+  '佛山恒福店':'恒福','佛山新塘店':'新塘','佛山绿地店':'绿地','佛山高明店':'高明',
+  '佛山万悦店':'万悦','佛山星耀店':'星耀','佛山万科店':'万科','佛山水城店':'水城'
+};
+function shortName(s){ return SHORT_MAP[s] || String(s||'').replace(/^\d+/,'').slice(0,2); }
 
 // ---------------------------------------------------------------------------
 // 匿名登录：RLS 收紧后，必须带上「已登录」身份才能读写。
-// 门店端完全无感知（不填邮箱密码），拿到的会话存在 localStorage，过期自动续。
+// 门店端完全无感知（不填邮箱密码），会话存 localStorage，过期自动续。
 // ---------------------------------------------------------------------------
 const SESSION_KEY = 'sb_anon_session';
-
 async function authPost(path, body) {
   const r = await fetch(SUPABASE_URL + path, {
     method: 'POST',
@@ -189,191 +286,332 @@ async function authHeaders() {
   return { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' };
 }
 
-// 每个平台的字段定义（与小程序 report.js 完全对应）
-const PLATFORMS = ['美团','抖音'];
-const NUM_OPTIONS = [0,1,2,3,4,5,6,7,8,9];  // 0-9 覆盖绝大多数门店；>9 走后台手工改
+// ---------------------------------------------------------------------------
+// 表单结构：与小程序 pages/report/report.js 完全一致
+// 快捷按钮 0~5，超出用右侧 [>] 手动输入
+// 到店人数 ↔ 核销金额、内购订单数 ↔ 内购金额 各自配对成一行
+// 「约不上」是 0~20 滑块
+// ---------------------------------------------------------------------------
+const NUM_OPTIONS = [0, 1, 2, 3, 4, 5];
+const PLATFORM_GROUPS = [
+  { name: '美团', rows: [
+    { key: 'meituan_visitors',       label: '真实', label2: '客数', amountKey: 'meituan_verify_amount', amountPlaceholder: '核销金额', amountHint: '美团核销金额' },
+    { key: 'meituan_inner_orders',   label: '内购', label2: '数量', amountKey: 'meituan_inner_amount',   amountPlaceholder: '内购金额', amountHint: '美团内购金额' },
+    { key: 'meituan_unable_to_book', label: '约不上', control: 'slider', max: 20 }
+  ]},
+  { name: '抖音', rows: [
+    { key: 'douyin_visitors',        label: '真实', label2: '客数', amountKey: 'douyin_verify_amount', amountPlaceholder: '核销金额', amountHint: '抖音核销金额' },
+    { key: 'douyin_inner_orders',    label: '内购', label2: '数量', amountKey: 'douyin_inner_amount',   amountPlaceholder: '内购金额', amountHint: '抖音内购金额' },
+    { key: 'douyin_unable_to_book',  label: '约不上', control: 'slider', max: 20 }
+  ]}
+];
 
-// 运行时表单状态
-const state = {}; // state[平台] = { visitors, verify, inner_orders, inner_amount, unable }
-
-const fmt = (d) => {
-  const p = n => String(n).padStart(2,'0');
-  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
-};
-function todayStr() { return fmt(new Date()); }
-
-function buildPlatformBody(pf) {
-  const body = document.getElementById(pf+'-body');
-  state[pf] = { visitors:null, verify:'', inner_orders:null, inner_amount:'', unable:0 };
-  body.innerHTML = '';
-
-  // 真实客数
-  body.appendChild(makeRow(pf, 'visitors', '真实','客数'));
-  // 核销金额
-  body.appendChild(makeAmountRow(pf, 'verify', '核销','金额'));
-  // 内购数量
-  body.appendChild(makeRow(pf, 'inner_orders', '内购','数量'));
-  // 内购金额
-  body.appendChild(makeAmountRow(pf, 'inner_amount', '内购','金额'));
-  // 约不上 滑块
-  body.appendChild(makeSliderRow(pf, 'unable', '约不上'));
-}
-
-function makeRow(pf, key, l1, l2) {
-  const row = document.createElement('div'); row.className = 'row';
-  row.innerHTML = `<div class="lbl"><span class="l1">${l1}</span><span class="l2">${l2}</span></div>`;
-  const btns = document.createElement('div'); btns.className = 'btns';
-  NUM_OPTIONS.forEach(opt => {
-    const b = document.createElement('div'); b.className = 'btn'; b.textContent = opt;
-    b.onclick = () => {
-      state[pf][key] = opt;
-      btns.querySelectorAll('.btn').forEach(x => x.classList.remove('selected'));
-      b.classList.add('selected');
-    };
-    btns.appendChild(b);
-  });
-  row.appendChild(btns);
-  return row;
-}
-
-function makeAmountRow(pf, key, l1, l2) {
-  const row = document.createElement('div'); row.className = 'row';
-  row.innerHTML = `<div class="lbl"><span class="l1">${l1}</span><span class="l2">${l2}</span></div>`;
-  const wrap = document.createElement('div'); wrap.className = 'amt-wrap';
-  const input = document.createElement('input');
-  input.type = 'number'; input.className = 'amt'; input.placeholder = '¥'; input.step = '0.01';
-  input.oninput = () => { state[pf][key] = input.value; };
-  const unit = document.createElement('span'); unit.className = 'unit'; unit.textContent = '元';
-  wrap.appendChild(input); wrap.appendChild(unit);
-  row.appendChild(wrap);
-  // 保存引用以便回填
-  row._input = input;
-  return row;
-}
-
-function makeSliderRow(pf, key, label) {
-  const row = document.createElement('div'); row.className = 'row';
-  row.innerHTML = `<div class="lbl"><span class="l1">${label}</span></div>`;
-  const slider = document.createElement('input');
-  slider.type = 'range'; slider.min = 0; slider.max = 20; slider.step = 1; slider.value = 0;
-  const val = document.createElement('span'); val.className = 'slider-val'; val.textContent = '0';
-  slider.oninput = () => { state[pf][key] = parseInt(slider.value,10); val.textContent = slider.value; };
-  row.appendChild(slider); row.appendChild(val);
-  return row;
-}
-
-// 回填已存在数据
-function applyExisting(rec) {
-  PLATFORMS.forEach(pf => {
-    const prefix = pf === '美团' ? 'meituan' : 'douyin';
-    const body = document.getElementById(pf+'-body');
-    const rows = body.children;
-    // visitors (row0), verify (row1), inner_orders (row2), inner_amount (row3), unable (row4)
-    setBtnOrManual(rows[0], rec[prefix+'_visitors']);
-    rows[1]._input.value = rec[prefix+'_verify_amount'] != null ? rec[prefix+'_verify_amount'] : '';
-    state[pf].verify = rows[1]._input.value;
-    setBtnOrManual(rows[2], rec[prefix+'_inner_orders']);
-    rows[3]._input.value = rec[prefix+'_inner_amount'] != null ? rec[prefix+'_inner_amount'] : '';
-    state[pf].inner_amount = rows[3]._input.value;
-    // slider row4
-    const sliderRow = rows[4];
-    const slider = sliderRow.querySelector('input[type=range]');
-    const val = sliderRow.querySelector('.slider-val');
-    const uv = rec[prefix+'_unable_to_book'] != null ? rec[prefix+'_unable_to_book'] : 0;
-    slider.value = uv; val.textContent = uv; state[pf].unable = uv;
-  });
-  document.getElementById('hasActivity').checked = (rec.has_activity === '是');
-  document.getElementById('activityContent').value = rec.activity_content || '';
-}
-
-function setBtnOrManual(rowEl, value) {
-  if (value == null) return;
-  const btns = rowEl.querySelector('.btns');
-  const btn = Array.from(btns.children).find(b => b.textContent == String(value));
-  if (btn) {
-    btns.querySelectorAll('.btn').forEach(x => x.classList.remove('selected'));
-    btn.classList.add('selected');
-  }
-  // value > 9：超出按钮范围，不做 UI 选中（state 中仍保留原值，提交时按 state 走）
-}
-
-function loadExisting() {
-  const date = document.getElementById('formDate').value;
-  const store = document.getElementById('store').value;
-  const hint = document.getElementById('prefillHint');
-  if (!date || !store) { hint.textContent = ''; return; }
-  const url = `${SUPABASE_URL}/rest/v1/daily_reports?select=*&form_date=eq.${date}&store_name=eq.${encodeURIComponent(store)}&limit=1`;
-  authHeaders()
-    .then(h => fetch(url, { headers: h }))
-    .then(r => r.json())
-    .then(rows => {
-      if (rows && rows.length) {
-        applyExisting(rows[0]);
-        hint.textContent = '已载入该门店 '+date+' 的已填数据，可直接修改后重新提交。';
-      } else {
-        hint.textContent = '该门店 '+date+' 暂无记录，提交将新建。';
-      }
+function buildGroups(record) {
+  const r = record || {};
+  return PLATFORM_GROUPS.map(g => ({
+    name: g.name,
+    rows: g.rows.map(row => {
+      let value = (r[row.key] !== undefined && r[row.key] !== null) ? r[row.key] : null;
+      if (row.control === 'slider' && (value === null || value === undefined)) value = 0;
+      return {
+        key: row.key, label: row.label, label2: row.label2 || '',
+        options: NUM_OPTIONS, control: row.control || '', max: row.max || 20,
+        amountKey: row.amountKey || '', amountPlaceholder: row.amountPlaceholder || '',
+        amountHint: row.amountHint || '',
+        value: value, manual: '',
+        amount: (row.amountKey && r[row.amountKey] != null) ? String(r[row.amountKey]) : ''
+      };
     })
-    .catch(() => { hint.textContent = ''; });
+  }));
 }
 
-function submit() {
-  const date = document.getElementById('formDate').value;
-  const store = document.getElementById('store').value;
-  const status = document.getElementById('status');
-  const btn = document.getElementById('submitBtn');
-  if (!date || !store) { status.className='status err'; status.textContent='请先选择填表日期和门店'; return; }
+// 运行时状态
+let groups = buildGroups();
+let selectedStore = '';
+let submittedStores = [];
+let isEditing = false;
+try { selectedStore = localStorage.getItem('lastStore') || ''; } catch (e) {}
 
-  const payload = { form_date: date, store_name: store };
-  for (const pf of PLATFORMS) {
-    const prefix = pf === '美团' ? 'meituan' : 'douyin';
-    const s = state[pf];
-    if (s.visitors == null) { status.className='status err'; status.textContent=`请填写${pf}真实客数`; return; }
-    if (s.verify === '' || s.verify == null) { status.className='status err'; status.textContent=`请填写${pf}核销金额（没核销填 0）`; return; }
-    if (s.inner_orders == null) { status.className='status err'; status.textContent=`请填写${pf}内购数量`; return; }
-    if (s.inner_amount === '' || s.inner_amount == null) { status.className='status err'; status.textContent=`请填写${pf}内购金额（没内购填 0）`; return; }
-    payload[prefix+'_visitors'] = s.visitors;
-    payload[prefix+'_verify_amount'] = parseFloat(s.verify);
-    payload[prefix+'_inner_orders'] = s.inner_orders;
-    payload[prefix+'_inner_amount'] = parseFloat(s.inner_amount);
-    payload[prefix+'_unable_to_book'] = s.unable;
+const pad = n => String(n).padStart(2, '0');
+const fmtDate = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const todayStr = () => fmtDate(new Date());
+function dateBounds() {
+  const now = new Date();
+  const yst = new Date(now.getTime() - 864e5);
+  return { minDate: fmtDate(yst), maxDate: fmtDate(now) };
+}
+
+// ---------------------------------------------------------------------------
+// 渲染
+// ---------------------------------------------------------------------------
+function renderStores() {
+  const grid = document.getElementById('storeGrid');
+  grid.innerHTML = '';
+  STORES.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'store-btn'
+      + (s === selectedStore ? ' selected' : '')
+      + (submittedStores.indexOf(s) > -1 ? ' submitted' : '');
+    d.innerHTML = (s === selectedStore ? '<span class="check">✓</span>' : '')
+      + '<span class="store-display">' + shortName(s) + '</span>';
+    d.onclick = () => {
+      selectedStore = s;
+      try { localStorage.setItem('lastStore', s); } catch (e) {}
+      renderStores();
+      reloadExisting();
+    };
+    grid.appendChild(d);
+  });
+}
+
+function renderGroups() {
+  const box = document.getElementById('groupsBox');
+  box.innerHTML = '';
+  groups.forEach((g, gi) => {
+    const gd = document.createElement('div');
+    gd.className = 'pf-group';
+    gd.innerHTML = '<div class="pf-name">' + g.name + '</div>';
+    g.rows.forEach((row, ri) => gd.appendChild(renderRow(g.name, gi, row, ri)));
+    box.appendChild(gd);
+  });
+}
+
+function renderRow(pfName, gi, row, ri) {
+  const line = document.createElement('div');
+  line.className = 'row-line';
+  const lbl = document.createElement('div');
+  lbl.className = 'row-label';
+  lbl.innerHTML = '<span class="rl-1">' + row.label + '</span>'
+    + (row.label2 ? '<span class="rl-2">' + row.label2 + '</span>' : '');
+  line.appendChild(lbl);
+
+  if (row.control === 'slider') {
+    line.classList.add('row-line--slider');
+    const sl = document.createElement('input');
+    sl.type = 'range'; sl.className = 'row-slider';
+    sl.min = 0; sl.max = row.max; sl.step = 1; sl.value = row.value || 0;
+    const val = document.createElement('span');
+    val.className = 'slider-val'; val.textContent = row.value || 0;
+    sl.oninput = () => {
+      groups[gi].rows[ri].value = parseInt(sl.value, 10);
+      val.textContent = sl.value;
+    };
+    line.appendChild(sl);
+    line.appendChild(val);
+    return line;
   }
-  payload.has_activity = document.getElementById('hasActivity').checked ? '是' : '否';
-  payload.activity_content = document.getElementById('activityContent').value.trim();
 
-  btn.disabled = true; status.className='status'; status.textContent='提交中…';
-  authHeaders().then(h => fetch(`${SUPABASE_URL}/rest/v1/daily_reports?on_conflict=form_date,store_name`, {
-    method: 'POST',
-    headers: Object.assign({}, h, { 'Prefer':'resolution=merge-duplicates,return=representation' }),
-    body: JSON.stringify(payload)
-  }))
-  .then(r => { if (!r.ok) return r.text().then(t => Promise.reject(t)); return r.json(); })
-  .then(() => { status.className='status ok'; status.textContent='✓ 提交成功！数据已保存到書荀每日数据表。'; })
-  .catch(e => { status.className='status err'; status.textContent='提交失败：'+e; })
-  .finally(() => { btn.disabled = false; });
+  // 数字快捷按钮 + 手动输入
+  const numRow = document.createElement('div');
+  numRow.className = 'num-row';
+  row.options.forEach(opt => {
+    const b = document.createElement('div');
+    b.className = 'num-btn' + (row.value === opt ? ' selected' : '');
+    b.textContent = opt;
+    b.onclick = () => {
+      groups[gi].rows[ri].value = opt;
+      groups[gi].rows[ri].manual = '';
+      numRow.querySelectorAll('.num-btn').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      const mi = numRow.querySelector('.num-input'); if (mi) mi.value = '';
+    };
+    numRow.appendChild(b);
+  });
+  const manual = document.createElement('input');
+  manual.className = 'num-input';
+  manual.type = 'text'; manual.inputMode = 'numeric';
+  manual.placeholder = '>'; manual.value = row.manual || '';
+  manual.oninput = () => {
+    const raw = manual.value.trim();
+    groups[gi].rows[ri].value = raw === '' ? null : parseInt(raw, 10);
+    groups[gi].rows[ri].manual = raw;
+    numRow.querySelectorAll('.num-btn').forEach(x => x.classList.remove('selected'));
+  };
+  numRow.appendChild(manual);
+  line.appendChild(numRow);
+
+  // 配对的金额输入框（grid 第 3 列由 .amt-input width:100% 填满）
+  if (row.amountKey) {
+    const amt = document.createElement('input');
+    amt.className = 'amt-input';
+    amt.type = 'text'; amt.inputMode = 'decimal';
+    amt.placeholder = row.amountPlaceholder;
+    amt.value = row.amount || '';
+    amt.oninput = () => { groups[gi].rows[ri].amount = amt.value; };
+    line.appendChild(amt);
+  }
+  return line;
 }
 
+function setStatus(text, kind) {
+  const s = document.getElementById('status');
+  s.className = 'status' + (kind ? ' ' + kind : '');
+  s.textContent = text || '';
+}
+
+function updateSubmitLabel() {
+  document.getElementById('submitBtn').textContent = isEditing ? '保存修改' : '提交';
+}
+
+// ---------------------------------------------------------------------------
+// 数据加载
+// ---------------------------------------------------------------------------
+async function checkSubmittedStores() {
+  const date = document.getElementById('formDate').value;
+  if (!date) return;
+  try {
+    const h = await authHeaders();
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/daily_reports?select=store_name&form_date=eq.${date}`, { headers: h });
+    const d = await r.json();
+    submittedStores = (d || []).map(x => x.store_name);
+    renderStores();
+  } catch (e) { /* 绿点失败不影响填报 */ }
+}
+
+async function reloadExisting() {
+  const date = document.getElementById('formDate').value;
+  if (!date || !selectedStore) {
+    groups = buildGroups(); isEditing = false;
+    renderGroups(); updateSubmitLabel(); setStatus('');
+    return;
+  }
+  try {
+    const h = await authHeaders();
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/daily_reports?form_date=eq.${date}&store_name=eq.${encodeURIComponent(selectedStore)}`,
+      { headers: h }
+    );
+    const data = await r.json();
+    if (data && data.length) {
+      const rec = data[0];
+      groups = buildGroups(rec);
+      isEditing = true;
+      document.getElementById('hasActivity').checked = (rec.has_activity === '是');
+      document.getElementById('activityContent').value = rec.activity_content || '';
+    } else {
+      groups = buildGroups();
+      isEditing = false;
+      document.getElementById('hasActivity').checked = false;
+      document.getElementById('activityContent').value = '';
+    }
+    syncActivityInput();
+    renderGroups(); updateSubmitLabel();
+  } catch (e) { /* 加载失败不影响填写 */ }
+}
+
+function syncActivityInput() {
+  document.getElementById('activityContent').style.display =
+    document.getElementById('hasActivity').checked ? 'block' : 'none';
+}
+
+// ---------------------------------------------------------------------------
+// 提交
+// ---------------------------------------------------------------------------
+function collectValues() {
+  const nums = {}, amounts = {};
+  groups.forEach(g => g.rows.forEach(r => {
+    nums[r.key] = r.value;
+    if (r.amountKey) amounts[r.amountKey] = r.amount;
+  }));
+  return { nums, amounts };
+}
+
+async function submit() {
+  const date = document.getElementById('formDate').value;
+  const hasActivity = document.getElementById('hasActivity').checked;
+  const activityContent = document.getElementById('activityContent').value;
+  const btn = document.getElementById('submitBtn');
+
+  if (!date) { setStatus('请选择填表日期', 'err'); return; }
+  if (!selectedStore) { setStatus('请选择门店', 'err'); return; }
+
+  // 数字必填
+  for (const g of groups) {
+    for (const r of g.rows) {
+      if (r.value === null || r.value === undefined) { setStatus('请填写' + g.name + r.label, 'err'); return; }
+    }
+  }
+  // 金额必填（无则填 0）
+  for (const g of groups) {
+    for (const r of g.rows) {
+      if (r.amountKey && !r.amount) { setStatus('请填写' + r.amountHint + '（无则填 0）', 'err'); return; }
+    }
+  }
+  if (hasActivity && !activityContent.trim()) { setStatus('请输入品项活动名称', 'err'); return; }
+
+  const { nums, amounts } = collectValues();
+  const payload = {
+    form_date: date,
+    store_name: selectedStore,
+    meituan_visitors: nums.meituan_visitors,
+    douyin_visitors: nums.douyin_visitors,
+    meituan_unable_to_book: nums.meituan_unable_to_book,
+    douyin_unable_to_book: nums.douyin_unable_to_book,
+    meituan_inner_orders: nums.meituan_inner_orders,
+    douyin_inner_orders: nums.douyin_inner_orders,
+    meituan_inner_amount: parseFloat(amounts.meituan_inner_amount),
+    douyin_inner_amount: parseFloat(amounts.douyin_inner_amount),
+    meituan_verify_amount: parseFloat(amounts.meituan_verify_amount),
+    douyin_verify_amount: parseFloat(amounts.douyin_verify_amount),
+    has_activity: hasActivity ? '是' : '否',
+    activity_content: hasActivity ? activityContent.trim() : null,
+    updated_at: new Date().toISOString()
+  };
+
+  btn.disabled = true; setStatus('提交中…', '');
+  try {
+    const h = await authHeaders();
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/daily_reports?on_conflict=form_date,store_name`, {
+      method: 'POST',
+      headers: Object.assign({}, h, { 'Prefer': 'resolution=merge-duplicates,return=representation' }),
+      body: JSON.stringify(payload)
+    });
+    if (r.ok || r.status === 201) {
+      if (submittedStores.indexOf(selectedStore) < 0) submittedStores.push(selectedStore);
+      renderStores();
+      isEditing = true; updateSubmitLabel();
+      setStatus('✓ 提交成功，当天可继续修改', 'ok');
+    } else {
+      const t = await r.text();
+      setStatus('提交失败：' + t, 'err');
+    }
+  } catch (e) {
+    setStatus('网络错误，请重试', 'err');
+  }
+  btn.disabled = false;
+}
+
+// ---------------------------------------------------------------------------
 // 初始化
+// ---------------------------------------------------------------------------
 const dateEl = document.getElementById('formDate');
-// 与小程序一致：只能填「今天 + 昨天」，更早的联系运营在网页后台改
-dateEl.max = todayStr();
-dateEl.min = fmt(new Date(Date.now() - 864e5));
-dateEl.value = todayStr();
-const storeSel = document.getElementById('store');
-STORES.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; storeSel.appendChild(o); });
-PLATFORMS.forEach(buildPlatformBody);
-document.getElementById('formDate').addEventListener('change', loadExisting);
-storeSel.addEventListener('change', loadExisting);
+const b = dateBounds();
+dateEl.min = b.minDate; dateEl.max = b.maxDate; dateEl.value = b.maxDate;
+dateEl.addEventListener('change', () => {
+  const v = dateEl.value;
+  if (v > dateEl.max) { setStatus('不能选择未来日期', 'err'); dateEl.value = dateEl.max; return; }
+  if (v < dateEl.min) { setStatus('更早的数据请联系运营修改', 'err'); dateEl.value = dateEl.min; return; }
+  setStatus('');
+  checkSubmittedStores();
+  reloadExisting();
+});
+
+document.getElementById('hasActivity').addEventListener('change', syncActivityInput);
 document.getElementById('submitBtn').addEventListener('click', submit);
 
+renderStores();
+renderGroups();
+checkSubmittedStores();
+if (selectedStore) reloadExisting();
+
 // 从运营后台点进来的（index.html?from=ops）才显示返回入口，门店直接打开时看不到
-(function(){
-  try{
-    if(new URLSearchParams(location.search).get('from') === 'ops'){
+(function () {
+  try {
+    if (new URLSearchParams(location.search).get('from') === 'ops') {
       var a = document.getElementById('backToOps');
-      if(a) a.style.display = 'inline-block';
+      if (a) a.style.display = 'inline-block';
     }
-  }catch(e){}
+  } catch (e) {}
 })();
 </script>
 </body>
