@@ -63,7 +63,8 @@
   button.primary:hover { background: #7c4ded; }
   button.danger { background: rgba(239,68,68,0.85); border-color: rgba(239,68,68,0.9); }
   button.danger:hover { background: #dc2626; }
-  button.sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 8px; }
+  button.sm, a.sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 8px; }
+  a.sm { display: inline-flex; align-items: center; box-sizing: border-box; text-decoration: none; }
   button:disabled { opacity: .5; cursor: not-allowed; }
 
   /* ---------- 顶部 ---------- */
@@ -174,7 +175,11 @@
         <h1 data-page-node-id="aa62ThZYpK6tLGgZfwEFNI">書荀运营后台</h1>
         <div class="who" id="whoAmI" data-page-node-id="NBaLHkfJ54c9qfvBDflXXt"></div>
       </div>
-      <button class="sm" onclick="doLogout()" data-page-node-id="vNrfZ2P6yTA4RynIZjSof5">退出登录</button>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+        <a class="sm" href="index.html?from=ops" target="_blank" rel="noopener" title="打开门店填报网页版：未加入小程序体验版的门店（新入职/换手机）可用它填报，数据同样进 daily_reports；从这儿进去页面顶部会有「返回运营后台」">门店填报页 ↗</a>
+        <button class="sm" onclick="copyFillLink()" title="复制填报页链接，可直接发给门店">复制链接</button>
+        <button class="sm" onclick="doLogout()" data-page-node-id="vNrfZ2P6yTA4RynIZjSof5">退出登录</button>
+      </div>
     </div>
 
     <div class="tabs" data-page-node-id="jcB8kqXHofYiQWzdIjes1v">
@@ -669,6 +674,41 @@ function switchTab(t){
   });
   if(t==='stores') loadStores();
   clearMsg();
+}
+
+/* ---- 门店填报网页版入口（小程序体验版白名单之外的门店备用） ---- */
+const FILL_PAGE = 'index.html';
+function fillAbsUrl(){ return new URL(FILL_PAGE, location.href).href; }
+function copyFillLink(){
+  const u = fillAbsUrl();
+  // 1) 先试 execCommand：在用户点击手势内同步执行，比异步 clipboard API 更容易拿到权限
+  let ok = false;
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = u; ta.setAttribute('readonly','');
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select(); ta.setSelectionRange(0, u.length);
+    ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+  }catch(e){ ok = false; }
+
+  // 2) 无论如何都把链接摆成一个自动选中的输入框，保证一定拿得到
+  const tip = ok ? '已复制，可直接粘贴发给门店：'
+                 : '自动复制被浏览器/预览面板拦了 —— 下面链接已帮你选中，按 Ctrl+C 即可：';
+  msg(tip + '<br><input id="fillLinkInput" readonly value="' + u + '" onclick="this.select()" '
+    + 'style="width:100%;margin-top:6px;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.25);'
+    + 'background:rgba(0,0,0,.25);color:#fff;font-size:12px;font-family:inherit">', ok ? 'ok' : 'err');
+  if(!ok){ const inp = $('fillLinkInput'); if(inp){ inp.focus(); inp.select(); } }
+
+  // 3) 兜底：异步再试一次现代 API，成了就把提示改成"已复制"
+  if(!ok && navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(u).then(()=>{
+      const d = $('globalMsg').firstChild; if(!d) return;
+      d.className = 'msg ok';
+      if(d.firstChild) d.firstChild.textContent = '已复制，可直接粘贴发给门店：';
+    }, ()=>{});
+  }
 }
 
 /* ---------------- 数据加载 ---------------- */
