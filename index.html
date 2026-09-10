@@ -92,6 +92,7 @@
 <body data-page-node-id="YN9SAaz6m7TrpUbJ1VkbBY">
 <div class="wrap" data-page-node-id="jrZfzBozFAVwtmICbjHwgi">
   <div class="header" data-page-node-id="skYTSbwWyHnGZC9oNk6D9h">
+    <a id="backToOps" href="ops.html" style="display:none;margin-bottom:10px;font-size:13px;color:#8b5cf6;text-decoration:none">← 返回运营后台</a>
     <h1 data-page-node-id="bBEjKjIvCrBPonlPoCY2t5">書荀每日数据填报</h1>
     <p data-page-node-id="t4AxzthXGNLwayoD109mL9">直营门店 · 每日营业数据</p>
   </div>
@@ -381,6 +382,16 @@ PLATFORMS.forEach(buildPlatformBody);
 document.getElementById('formDate').addEventListener('change', loadExisting);
 storeSel.addEventListener('change', loadExisting);
 document.getElementById('submitBtn').addEventListener('click', submit);
+
+// 从运营后台点进来的（index.html?from=ops）才显示返回入口，门店直接打开时看不到
+(function(){
+  try{
+    if(new URLSearchParams(location.search).get('from') === 'ops'){
+      var a = document.getElementById('backToOps');
+      if(a) a.style.display = 'inline-block';
+    }
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
