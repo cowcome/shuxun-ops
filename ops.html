@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<html lang="zh-CN" data-page-node-id="RrB36bAfTvCvx5jdf51JXV">
+<head data-page-node-id="gR5AIk2B6GnrzmmOK9d7ZQ">
+<meta charset="UTF-8" data-page-node-id="fDkGqfNPXAoFvE0NB2GOxf" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="MnIHKBhg8O7oSf2TdLXEhk" />
 <title>書荀运营后台 · 每日数据</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -146,246 +146,246 @@
   .log-item .d { color: rgba(255,255,255,0.5); font-family: monospace; font-size: 11px; word-break: break-all; }
 </style>
 </head>
-<body>
-<div class="wrap">
+<body data-page-node-id="goB8wIdl2lSUAkwD8ORqsB">
+<div class="wrap" data-page-node-id="7fsgOK99k9SIO3Izy4fkyQ">
 
   <!-- ============ 登录 ============ -->
-  <div id="loginView" class="login-box">
-    <h1>書荀运营后台</h1>
-    <div class="sub">每日数据 · 查看 / 核对 / 管理</div>
-    <div class="card">
-      <div id="loginErr"></div>
-      <div class="field">
-        <label class="field-label">邮箱</label>
-        <input type="text" id="lgEmail" placeholder="运营账号邮箱" autocomplete="username" />
+  <div id="loginView" class="login-box" data-page-node-id="Nwd9BeTKGNV28kVybLL7og">
+    <h1 data-page-node-id="OeI4wG6wB9AsEiIHfVtKfO">書荀运营后台</h1>
+    <div class="sub" data-page-node-id="m1SJZHQ1mKOT0UvRDeBfAt">每日数据 · 查看 / 核对 / 管理</div>
+    <div class="card" data-page-node-id="j7h9VVUHzNYXWavsTqLUFR">
+      <div id="loginErr" data-page-node-id="RZjFptFbZRqgmLk3l2labl"></div>
+      <div class="field" data-page-node-id="QGMH7TRPffly416jMdYMTE">
+        <label class="field-label" data-page-node-id="uAAENwPgFhO7liTy86oYEo">邮箱</label>
+        <input type="text" id="lgEmail" placeholder="运营账号邮箱" autocomplete="username" data-page-node-id="lxtrREl5m6aTmpruTWuHZQ" />
       </div>
-      <div class="field">
-        <label class="field-label">密码</label>
-        <input type="password" id="lgPwd" placeholder="密码" autocomplete="current-password" />
+      <div class="field" data-page-node-id="vrXJxb5yhgyQdCAAiCtAhk">
+        <label class="field-label" data-page-node-id="AjDiWFBh71s8GSy5m4eO1w">密码</label>
+        <input type="password" id="lgPwd" placeholder="密码" autocomplete="current-password" data-page-node-id="7DtpdCm1ZTcPgdBRMOtols" />
       </div>
-      <button class="primary" style="width:100%" id="lgBtn" onclick="doLogin()">登 录</button>
+      <button class="primary" style="width:100%" id="lgBtn" onclick="doLogin()" data-page-node-id="E9TDtjR1jFk526Al8GhpEZ">登 录</button>
     </div>
   </div>
 
   <!-- ============ 主界面 ============ -->
-  <div id="mainView" class="hide">
-    <div class="topbar">
-      <div>
-        <h1>書荀运营后台</h1>
-        <div class="who" id="whoAmI"></div>
+  <div id="mainView" class="hide" data-page-node-id="gwpP7qkHuxDbIAFWKauWLT">
+    <div class="topbar" data-page-node-id="tvqtO9fTroK24jzb136fyK">
+      <div data-page-node-id="IaY8CZYoSu8HJuSTCRoR5f">
+        <h1 data-page-node-id="aa62ThZYpK6tLGgZfwEFNI">書荀运营后台</h1>
+        <div class="who" id="whoAmI" data-page-node-id="NBaLHkfJ54c9qfvBDflXXt"></div>
       </div>
-      <button class="sm" onclick="doLogout()">退出登录</button>
+      <button class="sm" onclick="doLogout()" data-page-node-id="vNrfZ2P6yTA4RynIZjSof5">退出登录</button>
     </div>
 
-    <div class="tabs">
-      <div class="tab active" data-tab="dash" onclick="switchTab('dash')">总览看板</div>
-      <div class="tab" data-tab="query" onclick="switchTab('query')">查询与导出</div>
-      <div class="tab" data-tab="recon" onclick="switchTab('recon')">数据核对</div>
-      <div class="tab" data-tab="logs" id="tabBtnLogs" onclick="switchTab('logs')">操作日志</div>
-      <div class="tab" data-tab="stores" onclick="switchTab('stores')">门店管理</div>
+    <div class="tabs" data-page-node-id="jcB8kqXHofYiQWzdIjes1v">
+      <div class="tab active" data-tab="dash" onclick="switchTab('dash')" data-page-node-id="FdRV76SV4V2OYzkc7iBrwS">总览看板</div>
+      <div class="tab" data-tab="query" onclick="switchTab('query')" data-page-node-id="flHaxauEQgm1EzPjzmk1Go">查询与导出</div>
+      <div class="tab" data-tab="recon" onclick="switchTab('recon')" data-page-node-id="GyfZDCXqzBJan1Xm0eb02h">数据核对</div>
+      <div class="tab" data-tab="logs" id="tabBtnLogs" onclick="switchTab('logs')" data-page-node-id="JZcRcF6LSD3T9DyrMNFqv8">操作日志</div>
+      <div class="tab" data-tab="stores" onclick="switchTab('stores')" data-page-node-id="CJh0AG01eDigHR558nFNEl">门店管理</div>
     </div>
 
-    <div id="globalMsg"></div>
+    <div id="globalMsg" data-page-node-id="VBNixWpDfJcWvjHeBHMpKf"></div>
 
     <!-- ---------- 总览看板 ---------- -->
-    <div id="tab-dash">
-      <div class="card">
-        <div class="inline">
-          <div>
-            <label class="field-label">开始日期</label>
-            <input type="date" id="dashStart" />
+    <div id="tab-dash" data-page-node-id="zUGZ3vzSEnIfoEyJFgGcJS">
+      <div class="card" data-page-node-id="QJl3igHGXdQFY8Wg8k80ut">
+        <div class="inline" data-page-node-id="xFA6bip9DzWwLyBuG0xl2w">
+          <div data-page-node-id="9CAF3DHMSfxEImF6MwHpx0">
+            <label class="field-label" data-page-node-id="jGAivlbQHdTfOuX5gArjBp">开始日期</label>
+            <input type="date" id="dashStart" data-page-node-id="rAL4jdWqGqZC7QCsS5N9bA" />
           </div>
-          <div>
-            <label class="field-label">结束日期</label>
-            <input type="date" id="dashEnd" />
+          <div data-page-node-id="YMoPsi4SwWaGfPGNVgvcAE">
+            <label class="field-label" data-page-node-id="9xXNSSz8ypA1fI3sVXoXmR">结束日期</label>
+            <input type="date" id="dashEnd" data-page-node-id="uhQI2AfSjeJXFG32rtwuli" />
           </div>
-          <div style="flex:0 0 auto; display:flex; gap:6px; align-items:center" id="dashQuick">
-            <span class="quick" data-r="yest" onclick="onQuick('dash','yest')">昨日</span>
-            <span class="quick" data-r="7d" onclick="onQuick('dash','7d')">近七天</span>
-            <span class="quick" data-r="month" onclick="onQuick('dash','month')">本月</span>
-            <span class="quick" data-r="lastmonth" onclick="onQuick('dash','lastmonth')">上月</span>
+          <div style="flex:0 0 auto; display:flex; gap:6px; align-items:center" id="dashQuick" data-page-node-id="X6eCBuiUgH1bS9rqFyR7OZ">
+            <span class="quick" data-r="yest" onclick="onQuick('dash','yest')" data-page-node-id="300nTjCZR4ZZEotBP94gZs">昨日</span>
+            <span class="quick" data-r="7d" onclick="onQuick('dash','7d')" data-page-node-id="FL4aWd52fktUlJNfwMnhEz">近七天</span>
+            <span class="quick" data-r="month" onclick="onQuick('dash','month')" data-page-node-id="toB4hQvC7ZCAjZSKBOKTbf">本月</span>
+            <span class="quick" data-r="lastmonth" onclick="onQuick('dash','lastmonth')" data-page-node-id="VmUsbJQL0bA76AP6G4uTIb">上月</span>
           </div>
-          <div style="flex:0 0 auto">
-            <button class="primary" onclick="loadDash()">查看</button>
+          <div style="flex:0 0 auto" data-page-node-id="FrFQ3AbzqMUu2BQV5QDHvq">
+            <button class="primary" onclick="loadDash()" data-page-node-id="hiEIK0Lwqyrkc6LA1xQP4O">查看</button>
           </div>
         </div>
       </div>
-      <div class="stats" id="dashStats"></div>
-      <div class="card">
-        <div class="card-title" id="dashTableTitle">门店数据汇总</div>
-        <div id="dashStoreTable"></div>
+      <div class="stats" id="dashStats" data-page-node-id="bvcZWeoHL8hwhi9VnMtame"></div>
+      <div class="card" data-page-node-id="LnAbUXE5JEKLet1O0TzBhz">
+        <div class="card-title" id="dashTableTitle" data-page-node-id="CyXrGZ0ZIVsIR9o9UnUazl">门店数据汇总</div>
+        <div id="dashStoreTable" data-page-node-id="vqznOBUJJdfbHTg70rMvzA"></div>
       </div>
-      <div class="card">
-        <div class="card-title" id="storeChartTitle">各门店核销金额对比（美+抖合计 · 降序）</div>
-        <div class="chart-box"><canvas id="chStore"></canvas></div>
-        <div id="storeAmtTable" style="margin-top:12px"></div>
+      <div class="card" data-page-node-id="H65uFvdBGUAFdUKmijPl8Y">
+        <div class="card-title" id="storeChartTitle" data-page-node-id="Mx3zRMm4HU4vkIOqtPLbeU">各门店核销金额对比（美+抖合计 · 降序）</div>
+        <div class="chart-box" data-page-node-id="FNWBM6PycPxEbvNvnebgSG"><canvas id="chStore" data-page-node-id="yqHc62au9NdXBnSOSPjDUz"></canvas></div>
+        <div id="storeAmtTable" style="margin-top:12px" data-page-node-id="bZyDoQgHySHPBHc5fKQlG6"></div>
       </div>
-      <div class="card hide" id="cardTrend">
-        <div class="card-title" id="trendTitle">每日核销金额趋势</div>
-        <div class="chart-box"><canvas id="chTrend"></canvas></div>
+      <div class="card hide" id="cardTrend" data-page-node-id="e2K0jTHNnhToB4z4NKknWV">
+        <div class="card-title" id="trendTitle" data-page-node-id="3kH4JicV9gYPJB3hFgcn2W">每日核销金额趋势</div>
+        <div class="chart-box" data-page-node-id="DejdQiVmd3DzyOf6O69Ajz"><canvas id="chTrend" data-page-node-id="iLuoJyg3YYtH39czMM2QGo"></canvas></div>
       </div>
-      <div class="card">
-        <div class="card-title">各门店客单数</div>
-        <div class="chart-box"><canvas id="chPeople"></canvas></div>
+      <div class="card" data-page-node-id="ueBjnDsNbcuXfJXdWUMhU6">
+        <div class="card-title" data-page-node-id="c2FOkYDPG1fR4vWnkmz9KJ">各门店客单数</div>
+        <div class="chart-box" data-page-node-id="jTnNVMqSSCksOjF2dmVWX5"><canvas id="chPeople" data-page-node-id="jFJajIUpqH0NntmWlPICTA"></canvas></div>
       </div>
     </div>
 
     <!-- ---------- 查询与导出 ---------- -->
-    <div id="tab-query" class="hide">
-      <div class="card">
-        <div class="inline">
-          <div>
-            <label class="field-label">开始日期</label>
-            <input type="date" id="qStart" />
+    <div id="tab-query" class="hide" data-page-node-id="cg8s7EPd3wTOTmcngtkVUy">
+      <div class="card" data-page-node-id="MeoEiTJyaRO1wzWv0AQGUu">
+        <div class="inline" data-page-node-id="f478suer927gEZRx5JhuWq">
+          <div data-page-node-id="T1yccLFPbxiTx2LGXWfM81">
+            <label class="field-label" data-page-node-id="I0JpFbkoGbah5FisjdLjAy">开始日期</label>
+            <input type="date" id="qStart" data-page-node-id="eVtRGnZn51299qzIANEbyS" />
           </div>
-          <div>
-            <label class="field-label">结束日期</label>
-            <input type="date" id="qEnd" />
+          <div data-page-node-id="GHuOvS9wSwWmD37AQ4DdOy">
+            <label class="field-label" data-page-node-id="t4tA56ksQ4gxEc8zC730qY">结束日期</label>
+            <input type="date" id="qEnd" data-page-node-id="B0TcbSovgcR9QImWYI5snW" />
           </div>
-          <div>
-            <label class="field-label">门店（不选=全部）</label>
-            <select id="qStore"></select>
+          <div data-page-node-id="6vBDOYoAHW4UhILSQr33Kb">
+            <label class="field-label" data-page-node-id="FPsKcTMvDtfM5lybMaXBMI">门店（不选=全部）</label>
+            <select id="qStore" data-page-node-id="CKH0nqseg8qPvvD9OOzjpi"></select>
           </div>
-          <div style="flex:0 0 auto; display:flex; gap:6px; align-items:center" id="queryQuick">
-            <span class="quick" data-r="yest" onclick="onQuick('query','yest')">昨日</span>
-            <span class="quick" data-r="7d" onclick="onQuick('query','7d')">近七天</span>
-            <span class="quick" data-r="month" onclick="onQuick('query','month')">本月</span>
-            <span class="quick" data-r="lastmonth" onclick="onQuick('query','lastmonth')">上月</span>
+          <div style="flex:0 0 auto; display:flex; gap:6px; align-items:center" id="queryQuick" data-page-node-id="lDqgCTxEjTORTRTEZvFY1Z">
+            <span class="quick" data-r="yest" onclick="onQuick('query','yest')" data-page-node-id="FWd2IDuGHy3lg4nWMirOvq">昨日</span>
+            <span class="quick" data-r="7d" onclick="onQuick('query','7d')" data-page-node-id="XfkxpzmdPA6CFYaYMnwIBC">近七天</span>
+            <span class="quick" data-r="month" onclick="onQuick('query','month')" data-page-node-id="Yz5oVVY1wShFPQwu5wlgA0">本月</span>
+            <span class="quick" data-r="lastmonth" onclick="onQuick('query','lastmonth')" data-page-node-id="uzqi62VrxAxLNrihhNXH0u">上月</span>
           </div>
-          <div style="flex:0 0 auto; display:flex; gap:8px">
-            <button class="primary" onclick="loadQuery()">查询</button>
-            <button onclick="exportXlsx()">导出 Excel</button>
+          <div style="flex:0 0 auto; display:flex; gap:8px" data-page-node-id="nZPAtk1jqazWq5ayYCBTNH">
+            <button class="primary" onclick="loadQuery()" data-page-node-id="1MikLyjhdzIOH9tJgxC5sY">查询</button>
+            <button onclick="exportXlsx()" data-page-node-id="two5rCnFNYgLIgiCh4WKTY">导出 Excel</button>
           </div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-title" id="qTitle">数据明细</div>
-        <div id="qBody"><div class="empty">请选择日期范围后查询</div></div>
+      <div class="card" data-page-node-id="MEGnXwP0J8qyOkSmHYBXCa">
+        <div class="card-title" id="qTitle" data-page-node-id="SkpdhafXkYsI7GRAkxOxS0">数据明细</div>
+        <div id="qBody" data-page-node-id="X2e7zP5GXE8ToraQNbrs5g"><div class="empty" data-page-node-id="TCHQrDaHAWrHG2xabHWaoP">请选择日期范围后查询</div></div>
       </div>
     </div>
 
     <!-- ---------- 数据核对 ---------- -->
-    <div id="tab-recon" class="hide">
-      <div class="card">
-        <div class="card-title">1 · 选择数据日期</div>
-        <div class="inline">
-          <div>
-            <label class="field-label">核对日期</label>
-            <input type="date" id="rDate" />
+    <div id="tab-recon" class="hide" data-page-node-id="daEHnxFhUEx7s9SmfpZ5sS">
+      <div class="card" data-page-node-id="6vvohsWgIlwT7cYqYGVrnj">
+        <div class="card-title" data-page-node-id="qskEp3lpn5rmo1BLUKvrea">1 · 选择数据日期</div>
+        <div class="inline" data-page-node-id="Dop97x5RGK1YI7biMs1KHK">
+          <div data-page-node-id="XSBsmaIP8nFhSm91ER3CrQ">
+            <label class="field-label" data-page-node-id="2ojGhSIIdIBttrkpQ5A9mq">核对日期</label>
+            <input type="date" id="rDate" data-page-node-id="93q0tPv8PJzgBsn6zrxgW4" />
           </div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-title">核对配置 · 内购商品ID</div>
-        <div class="inline" style="align-items:flex-end">
-          <div style="flex:1 1 320px">
-            <label class="field-label">抖音明细按此清单剔除内购（逗号分隔，可多个）</label>
-            <input type="text" id="innerIdsInput" placeholder="如：1810245175321659" autocomplete="off" />
+      <div class="card" data-page-node-id="RHk4yP0HQgGAsb0J8GQIaW">
+        <div class="card-title" data-page-node-id="6O3ygSKIiBMnXd8SFxAHF5">核对配置 · 内购商品ID</div>
+        <div class="inline" style="align-items:flex-end" data-page-node-id="kCYsbsooFMH1XlXAtax6zA">
+          <div style="flex:1 1 320px" data-page-node-id="PdrdtWnkKxqu0M08F9ckZA">
+            <label class="field-label" data-page-node-id="TDqEu7s7GzkVHGeig8Wsmi">抖音明细按此清单剔除内购（逗号分隔，可多个）</label>
+            <input type="text" id="innerIdsInput" placeholder="如：1810245175321659" autocomplete="off" data-page-node-id="yNnQWsVGBN6EpzOq8DszSf" />
           </div>
-          <div style="flex:0 0 auto">
-            <button class="primary" onclick="saveInnerIds()">保存配置</button>
+          <div style="flex:0 0 auto" data-page-node-id="DOlkCC0FlNhuQ5NCrrEEFe">
+            <button class="primary" onclick="saveInnerIds()" data-page-node-id="AWM2y91uU0gcnkSIEUiocg">保存配置</button>
           </div>
         </div>
-        <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,0.4)">
+        <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,0.4)" data-page-node-id="HjQ0L3Jkynm9lqbgWDIiCu">
           更换内购商品后在这里加上新 ID 即可，旧 ID 不用删（历史明细仍要能识别）。保存后全后台共用。
         </div>
       </div>
-      <div class="card">
-        <div class="card-title">2 · 导入平台明细（xlsx）</div>
-        <div class="file-row">
-          <span class="nm">美团收益明细 <span style="color:#f87171">*</span></span>
-          <input type="file" id="fMt" accept=".xlsx,.xls" onchange="onFile('mt', this)" />
-          <span class="st" id="stMt">未选择（必填）</span>
+      <div class="card" data-page-node-id="SBU9lbJaNHvMwoHY715A7c">
+        <div class="card-title" data-page-node-id="k0memrubOYEJEFA2sX8czr">2 · 导入平台明细（xlsx）</div>
+        <div class="file-row" data-page-node-id="7nqHYxiu3QWSiuSoPfpSdS">
+          <span class="nm" data-page-node-id="xxcFulQyxbI5QKkJ9M9hWe">美团收益明细 <span style="color:#f87171" data-page-node-id="xmWFBNDRcXa5VG7rjioE6P">*</span></span>
+          <input type="file" id="fMt" accept=".xlsx,.xls" onchange="onFile('mt', this)" data-page-node-id="hYDSZmN783tHefK7bWiZgK" />
+          <span class="st" id="stMt" data-page-node-id="rhk5yamBLA1AUwdXvYl5gp">未选择（必填）</span>
         </div>
-        <div class="file-row">
-          <span class="nm">抖音核销明细 <span style="color:#f87171">*</span></span>
-          <input type="file" id="fDy" accept=".xlsx,.xls" onchange="onFile('dy', this)" />
-          <span class="st" id="stDy">未选择（必填）</span>
+        <div class="file-row" data-page-node-id="yKHPZLWHWD3JKXB1ctK07h">
+          <span class="nm" data-page-node-id="QB8jDJ8uxwSOB0HVimrKmG">抖音核销明细 <span style="color:#f87171" data-page-node-id="hGl75E4gCFgA7Yokw5nzu3">*</span></span>
+          <input type="file" id="fDy" accept=".xlsx,.xls" onchange="onFile('dy', this)" data-page-node-id="37gRK9kEGgjO1k9G5jnRl4" />
+          <span class="st" id="stDy" data-page-node-id="jDYbKETIwvZpOEsFJYkfNw">未选择（必填）</span>
         </div>
-        <div class="file-row">
-          <span class="nm">内购登记表 <span style="color:#f87171">*</span></span>
-          <input type="file" id="fNg" accept=".xlsx,.xls" onchange="onFile('ng', this)" />
-          <span class="st" id="stNg">未选择（必填：用于剔除双平台订单中的内购）</span>
+        <div class="file-row" data-page-node-id="iE4TYsJ5vI5XRk7rt0HzV6">
+          <span class="nm" data-page-node-id="Apxe8ODpjr2qYB01erCqRy">内购登记表 <span style="color:#f87171" data-page-node-id="79e3acUrgiVPKDxvuTAVY9">*</span></span>
+          <input type="file" id="fNg" accept=".xlsx,.xls" onchange="onFile('ng', this)" data-page-node-id="xMQLB5KDzOwe6gVeS7PAdp" />
+          <span class="st" id="stNg" data-page-node-id="n10Rs7XhVsy2tQu1LUr0gU">未选择（必填：用于剔除双平台订单中的内购）</span>
         </div>
-        <div class="file-row" style="cursor:pointer">
-          <input type="checkbox" id="noInner" style="width:auto; flex:0 0 auto" />
-          <span class="st" style="color:rgba(255,255,255,0.55)">今日全品牌确无内购（勾选后可不传内购表，按内购=0 核对）</span>
+        <div class="file-row" style="cursor:pointer" data-page-node-id="hfQFtibDTobqIq3InjdVmN">
+          <input type="checkbox" id="noInner" style="width:auto; flex:0 0 auto" data-page-node-id="NR1wcAQO0I7y1qInB93O3s" />
+          <span class="st" style="color:rgba(255,255,255,0.55)" data-page-node-id="zlHaLDeV7lFrFhE1ymBeYh">今日全品牌确无内购（勾选后可不传内购表，按内购=0 核对）</span>
         </div>
-        <div class="file-row">
-          <span class="nm">有赞订单汇总</span>
-          <input type="file" id="fYz" accept=".xlsx,.xls" onchange="onFile('yz', this)" />
-          <span class="st" id="stYz">未选择（选填，仅作交叉校验）</span>
+        <div class="file-row" data-page-node-id="7sJfmA1ulHIQjO71iVeczQ">
+          <span class="nm" data-page-node-id="MKZXtYpWGcydy1oEjylTU6">有赞订单汇总</span>
+          <input type="file" id="fYz" accept=".xlsx,.xls" onchange="onFile('yz', this)" data-page-node-id="QjZOvyzSnLWxdvH7jYz0zf" />
+          <span class="st" id="stYz" data-page-node-id="7cIyEAZ0FqtSLOvDBpV3yI">未选择（选填，仅作交叉校验）</span>
         </div>
-        <div style="margin-top:14px">
-          <button class="primary" onclick="runRecon()" id="rBtn">开始核对</button>
+        <div style="margin-top:14px" data-page-node-id="0XRexNe0Af2JpL1Sv2MY3h">
+          <button class="primary" onclick="runRecon()" id="rBtn" data-page-node-id="XPNkVkycA3txCR7gkIjkNC">开始核对</button>
         </div>
       </div>
-      <div class="card">
-        <div class="card-title">3 · 核对结果</div>
-        <div id="rBody"><div class="empty">导入文件后点击「开始核对」</div></div>
+      <div class="card" data-page-node-id="fhaH0lkUgjqjM1ZBpFBqNC">
+        <div class="card-title" data-page-node-id="nMbDvxH08jGSu9xHFihJsU">3 · 核对结果</div>
+        <div id="rBody" data-page-node-id="HHCgN21mw68RnfypjkgIQh"><div class="empty" data-page-node-id="N5JAAonCyebQ2IpQCxSkU3">导入文件后点击「开始核对」</div></div>
       </div>
     </div>
 
     <!-- ---------- 操作日志 ---------- -->
-    <div id="tab-logs" class="hide">
-      <div class="card">
-        <div class="inline">
-          <div>
-            <label class="field-label">开始日期（按数据日期）</label>
-            <input type="date" id="lStart" />
+    <div id="tab-logs" class="hide" data-page-node-id="f15fXD44ZBzWf4xRddz4X8">
+      <div class="card" data-page-node-id="d4ypk3F8bqyGdy7roIzNPJ">
+        <div class="inline" data-page-node-id="0Sz2wisaxQT1Azs7a8BXAJ">
+          <div data-page-node-id="H3D9oWolCedTy563nbX8hu">
+            <label class="field-label" data-page-node-id="3JwxQOVpHiApBJrckB1WXh">开始日期（按数据日期）</label>
+            <input type="date" id="lStart" data-page-node-id="Gw6ZH896PooDQZu46D1hAf" />
           </div>
-          <div>
-            <label class="field-label">结束日期</label>
-            <input type="date" id="lEnd" />
+          <div data-page-node-id="JLOBf0EZERYTnHatMbKwtG">
+            <label class="field-label" data-page-node-id="DfAvC0M2XjTCB5KZQxWICg">结束日期</label>
+            <input type="date" id="lEnd" data-page-node-id="diefkQCzCB4ABzjr6EaDMA" />
           </div>
-          <div>
-            <label class="field-label">门店（不选=全部）</label>
-            <select id="lStore"></select>
+          <div data-page-node-id="rK1QYf13KiFSAKwZ2CWcuP">
+            <label class="field-label" data-page-node-id="58LR1Hi7YpEo5P5kC981OD">门店（不选=全部）</label>
+            <select id="lStore" data-page-node-id="u8e96uCm6vbF9T2EKgTMQZ"></select>
           </div>
-          <div style="flex:0 0 auto">
-            <button class="primary" onclick="loadLogs()">查询</button>
+          <div style="flex:0 0 auto" data-page-node-id="EaSLSjgqKjZnhbuMDschcf">
+            <button class="primary" onclick="loadLogs()" data-page-node-id="Qxg3GaxqVAwTpotaXdYfgD">查询</button>
           </div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-title">改动记录（谁 / 何时 / 改前 → 改后）</div>
-        <div id="lBody"><div class="empty">请选择范围后查询</div></div>
+      <div class="card" data-page-node-id="SppCUSG8QClB31dOt8PjgX">
+        <div class="card-title" data-page-node-id="8Giz76GCfEAusMFQBLJKGH">改动记录（谁 / 何时 / 改前 → 改后）</div>
+        <div id="lBody" data-page-node-id="GaIfezFfDgXn6yPdlLmQ5p"><div class="empty" data-page-node-id="lCBD8NJiC8WMEKgD3lZRAA">请选择范围后查询</div></div>
       </div>
     </div>
 
     <!-- ---------- 门店管理 ---------- -->
-    <div id="tab-stores" class="hide">
-      <div class="card">
-        <div class="inline">
-          <div>
-            <label class="field-label">状态</label>
-            <select id="stStatus" onchange="renderStores()">
-              <option value="">全部</option><option selected>在营</option><option>闭店</option><option>待上线</option>
+    <div id="tab-stores" class="hide" data-page-node-id="JIv6wWAdXhSzfM3ZgmnmHD">
+      <div class="card" data-page-node-id="pAv5TReDAz948Us5d6H16X">
+        <div class="inline" data-page-node-id="r4v0zvpN7t9GdauSmuDRjZ">
+          <div data-page-node-id="TMuIXFrk3uDJbCojRT5EOQ">
+            <label class="field-label" data-page-node-id="8UQ7sOMzXRC7FlOuzeGiIX">状态</label>
+            <select id="stStatus" onchange="renderStores()" data-page-node-id="0hjEFcP8z3UcFEJKOT5ase">
+              <option value="" data-page-node-id="ARMXytitE2BjfuiTCTJXfe">全部</option><option selected data-page-node-id="Ws1lfm3kWkQ5TP9EChWqrF">在营</option><option data-page-node-id="hgkhoHENITaLEPvyxtdwdc">闭店</option><option data-page-node-id="ksdncJulb9QiprtCSrYyQe">待上线</option>
             </select>
           </div>
-          <div>
-            <label class="field-label">性质（快捷筛选）</label>
-            <div id="stTypeChips" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; height:38px">
-              <button class="sm" onclick="setStType('')">全部</button>
-              <button class="sm" onclick="setStType('直营')">直营</button>
-              <button class="sm" onclick="setStType('连锁')">连锁</button>
-              <button class="sm" onclick="setStType('陪跑')">陪跑</button>
-              <button class="sm" onclick="setStType('共管')">共管</button>
+          <div data-page-node-id="CRjQ54fV7pHuQOl3LyAfOT">
+            <label class="field-label" data-page-node-id="98LyDjcqOgdBW6IMvoeWo9">性质（快捷筛选）</label>
+            <div id="stTypeChips" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; height:38px" data-page-node-id="hHDxovQjxMCgnt8GgQZnmG">
+              <button class="sm" onclick="setStType('')" data-page-node-id="djGnci6wswL01mt0HEF48J">全部</button>
+              <button class="sm" onclick="setStType('直营')" data-page-node-id="LDeHkmdLsMzT14GGZDQ8BJ">直营</button>
+              <button class="sm" onclick="setStType('连锁')" data-page-node-id="ww9jkkGT6ceEP5Z8H0KHeP">连锁</button>
+              <button class="sm" onclick="setStType('陪跑')" data-page-node-id="yugWoeGFqDoNZjrsRzMqaD">陪跑</button>
+              <button class="sm" onclick="setStType('共管')" data-page-node-id="KQoi3Idx4ELaaDdXV5pWKg">共管</button>
             </div>
           </div>
-          <div>
-            <label class="field-label">搜索（名称 / 别名 / ID）</label>
-            <input type="text" id="stSearch" oninput="renderStores()" placeholder="如：顺联 / 十亩地" />
+          <div data-page-node-id="LskoK2cio9txIM3HF130jm">
+            <label class="field-label" data-page-node-id="jHkrzLaXGJ74MfMebWnoQA">搜索（名称 / 别名 / ID）</label>
+            <input type="text" id="stSearch" oninput="renderStores()" placeholder="如：顺联 / 十亩地" data-page-node-id="Z38N7Eimy8bOhQVdKPZUjG" />
           </div>
-          <div style="flex:0 0 auto; display:flex; gap:8px; align-items:flex-end">
-            <button onclick="loadStores()">刷新</button>
-            <button class="primary" id="btnAddStore" onclick="openStoreEdit()">+ 新增门店</button>
+          <div style="flex:0 0 auto; display:flex; gap:8px; align-items:flex-end" data-page-node-id="jGG448DPrBNgIt43lvJ8zP">
+            <button onclick="loadStores()" data-page-node-id="j9mCHv4OqYwLx0UTzWGCAN">刷新</button>
+            <button class="primary" id="btnAddStore" onclick="openStoreEdit()" data-page-node-id="7FqJPh4tKatgqaDbb1J0tk">+ 新增门店</button>
           </div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-title">门店主数据（Supabase stores 主表 · 唯一权威源）</div>
-        <div id="stBody"><div class="empty">加载中…</div></div>
+      <div class="card" data-page-node-id="YGyABuczLGH3dbT4X2uZff">
+        <div class="card-title" data-page-node-id="p55V1nb8JRDDXIFyHAGeBt">门店主数据（Supabase stores 主表 · 唯一权威源）</div>
+        <div id="stBody" data-page-node-id="7H7EK7ZxQXsx9CAISMtVIH"><div class="empty" data-page-node-id="TZXz6J6A99YGpisuSAqQM3">加载中…</div></div>
       </div>
     </div>
 
@@ -393,41 +393,41 @@
 </div>
 
 <!-- 编辑弹窗（日报） -->
-<div id="editMask" class="mask hide">
-  <div class="modal">
-    <h3 id="edTitle">编辑记录</h3>
-    <div id="edBody"></div>
-    <div class="modal-btns">
-      <button class="primary" onclick="saveEdit()">保存</button>
-      <button onclick="closeEdit()">取消</button>
+<div id="editMask" class="mask hide" data-page-node-id="CaMmz2kU75F3MsFnFFR6TG">
+  <div class="modal" data-page-node-id="jWbv56GIlXhs0FNZsqT1np">
+    <h3 id="edTitle" data-page-node-id="DgUevMAhyy7yYaAjc3VBuU">编辑记录</h3>
+    <div id="edBody" data-page-node-id="BA0LWsN4ZgbVyRU82CfNCY"></div>
+    <div class="modal-btns" data-page-node-id="cqSvSUypTCEyyZ6JzRjICo">
+      <button class="primary" onclick="saveEdit()" data-page-node-id="MZwZxH5JaKhDmSDLzZnigV">保存</button>
+      <button onclick="closeEdit()" data-page-node-id="A1Ft6IWHzCNjPfUAZ664cN">取消</button>
     </div>
   </div>
 </div>
 
 <!-- 门店编辑弹窗 -->
-<div id="storeMask" class="mask hide">
-  <div class="modal">
-    <h3 id="smTitle">门店</h3>
-    <div id="smBody"></div>
-    <div class="modal-btns">
-      <button class="primary" onclick="saveStore()">保存</button>
-      <button onclick="closeStoreEdit()">取消</button>
+<div id="storeMask" class="mask hide" data-page-node-id="UKUPEH1KWaueREKjDKjFpZ">
+  <div class="modal" data-page-node-id="Tq6EwFsJ3aJ9Iv5GB67sso">
+    <h3 id="smTitle" data-page-node-id="3QbxsUavyeXB1GpQH4H98i">门店</h3>
+    <div id="smBody" data-page-node-id="Q2oETe6D5zZsp0VsQOMeZq"></div>
+    <div class="modal-btns" data-page-node-id="CmpFsltM8eAAdb8hkEfTya">
+      <button class="primary" onclick="saveStore()" data-page-node-id="2vkCFXRDUpPdKIFXVnYVdo">保存</button>
+      <button onclick="closeStoreEdit()" data-page-node-id="pxtowVnCwm4xvZjkRYbLzA">取消</button>
     </div>
   </div>
 </div>
 
 <!-- 删除确认弹窗（手动输入「确认删除」） -->
-<div id="delMask" class="mask hide">
-  <div class="modal">
-    <h3 id="delTitle" style="color:#f87171">删除确认</h3>
-    <div id="delInfo" style="margin-bottom:10px;font-size:13px;color:rgba(255,255,255,0.75)"></div>
-    <div class="field">
-      <label class="field-label" style="color:#f87171">请输入「<b>确认删除</b>」四个字以继续</label>
-      <input type="text" id="delInput" placeholder="输入：确认删除" autocomplete="off" onkeydown="if(event.key==='Enter')doDelete()" />
+<div id="delMask" class="mask hide" data-page-node-id="G81ubo1ImfrUqE71cxixnM">
+  <div class="modal" data-page-node-id="fpbHBS4cgiTNDF0EhjGrTW">
+    <h3 id="delTitle" style="color:#f87171" data-page-node-id="DccZ0HjltQ0Yi84LJAp52D">删除确认</h3>
+    <div id="delInfo" style="margin-bottom:10px;font-size:13px;color:rgba(255,255,255,0.75)" data-page-node-id="hBWKV4jc9zXB4pifWkYT0U"></div>
+    <div class="field" data-page-node-id="TQ6CFSSM3kUwUF8EmdUgQz">
+      <label class="field-label" style="color:#f87171" data-page-node-id="OSVcotTaA6LeYGza3liKbA">请输入「<b data-page-node-id="MzcO3tvseir4orICvcIAfX">确认删除</b>」四个字以继续</label>
+      <input type="text" id="delInput" placeholder="输入：确认删除" autocomplete="off" onkeydown="if(event.key==='Enter')doDelete()" data-page-node-id="uD0DweD5KlHrPVXB8hxGyW" />
     </div>
-    <div class="modal-btns">
-      <button class="danger" id="delBtn" onclick="doDelete()">确认删除</button>
-      <button onclick="closeDel()">取消</button>
+    <div class="modal-btns" data-page-node-id="LCcQf0GqZ1x3EWOZEtWSfK">
+      <button class="danger" id="delBtn" onclick="doDelete()" data-page-node-id="BQyGLKhw5QC8qJeujnq3Yr">确认删除</button>
+      <button onclick="closeDel()" data-page-node-id="QcAni3O4hwJh7gFGGaKztn">取消</button>
     </div>
   </div>
 </div>
@@ -1366,18 +1366,29 @@ function parseMt(aoa){
     if(iFee < 0 && t.indexOf('平台技术服务费')>=0) iFee = i;
   }
   if(iSettle < 0 || iFee < 0) throw new Error('美团表缺少「结算价」或「平台技术服务费」列');
-  const out = {}, unmatched = {};
+  const out = {}, unmatched = {}, refund = { cnt:0, amt:0 };
   for(let r=hr+1;r<aoa.length;r++){
     const row = aoa[r]; if(!row || !row[iStore]) continue;
-    if(String(row[iType]==null?'':row[iType]).indexOf('已核销') < 0) continue;
+    // 2026-09-10 修复：美团退款/撤销行的「结算价」本身是负数，必须与核销行一起计入才能冲抵。
+    // 旧版只认「已核销」，把「已消费退」「撤销核销」整行丢掉 → 平台金额虚高、人数虚高。
+    // ⚠️ 注意：一个订单号出现多行 ≠ 重复，可能是多次卡拆成多张券（券号不同），全部都要算，
+    //    千万不要按订单号去重。
+    const ty = String(row[iType]==null?'':row[iType]);
+    const isVerify = ty.indexOf('已核销') >= 0;
+    const isRefund = ty.indexOf('已消费退') >= 0 || ty.indexOf('撤销核销') >= 0;
+    if(!isVerify && !isRefund) continue;
     const std = matchStore(row[iStore]);
     if(!std){ unmatched[String(row[iStore])] = (unmatched[String(row[iStore])]||0)+1; continue; }
     if(!out[std]) out[std] = { amt:0, ppl:0, cnt:0 };
-    out[std].amt += round2(toNum(row[iSettle]) - toNum(row[iFee]));
-    out[std].cnt += 1;
-    out[std].ppl += (String(row[iGid]==null?'':row[iGid]).trim() === MT_DOUBLE) ? 2 : 1;
+    // 退款行金额自带负号，直接累加即可冲抵；人数/笔数需反向扣减
+    const sgn = isRefund ? -1 : 1;
+    const one = round2(toNum(row[iSettle]) - toNum(row[iFee]));
+    out[std].amt += one;
+    out[std].cnt += sgn;
+    out[std].ppl += sgn * (String(row[iGid]==null?'':row[iGid]).trim() === MT_DOUBLE ? 2 : 1);
+    if(isRefund){ refund.cnt += 1; refund.amt = round2(refund.amt + one); }
   }
-  return { byStore: out, unmatched: unmatched };
+  return { byStore: out, unmatched: unmatched, refund: refund };
 }
 
 // 解析抖音 → {门店:{amt,ppl,cnt,innerCnt}}（已按配置清单剔除内购券）
@@ -1395,6 +1406,10 @@ function parseDy(aoa){
     const row = aoa[r]; if(!row || !row[iStore]) continue;
     const stt = String(row[iStatus]==null?'':row[iStatus]);
     if(stt.indexOf('已核销') < 0) continue;
+    // 2026-09-10 加固：抖音「已撤销核销」的订单实收是**正数**（不像美团退款行是负数），
+    // 所以必须排除、不能累加。旧版靠「已撤销核销」里不含连续「已核销」三字才碰巧跳过，
+    // 太脆弱（万一抖音改成「已核销（已撤销）」就会多算），改为显式排除。
+    if(stt.indexOf('撤销') >= 0 || stt.indexOf('退') >= 0) continue;
     const std = matchStore(row[iStore]);
     const gid = String(row[iGid]==null?'':row[iGid]).trim();
     if(gid && innerIdSet.has(gid)){
@@ -1565,6 +1580,10 @@ async function runRecon(){
     }
     if(yz && !reconFiles.ng && noInner && Object.keys(yz.byStore).length){
       note += '<div class="msg info">提示：本次按「今日全品牌无内购」核对（未导入内购表，内购按 0 剔除）——若实际有内购，请补传内购表重核。</div>';
+    }
+    if(mt && mt.refund && mt.refund.cnt){
+      note += '<div class="msg info">美团明细已自动冲抵退款/撤销 <b>'+mt.refund.cnt+' 笔</b>，'+
+        '合计 <b>'+fmtAmt(mt.refund.amt)+'</b> 元（2026-09-10 修复：旧版会漏扣，导致平台金额与人数虚高）</div>';
     }
     const noFill = STORES.filter(s=>!fill[s]);
     if(noFill.length){
