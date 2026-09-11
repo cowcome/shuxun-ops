@@ -176,6 +176,7 @@
         <div class="who" id="whoAmI" data-page-node-id="NBaLHkfJ54c9qfvBDflXXt"></div>
       </div>
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+        <a class="sm" id="lnkChain" href="chain.html" target="_blank" rel="noopener" style="background:rgba(139,92,246,0.25);border:1px solid rgba(167,139,250,0.5);font-weight:600" title="连锁板块经营看板（内测，仅主账号）：连锁门店的抖音/美团核销数据，数据源为有赞开放平台（接入中）">连锁板块 ↗</a>
         <a class="sm" href="index.html?from=ops" target="_blank" rel="noopener" title="打开门店填报网页版：未加入小程序体验版的门店（新入职/换手机）可用它填报，数据同样进 daily_reports；从这儿进去页面顶部会有「返回运营后台」">门店填报页 ↗</a>
         <button class="sm" onclick="copyFillLink()" title="复制填报页链接，可直接发给门店">复制链接</button>
         <button class="sm" onclick="doLogout()" data-page-node-id="vNrfZ2P6yTA4RynIZjSof5">退出登录</button>
@@ -601,6 +602,7 @@ let userEmail = '';
 function applyPerms(){
   const t = $('tabBtnLogs'); if(t) t.classList.toggle('hide', !isAdmin);
   const b = $('btnAddStore'); if(b) b.classList.toggle('hide', !isAdmin);
+  const c = $('lnkChain'); if(c) c.classList.toggle('hide', !isAdmin);   // 连锁板块：内测仅主账号
 }
 function doLogout(silent){
   localStorage.removeItem('ops_session');
