@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>書荀连锁板块 · 门店经营看板</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #1a1730 0%, #241b3f 50%, #1b2440 100%);
+    color: #fff;
+    min-height: 100vh;
+    padding: 16px 14px 48px;
+    font-size: 14px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  .hide { display: none !important; }
+
+  /* ---------- 登录 / 无权限 ---------- */
+  .login-box { max-width: 380px; margin: 12vh auto 0; }
+  .login-box h1 { font-size: 24px; text-align: center; margin: 0 0 6px; letter-spacing: 1px; }
+  .login-box .sub { text-align: center; font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 24px; }
+  .noperm { max-width: 420px; margin: 14vh auto 0; text-align: center; }
+  .noperm .big { font-size: 44px; margin-bottom: 10px; }
+  .noperm h2 { font-size: 18px; margin: 0 0 8px; }
+  .noperm p { color: rgba(255,255,255,0.55); font-size: 13px; line-height: 1.7; margin: 0 0 20px; }
+
+  /* ---------- 卡片 ---------- */
+  .card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(8px);
+  }
+  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #c4b5fd; }
+  .card-title .note { font-size: 12px; font-weight: 400; color: rgba(255,255,255,0.5); margin-left: 8px; }
+
+  /* ---------- 表单 ---------- */
+  .field { margin-bottom: 12px; }
+  .field-label { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 6px; display: block; }
+  input[type=text], input[type=password] {
+    width: 100%; height: 42px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05); color: #fff;
+    font-size: 14px; padding: 0 12px; outline: none;
+  }
+  input::placeholder { color: rgba(255,255,255,0.35); }
+
+  /* ---------- 按钮 ---------- */
+  button {
+    height: 42px; border-radius: 10px; padding: 0 18px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.07); color: #fff;
+    font-size: 14px; cursor: pointer; transition: all .15s;
+    font-family: inherit;
+  }
+  button:hover { background: rgba(255,255,255,0.12); }
+  button.primary { background: #8b5cf6; border-color: #8b5cf6; font-weight: 600; }
+  button.primary:hover { background: #7c4ded; }
+  button.sm, a.sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 8px; }
+  a.sm { display: inline-flex; align-items: center; box-sizing: border-box; text-decoration: none; color: #fff; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ---------- 顶部 ---------- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+  .topbar h1 { font-size: 20px; margin: 0; letter-spacing: .5px; }
+  .topbar .who { font-size: 12px; color: rgba(255,255,255,0.6); }
+  .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* ---------- 提示条 ---------- */
+  #globalMsg { margin-bottom: 12px; }
+  .msg { padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 8px; word-break: break-all; }
+  .msg.err { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.35); }
+  .msg.ok  { background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.3); }
+  .msg.info{ background: rgba(139,92,246,0.14); border: 1px solid rgba(139,92,246,0.35); }
+
+  /* ---------- 大盘健康度 ---------- */
+  .hero-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .stat {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 12px; padding: 14px;
+  }
+  .stat .k { font-size: 12px; color: rgba(255,255,255,0.55); margin-bottom: 6px; }
+  .stat .v { font-size: 26px; font-weight: 700; letter-spacing: .5px; }
+  .stat .d { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 6px; }
+  .stat .v.dim { color: rgba(255,255,255,0.28); }
+  .health-banner {
+    margin-top: 12px; padding: 10px 14px; border-radius: 10px; font-size: 13px;
+    background: rgba(139,92,246,0.14); border: 1px solid rgba(139,92,246,0.35);
+    color: rgba(255,255,255,0.85); line-height: 1.7;
+  }
+  .health-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 700; margin-left: 8px; vertical-align: middle;
+  }
+  .hb-wait { background: rgba(250,204,21,0.15); border: 1px solid rgba(250,204,21,0.4); color: #fde047; }
+
+  /* ---------- 筛选 chips ---------- */
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .chip {
+    padding: 6px 14px; border-radius: 999px; font-size: 13px; cursor: pointer;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.75); transition: all .15s; user-select: none;
+  }
+  .chip.on { background: #8b5cf6; border-color: #8b5cf6; color: #fff; font-weight: 600; }
+
+  /* ---------- 门店网格 ---------- */
+  .store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .store-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 12px; padding: 12px 14px;
+  }
+  .store-card .nm { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .store-card .op { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
+  .store-card .amt-row { font-size: 13px; color: rgba(255,255,255,0.4); }
+  .badge {
+    display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  }
+  .bg-open { background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.35); color: #4ade80; }
+  .bg-closed { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); }
+  .bg-pending { background: rgba(250,204,21,0.12); border: 1px solid rgba(250,204,21,0.35); color: #fde047; }
+
+  .foot { text-align: center; font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 登录框 -->
+  <div id="loginView" class="login-box hide">
+    <h1>连锁板块</h1>
+    <div class="sub">書荀门店经营数据 · 内测版（仅限授权账号）</div>
+    <div class="card">
+      <div class="field"><label class="field-label">邮箱</label><input type="text" id="lgEmail" placeholder="工作邮箱" /></div>
+      <div class="field"><label class="field-label">密码</label><input type="password" id="lgPwd" placeholder="密码" /></div>
+      <button class="primary" id="lgBtn" style="width:100%">登 录</button>
+      <div id="loginErr" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- 无权限 -->
+  <div id="noPermView" class="noperm hide">
+    <div class="big">🔒</div>
+    <h2>暂无访问权限</h2>
+    <p>连锁板块当前处于内测阶段，仅主账号可访问。<br/>如需查看，请联系主账号开通。</p>
+    <a class="sm" href="ops.html" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18)">← 返回运营后台</a>
+  </div>
+
+  <!-- 主界面 -->
+  <div id="appView" class="hide">
+    <div class="topbar">
+      <div>
+        <h1>连锁板块 · 门店经营看板</h1>
+        <div class="who" id="whoami"></div>
+      </div>
+      <div class="top-actions">
+        <a class="sm" href="ops.html" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18)">← 返回运营后台</a>
+        <button class="sm" onclick="doLogout()">退出登录</button>
+      </div>
+    </div>
+
+    <div id="globalMsg"></div>
+
+    <!-- 大盘健康度（第一眼） -->
+    <div class="card">
+      <div class="card-title">大盘健康度<span class="badge hb-wait" id="healthBadge">待接入</span><span class="note" id="asOf"></span></div>
+      <div class="hero-grid">
+        <div class="stat"><div class="k">今日核销金额</div><div class="v dim" id="stToday">—</div><div class="d" id="stTodayD">数据源接入后展示</div></div>
+        <div class="stat"><div class="k">对比昨日</div><div class="v dim" id="stDiff">—</div><div class="d">同口径按天对比</div></div>
+        <div class="stat"><div class="k">在营门店</div><div class="v" id="stStores">—</div><div class="d" id="stStoresD">以门店主表实际数据为准</div></div>
+      </div>
+      <div class="health-banner">
+        数据源接入中：有赞开放平台（自用型应用）正在走「建应用 → 店铺授权 → 获取 token」流程。
+        token 到位后本看板自动开始灌数，届时将展示全部门店的抖音 / 美团购券核销金额（口径：顾客买券实付，不减服务费）。
+      </div>
+    </div>
+
+    <!-- 门店列表 -->
+    <div class="card">
+      <div class="card-title">门店列表<span class="note" id="storeCount"></span></div>
+      <div class="chips" id="statusChips">
+        <div class="chip on" data-s="all">全部</div>
+        <div class="chip" data-s="在营">在营</div>
+        <div class="chip" data-s="闭店">闭店</div>
+        <div class="chip" data-s="待上线">待上线</div>
+      </div>
+      <div class="store-grid" id="storeGrid"><div class="op">加载中…</div></div>
+    </div>
+
+    <div class="foot">書荀连锁板块 · 数据源：有赞开放平台（接入中）</div>
+  </div>
+</div>
+
+<script>
+/* ================= 常量 ================= */
+const SB_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
+const SB_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
+const ADMIN_EMAIL = '411249585@qq.com';   // 连锁板块 v1：仅主账号可见
+
+/* ================= 工具 ================= */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function msg(html, cls){ $('globalMsg').innerHTML = '<div class="msg '+cls+'">'+html+'</div>'; }
+function clearMsg(){ $('globalMsg').innerHTML = ''; }
+
+/* ================= 会话（与 ops.html 共用同一份 localStorage 登录态） ================= */
+let session = null;
+try{ session = JSON.parse(localStorage.getItem('ops_session') || 'null'); }catch(e){ session = null; }
+
+async function authPost(path, body){
+  const r = await fetch(SB_URL+path, {
+    method:'POST',
+    headers:{ 'apikey':SB_KEY, 'Content-Type':'application/json' },
+    body: JSON.stringify(body||{})
+  });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.error_description || d.msg || d.message || ('HTTP '+r.status));
+  return d;
+}
+function saveSession(d){
+  session = d;
+  localStorage.setItem('ops_session', JSON.stringify(d));
+}
+async function fetchRole(token){
+  try{
+    const uid = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub;
+    const r = await fetch(SB_URL+'/rest/v1/user_roles?user_id=eq.'+uid+'&select=role', {
+      headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+token }
+    });
+    const d = await r.json();
+    return (d && d[0] && d[0].role) || null;
+  }catch(e){ return null; }
+}
+async function ensureSession(){
+  if(!session) throw new Error('未登录');
+  const exp = session.expires_at || 0;
+  if(exp*1000 - Date.now() < 120000){
+    try{
+      const d = await authPost('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+      saveSession(d);
+    }catch(e){ throw new Error('登录已过期，请重新登录'); }
+  }
+}
+async function sb(path, opts){
+  opts = opts || {};
+  await ensureSession();
+  const h = Object.assign({
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer '+session.access_token,
+    'Content-Type': 'application/json'
+  }, opts.headers||{});
+  let r = await fetch(SB_URL+path, Object.assign({}, opts, { headers:h }));
+  if(r.status === 401){
+    try{
+      const d = await authPost('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+      saveSession(d);
+    }catch(e){ doLogout(true); throw new Error('登录已过期，请重新登录'); }
+    h['Authorization'] = 'Bearer '+session.access_token;
+    r = await fetch(SB_URL+path, Object.assign({}, opts, { headers:h }));
+  }
+  if(!r.ok){
+    const t = await r.text().catch(()=> '');
+    throw new Error('接口错误 '+r.status+': '+t.slice(0,180));
+  }
+  return r.json();
+}
+function myEmail(){
+  try{ return String((session && session.user && session.user.email) || '').toLowerCase(); }catch(e){ return ''; }
+}
+function doLogout(silent){
+  localStorage.removeItem('ops_session'); session = null;
+  if(!silent) location.reload();
+}
+
+/* ================= 登录 ================= */
+async function doLogin(){
+  const email = $('lgEmail').value.trim();
+  const pwd = $('lgPwd').value;
+  $('loginErr').innerHTML = '';
+  if(!email || !pwd){ $('loginErr').innerHTML = '<div class="msg err">请填写邮箱和密码</div>'; return; }
+  $('lgBtn').disabled = true; $('lgBtn').textContent = '登录中…';
+  try{
+    const d = await authPost('/auth/v1/token?grant_type=password', { email, password: pwd });
+    const role = await fetchRole(d.access_token);
+    if(role !== 'ops'){
+      $('loginErr').innerHTML = '<div class="msg err">该账号没有运营权限（role='+(role||'无')+'）</div>';
+      $('lgBtn').disabled = false; $('lgBtn').textContent = '登 录';
+      return;
+    }
+    saveSession(d);
+    await enterApp();
+  }catch(e){
+    $('loginErr').innerHTML = '<div class="msg err">登录失败：'+esc(e.message)+'</div>';
+  }
+  $('lgBtn').disabled = false; $('lgBtn').textContent = '登 录';
+}
+
+/* ================= 入口 ================= */
+async function enterApp(){
+  const email = myEmail();
+  const isAdmin = email === ADMIN_EMAIL;
+  if(!isAdmin){
+    $('loginView').classList.add('hide');
+    $('noPermView').classList.remove('hide');
+    return;
+  }
+  $('loginView').classList.add('hide');
+  $('noPermView').classList.add('hide');
+  $('appView').classList.remove('hide');
+  $('whoami').textContent = email + ' · 连锁板块内测中（仅主账号可见）';
+  await loadChainStores();
+}
+
+/* ================= 连锁门店（数量与清单动态拉取，永不写死） ================= */
+let allStores = [];
+let statusFilter = 'all';
+
+async function loadChainStores(){
+  try{
+    // 只拉连锁类型；数量以数据库实际返回为准
+    allStores = await sb('/rest/v1/stores?store_type=eq.连锁&select=std_name,short_name,operator,status,launch_date&order=std_name.asc');
+  }catch(e){
+    allStores = [];
+    msg('门店列表加载失败：'+esc(e.message), 'err');
+  }
+  renderStores();
+}
+
+function statusBadge(s){
+  if(s === '在营') return '<span class="badge bg-open">在营</span>';
+  if(s === '待上线') return '<span class="badge bg-pending">待上线</span>';
+  return '<span class="badge bg-closed">'+esc(s||'—')+'</span>';
+}
+
+function renderStores(){
+  const grid = $('storeGrid');
+  const list = allStores.filter(x => statusFilter==='all' || x.status===statusFilter);
+  const open = allStores.filter(x => x.status==='在营').length;
+  $('stStores').textContent = open;                    // 健康度卡里的“在营门店”= 实际在营数
+  $('stStoresD').textContent = '连锁类型共 ' + allStores.length + ' 家（主表实时）';
+  $('storeCount').textContent = '共 ' + allStores.length + ' 家' + (statusFilter==='all' ? '' : ' · 当前筛选 '+list.length+' 家');
+  if(!list.length){
+    grid.innerHTML = '<div class="op">没有符合条件的门店</div>';
+    return;
+  }
+  grid.innerHTML = list.map(x =>
+    '<div class="store-card">' +
+      '<div class="nm">'+esc(x.short_name || x.std_name)+'</div>' +
+      '<div class="op">'+esc(x.operator||'—')+' · '+statusBadge(x.status)+'</div>' +
+      '<div class="amt-row">今日核销：—（待接入）</div>' +
+    '</div>'
+  ).join('');
+}
+
+/* ================= 状态筛选 ================= */
+$('statusChips').addEventListener('click', (ev) => {
+  const c = ev.target.closest('.chip'); if(!c) return;
+  document.querySelectorAll('#statusChips .chip').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on');
+  statusFilter = c.dataset.s;
+  renderStores();
+});
+
+/* ================= 启动 ================= */
+$('lgBtn').addEventListener('click', doLogin);
+$('lgPwd').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLogin(); });
+
+(async function init(){
+  if(session){
+    try{
+      await enterApp();
+      return;
+    }catch(e){
+      // session 失效则回登录
+      session = null; localStorage.removeItem('ops_session');
+    }
+  }
+  $('loginView').classList.remove('hide');
+})();
+</script>
+</body>
+</html>
