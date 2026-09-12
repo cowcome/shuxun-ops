@@ -548,8 +548,8 @@ let storeMetrics = {};
 function platRows(x){
   const m = storeMetrics[x.id] || null;
   const f = (k) => (m && m[k] != null) ? m[k] : '——';
-  return '<div class="plat-row"><span class="pv">美团</span><span class="pa">¥'+f('mtAmt')+'</span><span class="pc">'+f('mtCnt')+'人</span><span class="ng">ng ¥'+f('mtNgAmt')+'/'+f('mtNgCnt')+'</span></div>' +
-         '<div class="plat-row"><span class="pv">抖音</span><span class="pa">¥'+f('dyAmt')+'</span><span class="pc">'+f('dyCnt')+'人</span><span class="ng">ng ¥'+f('dyNgAmt')+'/'+f('dyNgCnt')+'</span></div>';
+  return '<div class="plat-row"><span class="pv">美团</span><span class="pa">¥'+f('mtAmt')+'</span><span class="pc">「'+f('mtCnt')+'人」</span><span class="ng">ng ¥'+f('mtNgAmt')+'/'+f('mtNgCnt')+'</span></div>' +
+         '<div class="plat-row"><span class="pv">抖音</span><span class="pa">¥'+f('dyAmt')+'</span><span class="pc">「'+f('dyCnt')+'人」</span><span class="ng">ng ¥'+f('dyNgAmt')+'/'+f('dyNgCnt')+'</span></div>';
 }
 
 /* ================= 周期内特殊门店 + 导出 ================= */
