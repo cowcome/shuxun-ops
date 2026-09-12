@@ -42,13 +42,17 @@
   /* ---------- 表单 ---------- */
   .field { margin-bottom: 12px; }
   .field-label { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 6px; display: block; }
-  input[type=text], input[type=password] {
+  input[type=text], input[type=password], input[type=date], select {
     width: 100%; height: 42px; border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.15);
     background: rgba(255,255,255,0.05); color: #fff;
     font-size: 14px; padding: 0 12px; outline: none;
+    font-family: inherit;
   }
+  select option { color: #222; }
   input::placeholder { color: rgba(255,255,255,0.35); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > div { flex: 1; }
 
   /* ---------- 按钮 ---------- */
   button {
@@ -101,13 +105,14 @@
   .hb-wait { background: rgba(250,204,21,0.15); border: 1px solid rgba(250,204,21,0.4); color: #fde047; }
 
   /* ---------- 筛选 chips ---------- */
-  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
   .chip {
     padding: 6px 14px; border-radius: 999px; font-size: 13px; cursor: pointer;
     background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
     color: rgba(255,255,255,0.75); transition: all .15s; user-select: none;
   }
   .chip.on { background: #8b5cf6; border-color: #8b5cf6; color: #fff; font-weight: 600; }
+  .chip .cnt { font-size: 11px; opacity: .65; margin-left: 4px; }
 
   /* ---------- 门店网格 ---------- */
   .store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
@@ -116,15 +121,50 @@
     border: 1px solid rgba(255,255,255,0.09);
     border-radius: 12px; padding: 12px 14px;
   }
+  .store-card.is-special { border-color: rgba(251,146,60,0.55); background: rgba(251,146,60,0.06); }
   .store-card .nm { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
   .store-card .op { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
   .store-card .amt-row { font-size: 13px; color: rgba(255,255,255,0.4); }
+  .store-card .sp-line { margin-bottom: 8px; font-size: 12px; }
+  .store-card .sp-date { color: rgba(251,146,60,0.85); }
   .badge {
     display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
   }
   .bg-open { background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.35); color: #4ade80; }
   .bg-closed { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); }
   .bg-pending { background: rgba(250,204,21,0.12); border: 1px solid rgba(250,204,21,0.35); color: #fde047; }
+  .bg-special { background: rgba(251,146,60,0.16); border: 1px solid rgba(251,146,60,0.45); color: #fb923c; }
+
+  /* ---------- 特殊填报弹窗 ---------- */
+  .modal-mask {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .modal {
+    background: #241b3f; border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px; max-width: 580px; width: 100%;
+    max-height: 88vh; overflow: auto;
+  }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px; font-weight: 700; font-size: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    position: sticky; top: 0; background: #241b3f; z-index: 1;
+  }
+  .modal-body { padding: 16px; }
+  .sp-item {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 8px 10px; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; margin-top: 8px; font-size: 13px;
+  }
+  .sp-item .grow { flex: 1; min-width: 180px; }
+  .sp-item .sub { color: rgba(255,255,255,0.45); font-size: 12px; }
+  .sp-tag { padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .sp-now { background: rgba(251,146,60,0.16); border: 1px solid rgba(251,146,60,0.45); color: #fb923c; }
+  .sp-future { background: rgba(250,204,21,0.12); border: 1px solid rgba(250,204,21,0.35); color: #fde047; }
+  .sp-past { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); }
 
   .foot { text-align: center; font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 20px; }
 </style>
@@ -173,7 +213,7 @@
       <div class="hero-grid">
         <div class="stat"><div class="k">今日核销金额</div><div class="v dim" id="stToday">—</div><div class="d" id="stTodayD">数据源接入后展示</div></div>
         <div class="stat"><div class="k">对比昨日</div><div class="v dim" id="stDiff">—</div><div class="d">同口径按天对比</div></div>
-        <div class="stat"><div class="k">在营门店</div><div class="v" id="stStores">—</div><div class="d" id="stStoresD">以门店主表实际数据为准</div></div>
+        <div class="stat"><div class="k">营业门店</div><div class="v" id="stStores">—</div><div class="d" id="stStoresD">以门店主表实际数据为准</div></div>
       </div>
       <div class="health-banner">
         数据源接入中：有赞开放平台（自用型应用）正在走「建应用 → 店铺授权 → 获取 token」流程。
@@ -184,11 +224,13 @@
     <!-- 门店列表 -->
     <div class="card">
       <div class="card-title">门店列表<span class="note" id="storeCount"></span></div>
-      <div class="chips" id="statusChips">
-        <div class="chip on" data-s="all">全部</div>
-        <div class="chip" data-s="在营">在营</div>
-        <div class="chip" data-s="闭店">闭店</div>
-        <div class="chip" data-s="待上线">待上线</div>
+      <div class="chips" id="storeChips">
+        <div class="chip on" data-f="all">全部<span class="cnt" id="cAll"></span></div>
+        <div class="chip" data-f="open">营业<span class="cnt" id="cOpen"></span></div>
+        <div class="chip" data-f="special">特殊<span class="cnt" id="cSp"></span></div>
+        <div class="chip" data-f="new">新店<span class="cnt" id="cNew"></span></div>
+        <div class="chip" data-f="old">老店<span class="cnt" id="cOld"></span></div>
+        <button class="sm" id="spOpenBtn" style="margin-left:auto">＋ 特殊填报</button>
       </div>
       <div class="store-grid" id="storeGrid"><div class="op">加载中…</div></div>
     </div>
@@ -197,17 +239,60 @@
   </div>
 </div>
 
+<!-- 特殊填报弹窗 -->
+<div id="spModal" class="modal-mask hide">
+  <div class="modal">
+    <div class="modal-head">
+      <span>特殊门店填报</span>
+      <button class="sm" onclick="closeSpModal()">关闭</button>
+    </div>
+    <div class="modal-body">
+      <div class="msg info" style="margin-bottom:14px">
+        适用于周期性特殊情况：闭店培训、台风闭店、假日闭店、装修调整、特殊营业时间等。<br/>
+        填报后，门店在起止日期内自动归入「特殊」分类，到期自动回到「营业」。
+      </div>
+      <div class="field"><label class="field-label">门店 *</label><select id="spStore"></select></div>
+      <div class="field"><label class="field-label">类型 *</label>
+        <select id="spType">
+          <option>闭店培训</option>
+          <option>台风闭店</option>
+          <option>假日闭店</option>
+          <option>装修调整</option>
+          <option>特殊营业时间</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <div class="field row2">
+        <div><label class="field-label">开始日期 *</label><input type="date" id="spStart" /></div>
+        <div><label class="field-label">结束日期 *</label><input type="date" id="spEnd" /></div>
+      </div>
+      <div class="field"><label class="field-label">备注</label><input type="text" id="spNote" placeholder="选填，如：全体员工去总部培训 3 天" /></div>
+      <button class="primary" id="spSaveBtn" style="width:100%">保 存</button>
+      <div id="spErr" style="margin-top:10px"></div>
+      <div style="margin-top:18px">
+        <div style="font-size:13px;color:rgba(255,255,255,0.6)">已登记的特殊周期（按开始日期倒序）</div>
+        <div id="spList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ================= 常量 ================= */
 const SB_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
 const SB_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
 const ADMIN_EMAIL = '411249585@qq.com';   // 连锁板块 v1：仅主账号可见
+const NEW_STORE_DAYS = 90;                // 上线 N 天内算「新店」，其余为「老店」（可调）
 
 /* ================= 工具 ================= */
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function msg(html, cls){ $('globalMsg').innerHTML = '<div class="msg '+cls+'">'+html+'</div>'; }
 function clearMsg(){ $('globalMsg').innerHTML = ''; }
+// 统一北京时间（GMT+8）取「今天」，YYYY-MM-DD
+function todayStr(){
+  return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Shanghai' });
+}
 
 /* ================= 会话（与 ops.html 共用同一份 localStorage 登录态） ================= */
 let session = null;
@@ -315,21 +400,53 @@ async function enterApp(){
   $('appView').classList.remove('hide');
   $('whoami').textContent = email + ' · 连锁板块内测中（仅主账号可见）';
   await loadChainStores();
+  await loadSpecials();
+  renderStores();
 }
 
 /* ================= 连锁门店（数量与清单动态拉取，永不写死） ================= */
-let allStores = [];
-let statusFilter = 'all';
+let allStores = [];     // stores 主表 · 连锁类型
+let specials = [];      // store_special_periods 全量记录
+let storeFilter = 'all';// all | open | special | new | old
 
 async function loadChainStores(){
   try{
     // 只拉连锁类型；数量以数据库实际返回为准
-    allStores = await sb('/rest/v1/stores?store_type=eq.连锁&select=std_name,short_name,operator,status,launch_date&order=std_name.asc');
+    allStores = await sb('/rest/v1/stores?store_type=eq.连锁&select=id,std_name,short_name,operator,status,launch_date&order=std_name.asc');
   }catch(e){
     allStores = [];
     msg('门店列表加载失败：'+esc(e.message), 'err');
   }
-  renderStores();
+}
+
+async function loadSpecials(){
+  try{
+    specials = await sb('/rest/v1/store_special_periods?select=*&order=start_date.desc');
+  }catch(e){
+    specials = [];
+    if(/relation .* does not exist|404/i.test(e.message)){
+      msg('特殊门店表尚未创建：请先在 Supabase 执行 store_special_periods_setup.sql', 'err');
+    }else{
+      msg('特殊周期加载失败：'+esc(e.message), 'err');
+    }
+  }
+}
+
+/* 今天（北京时间）是否落在该门店的特殊周期内 */
+function activeSpecialOf(x){
+  const T = todayStr();
+  return specials.find(s => s.store_id === x.id && s.start_date <= T && T <= s.end_date) || null;
+}
+
+/* 门店分类：特殊 > 新店 > 老店；营业 = 非特殊 */
+function classOf(x){
+  if(activeSpecialOf(x)) return 'special';
+  const ld = x.launch_date;
+  if(ld){
+    const days = Math.floor((new Date(todayStr()+'T00:00:00') - new Date(ld+'T00:00:00')) / 86400000);
+    if(days >= 0 && days <= NEW_STORE_DAYS) return 'new';
+  }
+  return 'old';
 }
 
 function statusBadge(s){
@@ -340,36 +457,134 @@ function statusBadge(s){
 
 function renderStores(){
   const grid = $('storeGrid');
-  const list = allStores.filter(x => statusFilter==='all' || x.status===statusFilter);
-  const open = allStores.filter(x => x.status==='在营').length;
-  $('stStores').textContent = open;                    // 健康度卡里的“在营门店”= 实际在营数
-  $('stStoresD').textContent = '连锁类型共 ' + allStores.length + ' 家（主表实时）';
-  $('storeCount').textContent = '共 ' + allStores.length + ' 家' + (statusFilter==='all' ? '' : ' · 当前筛选 '+list.length+' 家');
+  const cnt = { all: allStores.length, open: 0, special: 0, new: 0, old: 0 };
+  allStores.forEach(x => { cnt[classOf(x)]++; });
+  cnt.open = cnt.all - cnt.special;   // 营业 = 全部 − 特殊
+  $('cAll').textContent = '('+cnt.all+')';
+  $('cOpen').textContent = '('+cnt.open+')';
+  $('cSp').textContent = '('+cnt.special+')';
+  $('cNew').textContent = '('+cnt.new+')';
+  $('cOld').textContent = '('+cnt.old+')';
+  // 健康度卡：营业门店口径与列表一致
+  $('stStores').textContent = cnt.open;
+  $('stStoresD').textContent = '连锁类型共 ' + allStores.length + ' 家 · 特殊 ' + cnt.special + ' 家（主表实时）';
+
+  const list = allStores.filter(x => storeFilter==='all' || classOf(x)===storeFilter);
+  $('storeCount').textContent = '共 ' + allStores.length + ' 家' + (storeFilter==='all' ? '' : ' · 当前筛选 '+list.length+' 家');
   if(!list.length){
-    grid.innerHTML = '<div class="op">没有符合条件的门店</div>';
+    grid.innerHTML = '<div class="op">'+(storeFilter==='special' ? '当前没有特殊门店' : '没有符合条件的门店')+'</div>';
     return;
   }
-  grid.innerHTML = list.map(x =>
-    '<div class="store-card">' +
+  grid.innerHTML = list.map(x => {
+    const sp = activeSpecialOf(x);
+    return '<div class="store-card'+(sp?' is-special':'')+'">' +
       '<div class="nm">'+esc(x.short_name || x.std_name)+'</div>' +
+      (sp ? '<div class="sp-line"><span class="badge bg-special">特殊 · '+esc(sp.special_type)+'</span> <span class="sp-date">'+esc(String(sp.start_date).slice(5))+' ~ '+esc(String(sp.end_date).slice(5))+'</span></div>' : '') +
       '<div class="op">'+esc(x.operator||'—')+' · '+statusBadge(x.status)+'</div>' +
       '<div class="amt-row">今日核销：—（待接入）</div>' +
-    '</div>'
-  ).join('');
+    '</div>';
+  }).join('');
 }
 
-/* ================= 状态筛选 ================= */
-$('statusChips').addEventListener('click', (ev) => {
+/* ================= 筛选 ================= */
+$('storeChips').addEventListener('click', (ev) => {
   const c = ev.target.closest('.chip'); if(!c) return;
-  document.querySelectorAll('#statusChips .chip').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('#storeChips .chip').forEach(x=>x.classList.remove('on'));
   c.classList.add('on');
-  statusFilter = c.dataset.s;
+  storeFilter = c.dataset.f;
   renderStores();
 });
+
+/* ================= 特殊填报 ================= */
+function openSpModal(){
+  const sel = $('spStore');
+  sel.innerHTML = allStores.map(x => '<option value="'+x.id+'">'+esc(x.std_name)+'</option>').join('');
+  $('spStart').value = todayStr();
+  $('spEnd').value = todayStr();
+  $('spErr').innerHTML = '';
+  renderSpList();
+  $('spModal').classList.remove('hide');
+}
+function closeSpModal(){ $('spModal').classList.add('hide'); }
+
+function spTagOf(s){
+  const T = todayStr();
+  if(T < s.start_date) return '<span class="sp-tag sp-future">未开始</span>';
+  if(T > s.end_date)   return '<span class="sp-tag sp-past">已结束</span>';
+  return '<span class="sp-tag sp-now">进行中</span>';
+}
+
+function renderSpList(){
+  const box = $('spList');
+  if(!specials.length){
+    box.innerHTML = '<div class="op" style="color:rgba(255,255,255,0.4);font-size:13px;padding:8px 0">暂无记录</div>';
+    return;
+  }
+  box.innerHTML = specials.map(s => {
+    const st = allStores.find(x => x.id === s.store_id);
+    return '<div class="sp-item">' +
+      spTagOf(s) +
+      '<div class="grow"><b>'+esc(st ? (st.short_name || st.std_name) : (s.std_name || ('门店#'+s.store_id)))+'</b>' +
+      ' · '+esc(s.special_type||'')+'<br/>' +
+      '<span class="sub">'+esc(s.start_date)+' ~ '+esc(s.end_date)+(s.note ? ' · '+esc(s.note) : '')+'</span></div>' +
+      '<button class="sm" onclick="delSpecial('+s.id+')">删除</button>' +
+    '</div>';
+  }).join('');
+}
+
+async function saveSpecial(){
+  const storeId = parseInt($('spStore').value, 10);
+  const type = $('spType').value;
+  const sd = $('spStart').value;
+  const ed = $('spEnd').value;
+  const note = $('spNote').value.trim();
+  const st = allStores.find(x => x.id === storeId);
+  if(!st){ $('spErr').innerHTML = '<div class="msg err">请选择门店</div>'; return; }
+  if(!sd || !ed){ $('spErr').innerHTML = '<div class="msg err">请填写开始和结束日期</div>'; return; }
+  if(ed < sd){ $('spErr').innerHTML = '<div class="msg err">结束日期不能早于开始日期</div>'; return; }
+  $('spSaveBtn').disabled = true; $('spSaveBtn').textContent = '保存中…';
+  try{
+    await sb('/rest/v1/store_special_periods', {
+      method:'POST',
+      headers:{ 'Prefer':'return=minimal' },
+      body: JSON.stringify({
+        store_id: storeId,
+        std_name: st.std_name,
+        special_type: type,
+        start_date: sd,
+        end_date: ed,
+        note: note,
+        created_by: myEmail()
+      })
+    });
+    $('spErr').innerHTML = '<div class="msg ok">已保存：'+esc(st.std_name)+' '+esc(sd)+' ~ '+esc(ed)+'</div>';
+    $('spNote').value = '';
+    await loadSpecials();
+    renderSpList();
+    renderStores();
+  }catch(e){
+    $('spErr').innerHTML = '<div class="msg err">保存失败：'+esc(e.message)+'</div>';
+  }
+  $('spSaveBtn').disabled = false; $('spSaveBtn').textContent = '保 存';
+}
+
+async function delSpecial(id){
+  if(!confirm('确定删除这条特殊周期记录吗？')) return;
+  try{
+    await sb('/rest/v1/store_special_periods?id=eq.'+id, { method:'DELETE' });
+    await loadSpecials();
+    renderSpList();
+    renderStores();
+  }catch(e){
+    msg('删除失败：'+esc(e.message), 'err');
+  }
+}
 
 /* ================= 启动 ================= */
 $('lgBtn').addEventListener('click', doLogin);
 $('lgPwd').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLogin(); });
+$('spOpenBtn').addEventListener('click', openSpModal);
+$('spSaveBtn').addEventListener('click', saveSpecial);
 
 (async function init(){
   if(session){
