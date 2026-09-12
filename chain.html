@@ -135,10 +135,26 @@
     border-radius: 12px; padding: 12px 14px;
   }
   .store-card.is-special { border-color: rgba(251,146,60,0.55); background: rgba(251,146,60,0.06); }
-  .store-card .nm { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-  .store-card .op { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 8px; }
-  .store-card .amt-row { font-size: 13px; color: rgba(255,255,255,0.4); }
-  .store-card .sp-line { margin-bottom: 8px; font-size: 12px; }
+  .store-card .hd { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .store-card .nm { font-size: 16px; font-weight: 700; }
+  .op-pill {
+    font-size: 11px; padding: 1px 8px; border-radius: 999px; white-space: nowrap;
+    border: 1px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.75);
+  }
+  .op-pill.dim2 { border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.4); }
+  .dots { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .dt { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dt-g { background: #3bff6f; box-shadow: 0 0 6px rgba(59,255,111,0.8); }   /* 营业=荧光绿 */
+  .dt-r { background: #ff3b3b; box-shadow: 0 0 6px rgba(255,59,59,0.8); }   /* 特殊=荧光红 */
+  .dt-y { background: #ffe600; box-shadow: 0 0 6px rgba(255,230,0,0.8); }   /* 新店=荧光黄 */
+  .dt-p { background: #ff5edb; box-shadow: 0 0 6px rgba(255,94,219,0.8); }  /* 老店=荧光粉 */
+  .plat-row { display: flex; align-items: baseline; font-size: 12.5px; line-height: 1.9; color: rgba(255,255,255,0.8); }
+  .plat-row .pv { width: 38px; color: rgba(255,255,255,0.45); }
+  .plat-row .pa { width: 66px; }
+  .plat-row .pc { width: 58px; }
+  .plat-row .ng { color: rgba(255,255,255,0.5); margin-left: auto; }
+  .store-card .amt-row { font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 6px; }
+  .store-card .sp-line { margin-bottom: 2px; font-size: 12px; }
   .store-card .sp-date { color: rgba(251,146,60,0.85); }
   .badge {
     display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
@@ -504,14 +520,34 @@ function renderStores(){
   }
   grid.innerHTML = list.map(x => {
     const sp = activeSpecialOf(x);
+    const cls = classOf(x);
+    // 右上角荧光点：绿=营业 / 红=特殊（二选一） + 黄=新店 / 粉=老店（二选一）
+    const dots = (sp ? '<i class="dt dt-r"></i>' : '<i class="dt dt-g"></i>') +
+                 (cls === 'new' ? '<i class="dt dt-y"></i>' : '<i class="dt dt-p"></i>');
     return '<div class="store-card'+(sp?' is-special':'')+'">' +
-      '<div class="nm">'+esc(x.short_name || x.std_name)+'</div>' +
-      (sp ? '<div class="sp-line"><span class="badge bg-special">特殊 · '+esc(sp.special_type)+'</span> <span class="sp-date">'+esc(String(sp.start_date).slice(5))+' ~ '+esc(String(sp.end_date).slice(5))+'</span></div>' : '') +
-      '<div class="op">'+esc(x.operator||'—')+' · '+statusBadge(x.status)+'</div>' +
-      '<div class="amt-row">今日核销：—（待接入）</div>' +
+      '<div class="hd">' +
+        '<span class="nm">'+esc(x.short_name || x.std_name)+'</span>' +
+        (x.operator ? '<span class="op-pill">'+esc(x.operator)+'</span>' : '') +
+        (x.status && x.status !== '在营' ? '<span class="op-pill dim2">'+esc(x.status)+'</span>' : '') +
+        '<span class="dots">'+dots+'</span>' +
+      '</div>' +
+      (sp ? '<div class="sp-line">特殊 · '+esc(sp.special_type)+' <span class="sp-date">'+esc(String(sp.start_date).slice(5))+' ~ '+esc(String(sp.end_date).slice(5))+'</span></div>' : '') +
+      platRows(x) +
+      '<div class="amt-row">今日核销：——（待接入）</div>' +
     '</div>';
   }).join('');
   renderSpActive();
+}
+
+/* 平台数据行：美团 / 抖音 各一行（¥金额 [人数] + ng ¥内购金额/内购张数）
+   数据源：有赞 API（接入中）。storeMetrics 由取数模块填充，键：
+   mtAmt/mtCnt/dyAmt/dyCnt/mtNgAmt/mtNgCnt/dyNgAmt/dyNgCnt */
+let storeMetrics = {};
+function platRows(x){
+  const m = storeMetrics[x.id] || null;
+  const f = (k) => (m && m[k] != null) ? m[k] : '——';
+  return '<div class="plat-row"><span class="pv">美团</span><span class="pa">¥'+f('mtAmt')+'</span><span class="pc">['+f('mtCnt')+'人]</span><span class="ng">ng ¥'+f('mtNgAmt')+'/'+f('mtNgCnt')+'</span></div>' +
+         '<div class="plat-row"><span class="pv">抖音</span><span class="pa">¥'+f('dyAmt')+'</span><span class="pc">['+f('dyCnt')+'人]</span><span class="ng">ng ¥'+f('dyNgAmt')+'/'+f('dyNgCnt')+'</span></div>';
 }
 
 /* ================= 周期内特殊门店 + 导出 ================= */
