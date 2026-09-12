@@ -54,6 +54,19 @@
   .row2 { display: flex; gap: 10px; }
   .row2 > div { flex: 1; }
 
+  /* ---------- 门店搜索下拉 ---------- */
+  .store-pick {
+    position: absolute; left: 0; right: 0; top: 100%; z-index: 5;
+    background: #2b2148; border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px; max-height: 220px; overflow: auto; margin-top: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .store-pick div { padding: 9px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .store-pick div:last-child { border-bottom: none; }
+  .store-pick div:hover { background: rgba(139,92,246,0.25); }
+  .store-pick .empty { color: rgba(255,255,255,0.4); cursor: default; }
+  .store-pick .empty:hover { background: transparent; }
+
   /* ---------- 按钮 ---------- */
   button {
     height: 42px; border-radius: 10px; padding: 0 18px;
@@ -235,6 +248,14 @@
       <div class="store-grid" id="storeGrid"><div class="op">加载中…</div></div>
     </div>
 
+    <!-- 周期内特殊门店 -->
+    <div class="card">
+      <div class="card-title">周期内特殊门店<span class="note" id="spActiveCount"></span>
+        <button class="sm" id="spExportBtn" style="float:right">⬇ 导出为表格</button>
+      </div>
+      <div id="spActiveList"><div class="op">加载中…</div></div>
+    </div>
+
     <div class="foot">書荀连锁板块 · 数据源：有赞开放平台（接入中）</div>
   </div>
 </div>
@@ -248,13 +269,18 @@
     </div>
     <div class="modal-body">
       <div class="msg info" style="margin-bottom:14px">
-        适用于周期性特殊情况：闭店培训、台风闭店、假日闭店、装修调整、特殊营业时间等。<br/>
+        适用于周期性特殊情况：培训闭店、团建闭店、台风闭店、假日闭店、装修调整、特殊营业时间等。<br/>
         填报后，门店在起止日期内自动归入「特殊」分类，到期自动回到「营业」。
       </div>
-      <div class="field"><label class="field-label">门店 *</label><select id="spStore"></select></div>
+      <div class="field" id="spStoreWrap" style="position:relative">
+        <label class="field-label">门店 *（输入店名 / 缩写 / 别名关键字，从候选中点击选择）</label>
+        <input type="text" id="spStoreSearch" placeholder="如：百联 / 奉贤 / 上海…" autocomplete="off" />
+        <div id="spStoreList" class="store-pick hide"></div>
+      </div>
       <div class="field"><label class="field-label">类型 *</label>
         <select id="spType">
-          <option>闭店培训</option>
+          <option>培训闭店</option>
+          <option>团建闭店</option>
           <option>台风闭店</option>
           <option>假日闭店</option>
           <option>装修调整</option>
@@ -277,6 +303,7 @@
   </div>
 </div>
 
+<script src="vendor/xlsx.full.min.js"></script>
 <script>
 /* ================= 常量 ================= */
 const SB_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
@@ -412,7 +439,7 @@ let storeFilter = 'all';// all | open | special | new | old
 async function loadChainStores(){
   try{
     // 只拉连锁类型；数量以数据库实际返回为准
-    allStores = await sb('/rest/v1/stores?store_type=eq.连锁&select=id,std_name,short_name,operator,status,launch_date&order=std_name.asc');
+    allStores = await sb('/rest/v1/stores?store_type=eq.连锁&select=id,std_name,short_name,aliases,operator,status,launch_date&order=std_name.asc');
   }catch(e){
     allStores = [];
     msg('门店列表加载失败：'+esc(e.message), 'err');
@@ -484,6 +511,55 @@ function renderStores(){
       '<div class="amt-row">今日核销：—（待接入）</div>' +
     '</div>';
   }).join('');
+  renderSpActive();
+}
+
+/* ================= 周期内特殊门店 + 导出 ================= */
+function spActiveRows(){
+  const T = todayStr();
+  return specials.filter(s => s.start_date <= T && T <= s.end_date);
+}
+
+function renderSpActive(){
+  const rows = spActiveRows();
+  $('spActiveCount').textContent = '当前进行中 ' + rows.length + ' 家';
+  const box = $('spActiveList');
+  if(!rows.length){
+    box.innerHTML = '<div class="op" style="color:rgba(255,255,255,0.4);font-size:13px">当前没有进行中的特殊门店</div>';
+    return;
+  }
+  box.innerHTML = rows.map(s => {
+    const st = allStores.find(x => x.id === s.store_id);
+    return '<div class="sp-item">' +
+      '<span class="sp-tag sp-now">进行中</span>' +
+      '<div class="grow"><b>'+esc(st ? (st.short_name || st.std_name) : (s.std_name || ('门店#'+s.store_id)))+'</b>' +
+      ' · '+esc(s.special_type||'')+'<br/>' +
+      '<span class="sub">'+esc(s.start_date)+' ~ '+esc(s.end_date)+(s.note ? ' · '+esc(s.note) : '')+'</span></div>' +
+      '<button class="sm" onclick="delSpecial('+s.id+')">删除</button>' +
+    '</div>';
+  }).join('');
+}
+
+function exportSp(){
+  const rows = spActiveRows();
+  if(!rows.length){ msg('当前没有进行中的特殊门店，无需导出', 'info'); return; }
+  if(typeof XLSX === 'undefined'){ msg('导出组件未加载，请刷新页面重试', 'err'); return; }
+  const data = rows.map(s => {
+    const st = allStores.find(x => x.id === s.store_id);
+    return {
+      '门店': st ? st.std_name : (s.std_name || ''),
+      '类型': s.special_type || '',
+      '开始日期': s.start_date,
+      '结束日期': s.end_date,
+      '备注': s.note || '',
+      '填报人': s.created_by || ''
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:22},{wch:12},{wch:12},{wch:12},{wch:30},{wch:20}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '特殊门店');
+  XLSX.writeFile(wb, '周期内特殊门店_' + todayStr() + '.xlsx');
 }
 
 /* ================= 筛选 ================= */
@@ -496,9 +572,12 @@ $('storeChips').addEventListener('click', (ev) => {
 });
 
 /* ================= 特殊填报 ================= */
+let spStoreId = null;   // 已选中的门店 id（由搜索候选点选产生）
+
 function openSpModal(){
-  const sel = $('spStore');
-  sel.innerHTML = allStores.map(x => '<option value="'+x.id+'">'+esc(x.std_name)+'</option>').join('');
+  spStoreId = null;
+  $('spStoreSearch').value = '';
+  $('spStoreList').classList.add('hide');
   $('spStart').value = todayStr();
   $('spEnd').value = todayStr();
   $('spErr').innerHTML = '';
@@ -506,6 +585,33 @@ function openSpModal(){
   $('spModal').classList.remove('hide');
 }
 function closeSpModal(){ $('spModal').classList.add('hide'); }
+
+/* 门店关键字搜索：店名 / 缩写 / 别名，命中即出候选 */
+function spStoreMatches(kw){
+  kw = kw.trim().toLowerCase();
+  if(!kw) return [];
+  return allStores.filter(x => {
+    const hay = [x.std_name, x.short_name, x.aliases].filter(Boolean).join(',').toLowerCase();
+    return hay.indexOf(kw) >= 0;
+  }).slice(0, 30);
+}
+function renderSpPick(){
+  const kw = $('spStoreSearch').value;
+  const box = $('spStoreList');
+  if(!kw.trim()){ box.classList.add('hide'); box.innerHTML = ''; return; }
+  const ms = spStoreMatches(kw);
+  box.innerHTML = ms.length
+    ? ms.map(x => '<div onclick="pickSpStore('+x.id+')">'+esc(x.std_name)+
+        (x.short_name && x.short_name !== x.std_name ? '（'+esc(x.short_name)+'）' : '')+'</div>').join('')
+    : '<div class="empty">没有匹配的门店</div>';
+  box.classList.remove('hide');
+}
+function pickSpStore(id){
+  const x = allStores.find(v => v.id === id); if(!x) return;
+  spStoreId = id;
+  $('spStoreSearch').value = x.std_name;
+  $('spStoreList').classList.add('hide');
+}
 
 function spTagOf(s){
   const T = todayStr();
@@ -533,13 +639,13 @@ function renderSpList(){
 }
 
 async function saveSpecial(){
-  const storeId = parseInt($('spStore').value, 10);
+  const storeId = spStoreId;
   const type = $('spType').value;
   const sd = $('spStart').value;
   const ed = $('spEnd').value;
   const note = $('spNote').value.trim();
   const st = allStores.find(x => x.id === storeId);
-  if(!st){ $('spErr').innerHTML = '<div class="msg err">请选择门店</div>'; return; }
+  if(!st){ $('spErr').innerHTML = '<div class="msg err">请输入关键字并从候选列表中点击选择门店</div>'; return; }
   if(!sd || !ed){ $('spErr').innerHTML = '<div class="msg err">请填写开始和结束日期</div>'; return; }
   if(ed < sd){ $('spErr').innerHTML = '<div class="msg err">结束日期不能早于开始日期</div>'; return; }
   $('spSaveBtn').disabled = true; $('spSaveBtn').textContent = '保存中…';
@@ -585,6 +691,13 @@ $('lgBtn').addEventListener('click', doLogin);
 $('lgPwd').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLogin(); });
 $('spOpenBtn').addEventListener('click', openSpModal);
 $('spSaveBtn').addEventListener('click', saveSpecial);
+$('spExportBtn').addEventListener('click', exportSp);
+$('spStoreSearch').addEventListener('input', () => { spStoreId = null; renderSpPick(); });
+$('spStoreSearch').addEventListener('focus', renderSpPick);
+// 点击弹窗其他区域时收起候选列表
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('#spStoreWrap')) $('spStoreList').classList.add('hide');
+});
 
 (async function init(){
   if(session){
