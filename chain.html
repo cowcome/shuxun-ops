@@ -123,9 +123,11 @@
     padding: 6px 14px; border-radius: 999px; font-size: 13px; cursor: pointer;
     background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
     color: rgba(255,255,255,0.75); transition: all .15s; user-select: none;
+    display: inline-flex; align-items: center; gap: 5px;
   }
   .chip.on { background: #8b5cf6; border-color: #8b5cf6; color: #fff; font-weight: 600; }
   .chip .cnt { font-size: 11px; opacity: .65; margin-left: 4px; }
+  .chip .dt { width: 8px; height: 8px; }
 
   /* ---------- 门店网格 ---------- */
   .store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
@@ -255,10 +257,10 @@
       <div class="card-title">门店列表<span class="note" id="storeCount"></span></div>
       <div class="chips" id="storeChips">
         <div class="chip on" data-f="all">全部<span class="cnt" id="cAll"></span></div>
-        <div class="chip" data-f="open">营业<span class="cnt" id="cOpen"></span></div>
-        <div class="chip" data-f="special">特殊<span class="cnt" id="cSp"></span></div>
-        <div class="chip" data-f="new">新店<span class="cnt" id="cNew"></span></div>
-        <div class="chip" data-f="old">老店<span class="cnt" id="cOld"></span></div>
+        <div class="chip" data-f="open"><span class="dt dt-g"></span>营业<span class="cnt" id="cOpen"></span></div>
+        <div class="chip" data-f="special"><span class="dt dt-r"></span>特殊<span class="cnt" id="cSp"></span></div>
+        <div class="chip" data-f="new"><span class="dt dt-y"></span>新店<span class="cnt" id="cNew"></span></div>
+        <div class="chip" data-f="old"><span class="dt dt-p"></span>老店<span class="cnt" id="cOld"></span></div>
         <button class="sm" id="spOpenBtn" style="margin-left:auto">＋ 特殊填报</button>
       </div>
       <div class="store-grid" id="storeGrid"><div class="op">加载中…</div></div>
