@@ -273,7 +273,7 @@
         填报后，门店在起止日期内自动归入「特殊」分类，到期自动回到「营业」。
       </div>
       <div class="field" id="spStoreWrap" style="position:relative">
-        <label class="field-label">门店 *（输入店名 / 缩写 / 别名关键字，从候选中点击选择）</label>
+        <label class="field-label">门店 *（输入省份 / 城市 / 行政区 / 店名 / 缩写 / 别名关键字，从候选中点击选择）</label>
         <input type="text" id="spStoreSearch" placeholder="如：百联 / 奉贤 / 上海…" autocomplete="off" />
         <div id="spStoreList" class="store-pick hide"></div>
       </div>
@@ -439,7 +439,7 @@ let storeFilter = 'all';// all | open | special | new | old
 async function loadChainStores(){
   try{
     // 只拉连锁类型；数量以数据库实际返回为准
-    allStores = await sb('/rest/v1/stores?store_type=eq.连锁&select=id,std_name,short_name,aliases,operator,status,launch_date&order=std_name.asc');
+    allStores = await sb('/rest/v1/stores?store_type=eq.连锁&select=id,std_name,short_name,aliases,province,city,district,operator,status,launch_date&order=std_name.asc');
   }catch(e){
     allStores = [];
     msg('门店列表加载失败：'+esc(e.message), 'err');
@@ -586,12 +586,15 @@ function openSpModal(){
 }
 function closeSpModal(){ $('spModal').classList.add('hide'); }
 
-/* 门店关键字搜索：店名 / 缩写 / 别名，命中即出候选 */
+/* 门店关键字搜索：省份 / 城市 / 行政区 / 店名 / 缩写 / 别名，命中即出候选 */
 function spStoreMatches(kw){
   kw = kw.trim().toLowerCase();
   if(!kw) return [];
   return allStores.filter(x => {
-    const hay = [x.std_name, x.short_name, x.aliases].filter(Boolean).join(',').toLowerCase();
+    const parts = [x.province, x.city, x.district, x.std_name, x.short_name, x.aliases].filter(Boolean);
+    if(!parts.length) return false;
+    // 两种拼法都参与匹配：带分隔（各字段独立命中）+ 无分隔（地区+店名连打，如「上海奉贤」）
+    const hay = (parts.join(',') + ',' + parts.join('')).toLowerCase();
     return hay.indexOf(kw) >= 0;
   }).slice(0, 30);
 }
@@ -601,8 +604,12 @@ function renderSpPick(){
   if(!kw.trim()){ box.classList.add('hide'); box.innerHTML = ''; return; }
   const ms = spStoreMatches(kw);
   box.innerHTML = ms.length
-    ? ms.map(x => '<div onclick="pickSpStore('+x.id+')">'+esc(x.std_name)+
-        (x.short_name && x.short_name !== x.std_name ? '（'+esc(x.short_name)+'）' : '')+'</div>').join('')
+    ? ms.map(x => {
+        const reg = [x.province, x.city, x.district].filter(Boolean).join('');
+        return '<div onclick="pickSpStore('+x.id+')">'+esc(x.std_name)+
+          (x.short_name && x.short_name !== x.std_name ? '（'+esc(x.short_name)+'）' : '')+
+          (reg ? ' <span style="color:rgba(255,255,255,0.4);font-size:12px">'+esc(reg)+'</span>' : '')+'</div>';
+      }).join('')
     : '<div class="empty">没有匹配的门店</div>';
   box.classList.remove('hide');
 }
