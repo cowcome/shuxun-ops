@@ -539,15 +539,15 @@ function renderStores(){
   renderSpActive();
 }
 
-/* 平台数据行：美团 / 抖音 各一行（¥金额 [人数] + ng ¥内购金额/内购张数）
+/* 平台数据行：美团 / 抖音 各一行（¥金额 X人 + ng ¥内购金额/内购张数）
    数据源：有赞 API（接入中）。storeMetrics 由取数模块填充，键：
    mtAmt/mtCnt/dyAmt/dyCnt/mtNgAmt/mtNgCnt/dyNgAmt/dyNgCnt */
 let storeMetrics = {};
 function platRows(x){
   const m = storeMetrics[x.id] || null;
   const f = (k) => (m && m[k] != null) ? m[k] : '——';
-  return '<div class="plat-row"><span class="pv">美团</span><span class="pa">¥'+f('mtAmt')+'</span><span class="pc">['+f('mtCnt')+'人]</span><span class="ng">ng ¥'+f('mtNgAmt')+'/'+f('mtNgCnt')+'</span></div>' +
-         '<div class="plat-row"><span class="pv">抖音</span><span class="pa">¥'+f('dyAmt')+'</span><span class="pc">['+f('dyCnt')+'人]</span><span class="ng">ng ¥'+f('dyNgAmt')+'/'+f('dyNgCnt')+'</span></div>';
+  return '<div class="plat-row"><span class="pv">美团</span><span class="pa">¥'+f('mtAmt')+'</span><span class="pc">'+f('mtCnt')+'人</span><span class="ng">ng ¥'+f('mtNgAmt')+'/'+f('mtNgCnt')+'</span></div>' +
+         '<div class="plat-row"><span class="pv">抖音</span><span class="pa">¥'+f('dyAmt')+'</span><span class="pc">'+f('dyCnt')+'人</span><span class="ng">ng ¥'+f('dyNgAmt')+'/'+f('dyNgCnt')+'</span></div>';
 }
 
 /* ================= 周期内特殊门店 + 导出 ================= */
