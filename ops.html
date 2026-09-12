@@ -189,6 +189,7 @@
       <div class="tab" data-tab="recon" onclick="switchTab('recon')" data-page-node-id="GyfZDCXqzBJan1Xm0eb02h">数据核对</div>
       <div class="tab" data-tab="logs" id="tabBtnLogs" onclick="switchTab('logs')" data-page-node-id="JZcRcF6LSD3T9DyrMNFqv8">操作日志</div>
       <div class="tab" data-tab="stores" onclick="switchTab('stores')" data-page-node-id="CJh0AG01eDigHR558nFNEl">门店管理</div>
+      <div class="tab" data-tab="dy" id="tabBtnDy" onclick="switchTab('dy')">抖音监控</div>
     </div>
 
     <div id="globalMsg" data-page-node-id="VBNixWpDfJcWvjHeBHMpKf"></div>
@@ -392,6 +393,48 @@
       <div class="card" data-page-node-id="YGyABuczLGH3dbT4X2uZff">
         <div class="card-title" data-page-node-id="p55V1nb8JRDDXIFyHAGeBt">门店主数据（Supabase stores 主表 · 唯一权威源）</div>
         <div id="stBody" data-page-node-id="7H7EK7ZxQXsx9CAISMtVIH"><div class="empty" data-page-node-id="TZXz6J6A99YGpisuSAqQM3">加载中…</div></div>
+      </div>
+    </div>
+
+    <div id="tab-dy" class="hide">
+      <div class="card">
+        <div class="card-title">抖音账号监控 · 概况</div>
+        <div id="dySummary" style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:6px"><div class="empty">加载中…</div></div>
+        <div style="color:rgba(255,255,255,0.45);font-size:12px">数据源 = stores 表抖音账号清单（唯一真值）· 采集器常驻本机自动抓取 · 报告每次独立成档</div>
+      </div>
+      <div class="card">
+        <div class="inline">
+          <div>
+            <label class="field-label">定时运行（北京时间）</label>
+            <div class="inline" style="gap:8px">
+              <select id="dyDow" style="width:auto">
+                <option value="0">周日</option><option value="1">周一</option><option value="2">周二</option>
+                <option value="3">周三</option><option value="4">周四</option><option value="5">周五</option><option value="6">周六</option>
+              </select>
+              <input type="number" id="dyHour" min="0" max="23" style="width:64px" /> 点
+              <input type="number" id="dyMin" min="0" max="59" style="width:64px" /> 分
+              <label style="display:flex;align-items:center;gap:5px;margin:0"><input type="checkbox" id="dyEnabled" /> 启用</label>
+            </div>
+          </div>
+          <div style="flex:0 0 auto; display:flex; gap:8px; align-items:flex-end">
+            <button class="primary hide" id="dySaveCfg" onclick="saveDyCfg()">保存定时设置</button>
+            <button class="primary hide" id="dyRunBtn" onclick="triggerDyRun()">▶ 立即更新</button>
+            <button onclick="loadDy()">刷新</button>
+          </div>
+        </div>
+        <div style="color:rgba(255,255,255,0.45);font-size:12px;margin-top:8px">点「立即更新」后指令 1~2 分钟内被采集器接收，全部账号跑完约 20~40 分钟，跑完刷新本页即可看到新报告。</div>
+      </div>
+      <div class="card hide" id="dyFailCard">
+        <div class="card-title" style="color:#f87171">⚠ 失败记录</div>
+        <div id="dyFailBody"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">运行历史与报告（点击查看当期完整报告）</div>
+        <div id="dyRunsBody"><div class="empty">加载中…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">账号明细（最近一次成功运行）</div>
+        <div id="dyAcctBody"><div class="empty">加载中…</div></div>
       </div>
     </div>
 
@@ -603,6 +646,8 @@ function applyPerms(){
   const t = $('tabBtnLogs'); if(t) t.classList.toggle('hide', !isAdmin);
   const b = $('btnAddStore'); if(b) b.classList.toggle('hide', !isAdmin);
   const c = $('lnkChain'); if(c) c.classList.toggle('hide', !isAdmin);   // 连锁板块：内测仅主账号
+  const dr = $('dyRunBtn'); if(dr) dr.classList.toggle('hide', !isAdmin);       // 抖音监控：触发/配置仅主账号
+  const dc = $('dySaveCfg'); if(dc) dc.classList.toggle('hide', !isAdmin);
 }
 function doLogout(silent){
   localStorage.removeItem('ops_session');
@@ -610,6 +655,122 @@ function doLogout(silent){
   $('mainView').classList.add('hide');
   $('loginView').classList.remove('hide');
   if(!silent) { $('loginErr').innerHTML = ''; }
+}
+
+/* ---------------- 抖音监控板块 ---------------- */
+let dyRuns = [];
+async function loadDy(){
+  try{
+    const [cR, rR] = await Promise.all([
+      sb('/rest/v1/dy_monitor_config?select=*&id=eq.1'),
+      sb('/rest/v1/dy_monitor_runs?select=*&order=id.desc&limit=20')
+    ]);
+    if(cR.ok){
+      const c = (await cR.json())[0]||{};
+      $('dyDow').value = String(c.schedule_dow==null?1:c.schedule_dow);
+      $('dyHour').value = c.schedule_hour==null?8:c.schedule_hour;
+      $('dyMin').value = c.schedule_min==null?0:c.schedule_min;
+      $('dyEnabled').checked = !!c.enabled;
+    }
+    dyRuns = rR.ok ? await rR.json() : [];
+    renderDyRuns();
+    const latest = dyRuns.find(x=>x.status==='success');
+    if(latest){ loadDySummary(latest); loadDyAcct(latest); }
+    else {
+      $('dySummary').innerHTML = '<div class="empty">尚无成功运行记录——点上方「立即更新」跑第一次</div>';
+      $('dyAcctBody').innerHTML = '<div class="empty">尚无账号明细</div>';
+    }
+  }catch(e){
+    $('dyRunsBody').innerHTML = '<div class="empty">加载失败：'+esc(e.message)+'</div>';
+  }
+}
+function dyDaysSince(iso){
+  if(!iso) return null;
+  const d = new Date(iso); if(isNaN(d)) return null;
+  return Math.floor((Date.now() - d.getTime()) / 864e5);
+}
+async function loadDySummary(run){
+  const s = $('dySummary');
+  s.innerHTML = '<div class="empty">统计中…</div>';
+  const r = await sb('/rest/v1/dy_monitor_results?run_id=eq.'+run.id+'&select=std_name,last_video_time,ok&limit=500');
+  const rows = r.ok ? await r.json() : [];
+  const okRows = rows.filter(x=>x.ok);
+  const days = okRows.map(x=>dyDaysSince(x.last_video_time)).filter(d=>d!=null);
+  const upd7 = days.filter(d=>d<=7).length;
+  const no7 = days.filter(d=>d>7&&d<=15).length;
+  const no15 = days.filter(d=>d>15&&d<=90).length;
+  const no90 = days.filter(d=>d>90).length;
+  const unk = okRows.length - days.length;
+  s.innerHTML =
+    card('监控账号', run.accounts_total==null?okRows.length:run.accounts_total, '本次成功 '+okRows.length) +
+    card('近7天已更新', upd7, '更新率 '+(okRows.length?Math.round(upd7/okRows.length*100):0)+'%') +
+    card('7天未更', no7, '7-15 天') +
+    card('15天未更', no15, '15-90 天') +
+    card('断更', no90, '90 天以上') +
+    (unk ? card('发布时间未知', unk, '历史库缺时间') : '');
+  function card(l,v,sub){ return '<div style="min-width:120px"><div style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:1px">'+l+'</div><div style="font-size:30px;font-weight:800;line-height:1.2">'+v+'</div><div style="font-size:11px;color:rgba(255,255,255,0.35)">'+sub+'</div></div>'; }
+}
+async function loadDyAcct(run){
+  $('dyAcctBody').innerHTML = '<div class="empty">加载中…</div>';
+  const r = await sb('/rest/v1/dy_monitor_results?run_id=eq.'+run.id+'&select=std_name,nickname,last_video_time,last_video_desc,like_count,comment_count,total_videos,ok,error_message&order=ok.asc,std_name.asc&limit=500');
+  const rows = r.ok ? await r.json() : [];
+  if(!rows.length){ $('dyAcctBody').innerHTML = '<div class="empty">无明细数据</div>'; return; }
+  $('dyAcctBody').innerHTML =
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead><tr>'+['门店','抖音昵称','最近发布','距今天数','历史视频','平均赞/评','状态'].map(h=>'<th style="text-align:left;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);font-weight:600;white-space:nowrap">'+h+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map(x=>{
+      const d = dyDaysSince(x.last_video_time);
+      const dTxt = d==null ? '—' : d+' 天';
+      const dCol = d==null ? 'rgba(255,255,255,0.4)' : d<=7 ? '#4ade80' : d<=15 ? '#facc15' : '#f87171';
+      return '<tr>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05)">'+esc(x.std_name||'—')+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.6)">'+esc(x.nickname||'—')+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05)">'+esc(x.last_video_time?fmtTime(x.last_video_time).slice(0,10):'—')+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05);color:'+dCol+';font-weight:600">'+dTxt+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05)">'+(x.total_videos==null?'—':x.total_videos)+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05);color:rgba(255,255,255,0.6)">'+(x.like_count==null?'—':x.like_count)+' / '+(x.comment_count==null?'—':x.comment_count)+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.05)">'+(x.ok?'<span style="color:#4ade80">✓</span>':'<span style="color:#f87171" title="'+esc(x.error_message||'')+'">✗ '+esc(x.error_message||'失败')+'</span>')+'</td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table></div>';
+}
+function renderDyRuns(){
+  const fails = dyRuns.filter(x=>x.status==='failed');
+  $('dyFailCard').classList.toggle('hide', fails.length===0);
+  $('dyFailBody').innerHTML = fails.map(x=>
+    '<div class="msg err" style="margin-bottom:6px">'+esc(fmtTime(x.started_at))+' · '+(x.trigger_type==='scheduled'?'定时':'手动')+' · '+esc(x.error_message||'未知原因')+'</div>').join('');
+  $('dyRunsBody').innerHTML = dyRuns.length ? dyRuns.map(x=>{
+    const st = x.status==='success' ? '<span style="color:#4ade80;font-weight:600">✓ 成功</span>'
+             : x.status==='running' ? '<span style="color:#facc15;font-weight:600">… 运行中</span>'
+             : '<span style="color:#f87171;font-weight:600">✗ 失败</span>';
+    return '<div style="display:flex;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);flex-wrap:wrap">'+
+      '<span style="min-width:132px">'+esc(fmtTime(x.started_at))+'</span>'+
+      '<span style="min-width:40px;color:rgba(255,255,255,0.55)">'+(x.trigger_type==='scheduled'?'定时':'手动')+'</span>'+
+      st+
+      (x.status==='success'&&x.accounts_total!=null ? '<span style="color:rgba(255,255,255,0.55)">成功 '+x.accounts_ok+'/'+x.accounts_total+'</span>' : '')+
+      (x.report_url ? '<a class="sm" href="'+esc(x.report_url)+'" target="_blank" rel="noopener" style="text-decoration:none">📄 查看报告 ↗</a>' : '')+
+      (x.error_message ? '<span style="color:rgba(255,255,255,0.4);font-size:12px;flex:1;min-width:200px">'+esc(x.error_message)+'</span>' : '')+
+    '</div>';
+  }).join('') : '<div class="empty">还没有运行记录</div>';
+}
+async function triggerDyRun(){
+  if(!confirm('给采集器发「立即更新」指令？\n采集器约 1~2 分钟内开跑，全部账号跑完约 20~40 分钟。\n跑完后回到本页点「刷新」即可看到新报告。')) return;
+  try{
+    const r = await sb('/rest/v1/dy_monitor_commands',{method:'POST',body:JSON.stringify({command:'run',note:'手动触发 '+(userEmail||'')})});
+    if(r.ok) msg('指令已发出：采集器 1~2 分钟内开跑。跑完回本页刷新，报告出现在「运行历史与报告」。','ok');
+    else msg('发送失败（HTTP '+r.status+'）','err');
+  }catch(e){ msg('发送失败：'+e.message,'err'); }
+}
+async function saveDyCfg(){
+  const h = parseInt($('dyHour').value,10), m = parseInt($('dyMin').value,10);
+  if(isNaN(h)||h<0||h>23||isNaN(m)||m<0||m>59){ msg('时间不合法：小时 0-23，分钟 0-59','err'); return; }
+  const body = { schedule_dow: parseInt($('dyDow').value,10), schedule_hour: h, schedule_min: m,
+                 enabled: $('dyEnabled').checked, updated_by: userEmail||'admin',
+                 updated_at: new Date().toISOString() };
+  try{
+    const r = await sb('/rest/v1/dy_monitor_config?id=eq.1',{method:'PATCH',body:JSON.stringify(body)});
+    msg(r.ok ? '定时设置已保存，采集器 1 分钟内自动读到新配置。' : '保存失败（HTTP '+r.status+'）', r.ok?'ok':'err');
+  }catch(e){ msg('保存失败：'+e.message,'err'); }
 }
 
 /* ---------------- 初始化 ---------------- */
@@ -671,10 +832,11 @@ function onQuick(prefix, r){
 function switchTab(t){
   if(t==='logs' && !isAdmin) t='dash';          // 操作日志仅主账号可见
   document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active', el.dataset.tab===t));
-  ['dash','query','recon','logs','stores'].forEach(x=>{
+  ['dash','query','recon','logs','stores','dy'].forEach(x=>{
     $('tab-'+x).classList.toggle('hide', x!==t);
   });
   if(t==='stores') loadStores();
+  if(t==='dy') loadDy();
   clearMsg();
 }
 
