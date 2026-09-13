@@ -224,7 +224,7 @@
       </div>
       <div class="card" data-page-node-id="H65uFvdBGUAFdUKmijPl8Y">
         <div class="card-title" id="storeChartTitle" data-page-node-id="Mx3zRMm4HU4vkIOqtPLbeU">各门店核销金额对比（美+抖合计 · 降序）</div>
-        <div class="chart-box" data-page-node-id="FNWBM6PycPxEbvNvnebgSG"><canvas id="chStore" data-page-node-id="yqHc62au9NdXBnSOSPjDUz"></canvas></div>
+        <div class="chart-box" id="chStoreBox" data-page-node-id="FNWBM6PycPxEbvNvnebgSG"><canvas id="chStore" data-page-node-id="yqHc62au9NdXBnSOSPjDUz"></canvas></div>
         <div id="storeAmtTable" style="margin-top:12px" data-page-node-id="bZyDoQgHySHPBHc5fKQlG6"></div>
       </div>
       <div class="card hide" id="cardTrend" data-page-node-id="e2K0jTHNnhToB4z4NKknWV">
@@ -975,27 +975,35 @@ function renderCharts(rows, s, e){
     if(dtEl) dtEl.innerHTML = '<div class="tbl-wrap"><table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table></div>';
   }
 
-  // 每日趋势：仅多日区间显示；日期标签 2026-09-01 → 1；周六荧光粉 / 周日荧光绿
+  // 每日趋势：多日区间 →「核销金额 / 到店客数 / 约内购」三线折线图（替代门店对比柱状图）
   const byDay = {};
   rows.forEach(r=>{
-    if(!byDay[r.form_date]) byDay[r.form_date]={mt:0,dy:0};
+    if(!byDay[r.form_date]) byDay[r.form_date]={mt:0,dy:0,ppl:0,inner:0};
     byDay[r.form_date].mt += num(r.meituan_verify_amount);
     byDay[r.form_date].dy += num(r.douyin_verify_amount);
+    byDay[r.form_date].ppl += num(r.meituan_visitors)+num(r.douyin_visitors);
+    byDay[r.form_date].inner += num(r.meituan_inner_orders)+num(r.douyin_inner_orders);
   });
   const days = Object.keys(byDay).sort();
+  const isRange = (s !== e);
   const trendCard = $('cardTrend');
-  if(trendCard) trendCard.classList.toggle('hide', s===e);
-  $('trendTitle').textContent = '每日核销金额趋势 · ' + s + (s===e?'':' ~ '+e);
+  if(trendCard) trendCard.classList.toggle('hide', !isRange);
+  // 多日：柱状图换成明细表标题；单日：保留对比柱状图
+  const sBox = $('chStoreBox'); if(sBox) sBox.classList.toggle('hide', isRange);
+  $('storeChartTitle').textContent = (isRange ? '各门店核销金额明细（美+抖合计 · 降序）' : '各门店核销金额对比（美+抖合计 · 降序）') + ' · ' + s + (isRange?' ~ '+e:'');
+  $('trendTitle').textContent = '每日趋势：核销金额 / 到店客数 / 约内购 · ' + s + ' ~ ' + e;
   const dayLbls = days.map(d=>String(parseInt(d.slice(8),10)));
   const dayColors = days.map(d=>{
     const w = new Date(d+'T00:00:00').getDay();
     return w===6 ? '#ff5fd7' : (w===0 ? '#7dff5a' : 'rgba(255,255,255,0.6)');
   });
 
-  mkBar('chStore', namesSort.map(n=>shortName(n)+(filled&&filled.has(n)?' ●':'')), [
-    {label:'核销合计', data:namesSort.map(n=>round2(byStore[n].mt+byStore[n].dy)), bg:'#8b5cf6',
-     _split:namesSort.map(n=>({mt:byStore[n].mt, dy:byStore[n].dy}))}
-  ], false, filled ? namesSort.map(n=>filled.has(n)?'#4ade80':'rgba(255,255,255,0.45)') : null);
+  if(!isRange){  // 单日：门店核销金额对比柱状图；多日：由每日折线图替代
+    mkBar('chStore', namesSort.map(n=>shortName(n)+(filled&&filled.has(n)?' ●':'')), [
+      {label:'核销合计', data:namesSort.map(n=>round2(byStore[n].mt+byStore[n].dy)), bg:'#8b5cf6',
+       _split:namesSort.map(n=>({mt:byStore[n].mt, dy:byStore[n].dy}))}
+    ], false, filled ? namesSort.map(n=>filled.has(n)?'#4ade80':'rgba(255,255,255,0.45)') : null);
+  }
   // 核销金额明细表（与图同序，金额四舍五入取整）
   const stEl = $('storeAmtTable');
   if(!namesSort.length){ if(stEl) stEl.innerHTML=''; }
@@ -1010,10 +1018,18 @@ function renderCharts(rows, s, e){
   tb += '<tr class="total"><td></td><td class="store">合计</td><td>'+Math.round(totM+totD)+'</td><td class="mei">'+Math.round(totM)+'</td><td class="dou">'+Math.round(totD)+'</td></tr>';
   if(stEl) stEl.innerHTML = '<div class="tbl-wrap"><table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table></div>';
   }
-  mkLine('chTrend', dayLbls, [
-    {label:'美团', data:days.map(d=>round2(byDay[d].mt)), bc:'#fbbf24'},
-    {label:'抖音', data:days.map(d=>round2(byDay[d].dy)), bc:'#a78bfa'}
-  ], dayColors);
+  if(isRange){
+    mkLine('chTrend', dayLbls, [
+      {label:'核销金额（元）', data:days.map(d=>round2(byDay[d].mt+byDay[d].dy)), bc:'#8b5cf6', unit:'¥'},
+      {label:'到店客数（人）', data:days.map(d=>Math.round(byDay[d].ppl)), bc:'#7dff5a', yAxisID:'y1', unit:''},
+      {label:'约内购（单）',   data:days.map(d=>Math.round(byDay[d].inner)), bc:'#fbbf24', yAxisID:'y1', unit:''}
+    ], dayColors, true);
+  }else{
+    mkLine('chTrend', dayLbls, [
+      {label:'美团', data:days.map(d=>round2(byDay[d].mt)), bc:'#fbbf24'},
+      {label:'抖音', data:days.map(d=>round2(byDay[d].dy)), bc:'#a78bfa'}
+    ], dayColors);
+  }
   mkBar('chPeople', names.map(shortName), [
     {label:'客单数', data:names.map(n=>Math.round(byStore[n].ppl)), bg:'#8b5cf6'}
   ], true);
@@ -1037,16 +1053,28 @@ function mkBar(id, labels, sets, intY, xTickColors){
                y:(intY?{beginAtZero:true,ticks:{precision:0,color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}}:{ticks:{color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}}) } }
   });
 }
-function mkLine(id, labels, sets, tickColors){
+function mkLine(id, labels, sets, tickColors, dual){
   if(charts[id]) charts[id].destroy();
   const el = $(id); if(!el) return;
+  const axTick = {color:'rgba(255,255,255,0.6)',font:{size:10}};
+  const axGrid = {color:'rgba(255,255,255,0.06)'};
+  const scales = {
+    x:{ticks:{color: tickColors || 'rgba(255,255,255,0.6)',font:{size:10}}, grid:axGrid},
+    y:{position:'left', ticks:axTick, grid:axGrid}
+  };
+  if(dual) scales.y1 = {position:'right', ticks:axTick, grid:{drawOnChartArea:false}};
   charts[id] = new Chart(el, {
     type:'line',
-    data:{ labels, datasets: sets.map(x=>({label:x.label,data:x.data,borderColor:x.bc,backgroundColor:x.bc,tension:0.3,borderWidth:2,pointRadius:2})) },
+    data:{ labels, datasets: sets.map(x=>({label:x.label, data:x.data, borderColor:x.bc, backgroundColor:x.bc,
+      tension:0.3, borderWidth:2, pointRadius:2, yAxisID:x.yAxisID||'y', _unit:x.unit||''})) },
     options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{labels:{color:'rgba(255,255,255,0.7)',font:{size:11}}} },
-      scales:{ x:{ticks:{color: tickColors || 'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}},
-               y:{ticks:{color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}} } }
+      interaction:{mode:'index', intersect:false},
+      plugins:{ legend:{labels:{color:'rgba(255,255,255,0.7)',font:{size:11}}},
+        tooltip:{callbacks:{label:(ctx)=>{
+          const ds = ctx.chart.data.datasets[ctx.datasetIndex];
+          return ' '+ds.label.replace(/（.*?）/,'')+': '+(ds._unit==='¥' ? '¥'+fmtAmt(ctx.parsed.y) : Math.round(ctx.parsed.y));
+        }}} },
+      scales }
   });
 }
 
