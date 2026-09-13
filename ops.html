@@ -418,11 +418,13 @@
           </div>
           <div style="flex:0 0 auto; display:flex; gap:8px; align-items:flex-end">
             <button class="primary hide" id="dySaveCfg" onclick="saveDyCfg()">保存定时设置</button>
-            <button class="primary hide" id="dyRunBtn" onclick="triggerDyRun()">▶ 立即更新</button>
+            <button class="primary hide" id="dyRunBtn" onclick="triggerDyRun('run')">▶ 增量更新</button>
+            <button class="hide" id="dyRunFullBtn" onclick="triggerDyRun('run_full')" style="border-color:rgba(245,158,11,0.7);color:#fbbf24">📦 全量更新</button>
+            <button class="hide" id="dyStopBtn" onclick="stopDyCollector()">⏹ 停止采集器</button>
             <button onclick="loadDy()">刷新</button>
           </div>
         </div>
-        <div style="color:rgba(255,255,255,0.45);font-size:12px;margin-top:8px">点「立即更新」后指令 1~2 分钟内被采集器接收，全部账号跑完约 20~40 分钟，跑完刷新本页即可看到新报告。</div>
+        <div style="color:rgba(255,255,255,0.45);font-size:12px;margin-top:8px">「增量更新」= 日常用，每号查最新 5 条视频、判断近 7 天是否更新，约 20~40 分钟；「全量更新」= 补历史建档用，每号抓最多 20 条，耗时 1 小时以上，平时别点；周一 8:00 定时自动跑增量。指令 1~2 分钟内被采集器接收，跑完刷新本页看新报告。</div>
       </div>
       <div class="card hide" id="dyFailCard">
         <div class="card-title" style="color:#f87171">⚠ 失败记录</div>
@@ -647,6 +649,8 @@ function applyPerms(){
   const b = $('btnAddStore'); if(b) b.classList.toggle('hide', !isAdmin);
   const c = $('lnkChain'); if(c) c.classList.toggle('hide', !isAdmin);   // 连锁板块：内测仅主账号
   const dr = $('dyRunBtn'); if(dr) dr.classList.toggle('hide', !isAdmin);       // 抖音监控：触发/配置仅主账号
+  const drf = $('dyRunFullBtn'); if(drf) drf.classList.toggle('hide', !isAdmin);
+  const dst = $('dyStopBtn'); if(dst) dst.classList.toggle('hide', !isAdmin);
   const dc = $('dySaveCfg'); if(dc) dc.classList.toggle('hide', !isAdmin);
 }
 function doLogout(silent){
@@ -677,7 +681,7 @@ async function loadDy(){
     const latest = dyRuns.find(x=>x.status==='success');
     if(latest){ loadDySummary(latest); loadDyAcct(latest); }
     else {
-      $('dySummary').innerHTML = '<div class="empty">尚无成功运行记录——点上方「立即更新」跑第一次</div>';
+      $('dySummary').innerHTML = '<div class="empty">尚无成功运行记录——点上方「增量更新」跑第一次</div>';
       $('dyAcctBody').innerHTML = '<div class="empty">尚无账号明细</div>';
     }
   }catch(e){
@@ -753,11 +757,22 @@ function renderDyRuns(){
     '</div>';
   }).join('') : '<div class="empty">还没有运行记录</div>';
 }
-async function triggerDyRun(){
-  if(!confirm('给采集器发「立即更新」指令？\n采集器约 1~2 分钟内开跑，全部账号跑完约 20~40 分钟。\n跑完后回到本页点「刷新」即可看到新报告。')) return;
+async function triggerDyRun(mode){
+  const isFull = mode==='run_full';
+  if(!confirm(isFull
+    ? '发「全量更新」指令？\n每个账号抓最多 20 条历史视频建档，耗时 1 小时以上（109 个账号）。\n仅首次建档或校准历史数据时使用，日常请用「增量更新」。'
+    : '给采集器发「增量更新」指令？\n采集器约 1~2 分钟内开跑，全部账号跑完约 20~40 分钟。\n跑完后回到本页点「刷新」即可看到新报告。')) return;
   try{
-    const r = await sb('/rest/v1/dy_monitor_commands',{method:'POST',body:JSON.stringify({command:'run',note:'手动触发 '+(userEmail||'')})});
-    if(r.ok) msg('指令已发出：采集器 1~2 分钟内开跑。跑完回本页刷新，报告出现在「运行历史与报告」。','ok');
+    const r = await sb('/rest/v1/dy_monitor_commands',{method:'POST',body:JSON.stringify({command:isFull?'run_full':'run',note:(isFull?'全量':'增量')+'手动触发 '+(userEmail||'')})});
+    if(r.ok) msg('指令已发出：采集器 1~2 分钟内开跑（'+(isFull?'全量，耗时 1 小时+':'增量，约 20~40 分钟')+'）。跑完回本页刷新，报告出现在「运行历史与报告」。','ok');
+    else msg('发送失败（HTTP '+r.status+'）','err');
+  }catch(e){ msg('发送失败：'+e.message,'err'); }
+}
+async function stopDyCollector(){
+  if(!confirm('发「停止采集器」指令？\n采集器会在 1 分钟内收到指令并退出。\n停止后定时任务和手动指令都不会再执行，需重新启动采集器（双击启动脚本或重启电脑）。')) return;
+  try{
+    const r = await sb('/rest/v1/dy_monitor_commands',{method:'POST',body:JSON.stringify({command:'stop',note:'手动停止 '+(userEmail||'')})});
+    if(r.ok) msg('停止指令已发出，采集器约 1 分钟内退出。','ok');
     else msg('发送失败（HTTP '+r.status+'）','err');
   }catch(e){ msg('发送失败：'+e.message,'err'); }
 }
