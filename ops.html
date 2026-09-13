@@ -646,6 +646,7 @@ let userEmail = '';
 /* 权限可见性：主账号 411249585@qq.com 才显示 操作日志 tab / 新增门店 / 操作列 */
 function applyPerms(){
   const t = $('tabBtnLogs'); if(t) t.classList.toggle('hide', !isAdmin);
+  const td = $('tabBtnDy'); if(td) td.classList.toggle('hide', !isAdmin);   // 抖音监控：整个 tab 仅主账号
   const b = $('btnAddStore'); if(b) b.classList.toggle('hide', !isAdmin);
   const c = $('lnkChain'); if(c) c.classList.toggle('hide', !isAdmin);   // 连锁板块：内测仅主账号
   const dr = $('dyRunBtn'); if(dr) dr.classList.toggle('hide', !isAdmin);       // 抖音监控：触发/配置仅主账号
@@ -846,6 +847,7 @@ function onQuick(prefix, r){
 }
 function switchTab(t){
   if(t==='logs' && !isAdmin) t='dash';          // 操作日志仅主账号可见
+  if(t==='dy' && !isAdmin) t='dash';            // 抖音监控仅主账号可见
   document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active', el.dataset.tab===t));
   ['dash','query','recon','logs','stores','dy'].forEach(x=>{
     $('tab-'+x).classList.toggle('hide', x!==t);
