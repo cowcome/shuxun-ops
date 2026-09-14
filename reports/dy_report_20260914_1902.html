@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>书荀抖音矩阵运营报告 · 2026-09-14</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Serif+SC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1a1a; --ink-light: #666; --ink-lighter: #999;
+  --paper: #faf8f5; --paper-dark: #f0ede8; --accent: #00B4D8; --warm: #FFF9E6;
+  --border: #e5e0d8; --success: #8AC926; --warning: #FFB703; --danger: #FF6B6B;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: "Noto Serif SC", "Playfair Display", Georgia, serif; background: var(--paper); color: var(--ink); line-height: 1.8; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+.hero { padding: 80px 0 60px; border-bottom: 3px double var(--ink); margin-bottom: 60px; }
+.hero .issue { font-size: 12px; letter-spacing: 4px; text-transform: uppercase; color: var(--ink-light); margin-bottom: 20px; }
+.hero h1 { font-family: "Playfair Display", "Noto Serif SC", serif; font-size: 52px; font-weight: 900; line-height: 1.15; letter-spacing: -1px; margin-bottom: 20px; }
+.hero h1 .accent { color: var(--accent); font-style: italic; }
+.hero .subtitle { font-size: 16px; color: var(--ink-light); max-width: 600px; margin-bottom: 24px; }
+.hero .meta { display: flex; gap: 40px; font-size: 12px; color: var(--ink-lighter); border-top: 1px solid var(--border); padding-top: 16px; flex-wrap: wrap; }
+.hero .meta span { font-weight: 700; color: var(--ink); }
+.section { margin-bottom: 80px; }
+.section-header { display: flex; align-items: baseline; gap: 20px; margin-bottom: 40px; padding-bottom: 16px; border-bottom: 1px solid var(--ink); }
+.section-number { font-family: "Playfair Display", serif; font-size: 36px; font-weight: 900; color: var(--accent); line-height: 1; }
+.section-title { font-family: "Playfair Display", "Noto Serif SC", serif; font-size: 24px; font-weight: 700; }
+.section-desc { font-size: 13px; color: var(--ink-light); margin-left: auto; font-style: italic; }
+.stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border: 1px solid var(--border); }
+.stat-card { padding: 32px 20px; border-right: 1px solid var(--border); position: relative; background: #fff; transition: background 0.3s; }
+.stat-card:last-child { border-right: none; }
+.stat-card:hover { background: var(--warm); }
+.stat-card .label { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink-lighter); margin-bottom: 12px; }
+.stat-card .value { font-family: "Playfair Display", serif; font-size: 40px; font-weight: 900; line-height: 1; margin-bottom: 10px; }
+.stat-card .sub { font-size: 12px; color: var(--ink-light); }
+.stat-card.green .value { color: var(--success); }
+.stat-card.orange .value { color: var(--warning); }
+.stat-card.red .value { color: var(--danger); }
+.stat-card .bar { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--accent); }
+.op-list { display: flex; flex-direction: column; gap: 0; }
+.op-row { display: grid; grid-template-columns: 120px 1fr 100px 100px 100px; align-items: center; padding: 24px 0; border-bottom: 1px solid var(--border); gap: 20px; }
+.op-row:last-child { border-bottom: none; }
+.op-name { font-family: "Playfair Display", "Noto Serif SC", serif; font-size: 18px; font-weight: 700; }
+.op-bar-wrap { height: 8px; background: var(--paper-dark); border-radius: 4px; overflow: hidden; }
+.op-bar { height: 100%; border-radius: 4px; transition: width 0.8s; }
+.op-stat { text-align: right; font-size: 13px; }
+.op-stat .num { font-weight: 700; font-size: 26px; font-family: "Playfair Display", serif; }
+.op-stat .lbl { font-size: 12px; color: var(--ink-lighter); }
+.table-wrap { background: #fff; border: 1px solid var(--border); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+thead { border-bottom: 2px solid var(--ink); }
+th { padding: 14px 12px; text-align: center; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--ink-light); white-space: nowrap; }
+td { padding: 14px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: center; }
+td.long-text { white-space: normal; word-break: break-word; max-width: 180px; }
+tbody tr { transition: background 0.2s; }
+tbody tr:hover { background: var(--warm); }
+.badge { display: inline-block; padding: 4px 12px; border-radius: 2px; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+.badge.normal { background: #e8f5e9; color: #2e7d32; }
+.badge.warn { background: #fff3e0; color: #e65100; }
+.badge.danger { background: #ffebee; color: #c62828; }
+.days-tag { display: inline-block; padding: 2px 8px; font-size: 12px; font-weight: 700; font-family: "Playfair Display", serif; }
+.days-tag.fresh { color: var(--success); }
+.days-tag.warn { color: var(--warning); }
+.days-tag.danger { color: var(--danger); }
+.clickable { cursor: pointer; text-decoration: underline dotted; text-decoration-color: #c9c2b6; transition: color 0.2s; }
+.clickable:hover { color: var(--accent); text-decoration-color: var(--accent); background: var(--warm); }
+td.hl { background: var(--warm); font-weight: 700; }
+td.hl .badge { box-shadow: 0 0 0 2px var(--accent); }
+.op-name { cursor: pointer; }
+.op-name:hover { color: var(--accent); text-decoration: underline; }
+.copy-btn { background: none; border: 1px solid var(--border); padding: 2px 8px; font-size: 11px; cursor: pointer; color: var(--ink-light); font-family: inherit; }
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+.video-link { color: var(--accent); text-decoration: none; font-size: 13px; border-bottom: 1px solid var(--accent); }
+.video-link:hover { opacity: 0.7; }
+.footer { margin-top: 80px; padding: 40px 0; border-top: 3px double var(--ink); text-align: center; font-size: 12px; color: var(--ink-lighter); letter-spacing: 2px; }
+@media (max-width: 768px) {
+  .container { padding: 0 20px; }
+  .hero h1 { font-size: 42px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-card { border-right: none; border-bottom: 1px solid var(--border); }
+  .op-row { grid-template-columns: 80px 1fr 60px; }
+  .op-stat:nth-child(4), .op-stat:nth-child(5) { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="hero">
+    <div class="issue">Vol. 20260914 · 抖音矩阵报告</div>
+    <h1>书荀抖音<br><span class="accent">矩阵运营</span>报告</h1>
+    <p class="subtitle">全门店抖音账号发布监控 · 数据驱动运营决策</p>
+    <div class="meta">
+      <div>报告日期 <span>2026-09-14</span></div>
+      <div>监控账号 <span>109</span></div>
+      <div>已匹配门店 <span>109</span></div>
+      <div>数据来源 <span>抖音主页自动抓取</span></div>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">01</div>
+      <div class="section-title">核心数据</div>
+      <div class="section-desc">Key Metrics</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card" onclick="filterAccounts('all')" style="cursor:pointer">
+        <div class="label">账号总数</div>
+        <div class="value">109</div>
+        <div class="sub">已匹配 109 个</div>
+        <div class="bar" style="width:100%"></div>
+      </div>
+      <div class="stat-card green" onclick="filterAccounts('updated')" style="cursor:pointer">
+        <div class="label">近7天已更新</div>
+        <div class="value">60</div>
+        <div class="sub">更新率 55.0%</div>
+        <div class="bar" style="width:55%;background:var(--success)"></div>
+      </div>
+      <div class="stat-card orange" onclick="filterAccounts('7d')" style="cursor:pointer">
+        <div class="label">7天未更</div>
+        <div class="value">4</div>
+        <div class="sub">7-15天未更新</div>
+        <div class="bar" style="width:4%;background:var(--warning)"></div>
+      </div>
+      <div class="stat-card orange" onclick="filterAccounts('15d')" style="cursor:pointer">
+        <div class="label">15天未更</div>
+        <div class="value">18</div>
+        <div class="sub">15-90天未更新</div>
+        <div class="bar" style="width:17%;background:var(--warning)"></div>
+      </div>
+      <div class="stat-card red" onclick="filterAccounts('broken')" style="cursor:pointer">
+        <div class="label">断更</div>
+        <div class="value">23</div>
+        <div class="sub">90天以上未更新</div>
+        <div class="bar" style="width:21%;background:var(--danger)"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">02</div>
+      <div class="section-title">运营人对比</div>
+      <div class="section-desc">Operator Performance</div>
+    </div>
+    <div class="op-list" id="op-list"></div>
+  </section>
+
+  <section class="section" id="detail-section">
+    <div class="section-header">
+      <div class="section-number">03</div>
+      <div class="section-title">账号明细</div>
+      <div class="section-desc">点击表中「运营人 / 城市 / 最近发布 / 状态」可只看同类账号</div>
+    </div>
+    <div class="filter-bar" id="filter-bar" style="display:none;margin-bottom:16px;padding:12px 16px;background:var(--warm);border:1px solid var(--border);font-size:14px;">
+      <span>当前筛选：<b id="filter-label"></b>（<span id="filter-count"></span>个账号）</span>
+      <button onclick="filterAccounts('all')" style="margin-left:16px;padding:4px 12px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:13px;">显示全部</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>运营人</th><th>门店名称</th><th>城市</th>
+          <th>最近发布</th><th>距今天数</th><th>月发布</th>
+          <th>状态</th><th>抖音号</th><th>最新视频</th>
+        </tr></thead>
+        <tbody id="detail-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="footer">
+    书荀头疗 · 抖音矩阵运营报告 · 自动生成于 2026-09-14
+  </footer>
+
+</div>
+
+<script>
+const accounts = [{"dy_id": "65262694701", "nickname": "書荀·头疗·美容养生(顺联店)", "store_name": "佛山顺联店", "operator": "琳琳", "city": "佛山", "nature": "直营", "latest": "2026-09-13", "days_since": 1, "v30": 5, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685011447043518885", "latest_title": "她怎么不帮我？ #有什么可以帮你的吗 #搞笑 #书荀 #头疗养生"}, {"dy_id": "74027074727", "nickname": "阿玛仕書荀·头疗(嘉邦国金中心店)", "store_name": "佛山国金店", "operator": "琳琳", "city": "佛山", "nature": "直营", "latest": "2025-09-27", "days_since": 352, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7554625273820548409", "latest_title": "书荀出抖音团购，新店碳酸泉水循环套餐72.8元。美容人气榜上榜品牌，668元套餐划算，美疗师静怡服务用心，快囤。（注意，"}, {"dy_id": "29921415489", "nickname": "書荀·头疗·美容养生(恒福国际店)", "store_name": "佛山恒福店", "operator": "琳琳", "city": "佛山", "nature": "直营", "latest": "2026-05-01", "days_since": 136, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7634850251774662818", "latest_title": "禅城美容好评榜書荀来袭！498元毛孔大扫除仅159，60分钟护理，服务贴心，超划算！ （注意，叠加立减后的价格是159元"}, {"dy_id": "92905273805", "nickname": "書荀·头疗·美容养生(高明店)", "store_name": "佛山高明店", "operator": "琳琳", "city": "佛山", "nature": "直营", "latest": "2025-12-19", "days_since": 269, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7585541610390998307", "latest_title": "头疗美容养生按摩##美容养生"}, {"dy_id": "54254786281", "nickname": "書荀·头疗·美容养生(新塘万达店)", "store_name": "佛山新塘店", "operator": "琳琳", "city": "广州", "nature": "直营", "latest": "2026-01-15", "days_since": 242, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7595577116842867776", "latest_title": "💆‍♀五指梳云鬓，清泉润山河\n 碳酸泉水，润养每缕青丝\n 精准抚触，唤醒每寸轻盈\n 今日宜充电，静待君充能✨\n#書荀#花"}, {"dy_id": "65433181317", "nickname": "阿玛仕書荀·头疗·美容(绿地缤纷城店)", "store_name": "佛山绿地店", "operator": "琳琳", "city": "广州", "nature": "直营", "latest": "2026-08-21", "days_since": 24, "v30": 2, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7676479481662254778", "latest_title": "#我已到岗在线上班🤣 好玩爱玩"}, {"dy_id": "58421874088", "nickname": "書荀·头疗美容养生SPA(顺德十亩地店)", "store_name": "佛山星耀店", "operator": "琳琳", "city": "佛山", "nature": "直营", "latest": "未知", "days_since": "", "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "正常", "alerts": [], "latest_url": "", "latest_title": ""}, {"dy_id": "38184848706", "nickname": "書荀·头疗美容养生SPA(南海万科广场店)", "store_name": "佛山万科店", "operator": "琳琳", "city": "佛山", "nature": "直营", "latest": "2026-09-13", "days_since": 1, "v30": 16, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685013659063589110", "latest_title": "#沉浸式体验护肤美容"}, {"dy_id": "89059671468", "nickname": "書荀·头疗·美容养生(保利水城时光汇店)", "store_name": "佛山水城店", "operator": "琳琳", "city": "佛山", "nature": "直营", "latest": "2026-09-11", "days_since": 3, "v30": 10, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684262678534362554", "latest_title": "做头疗吗？加班给你做😄 #头疗 #上班哪有不演的 #我和我的逗比同事搞笑日常"}, {"dy_id": "74871740673", "nickname": "書荀·头疗·美容养生(于都万达店)", "store_name": "赣州万达店", "operator": "夏夏", "city": "赣州", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 5, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684977319904456310", "latest_title": "#短发故事 #按头皮有点疼怎么回事 #护发养发 #美丽秀发 #周末去哪玩 书荀碳酸泉头疗套餐仅88元，可养生缓压，含5分"}, {"dy_id": "77582019409", "nickname": "書荀·头疗·美容养生(苏州宝带店)", "store_name": "苏州宝带店", "operator": "慧慧", "city": "苏州", "nature": "连锁", "latest": "2026-08-29", "days_since": 16, "v30": 2, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7679391327843514297", "latest_title": "#生活百般滋味你要笑着面对 #美容日常搞笑 #书荀 大王 来抓我啊"}, {"dy_id": "75193209074", "nickname": "書荀·头疗·美容养生(峥嵘店)", "store_name": "衡阳峥嵘店", "operator": "琦琦", "city": "衡阳", "nature": "连锁", "latest": "2025-06-06", "days_since": 465, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7512748674549304614", "latest_title": "衡东宝子有福，衡阳市美容热销榜的書荀开到衡东。芳芳温柔手法好。68元享70分钟碳酸泉套餐，周销量涨1倍，快带闺蜜来。（注"}, {"dy_id": "hnana2021", "nickname": "書荀·头疗·美容养生(海翼·汉东至尊店)", "store_name": "随州海翼店", "operator": "琦琦", "city": "随州", "nature": "连锁", "latest": "2024-04-20", "days_since": 877, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7359884282157927718", "latest_title": "女人的魅力是美丽和智慧并存#随州 #同城美容护肤 #女性独立 #创业"}, {"dy_id": "23229794818", "nickname": "書荀·头疗·美容养生(观山湖万达广场店)", "store_name": "贵阳万达店", "operator": "琦琦", "city": "贵阳", "nature": "连锁", "latest": "2026-05-08", "days_since": 129, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7637482559739657915", "latest_title": "头皮紧绷 是在“喊累”\n经络要常通 头痛就会松\n碳酸泉头疗 按摩主要经络\n释放因工作紧绷的肌肉\n＃書荀碳酸泉头疗SPA"}, {"dy_id": "51755912825", "nickname": "書荀·头疗·美容养生(麒麟嘉城店)", "store_name": "曲靖云玉店", "operator": "夏夏", "city": "曲靖", "nature": "连锁", "latest": "2025-12-11", "days_since": 277, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7582578885684333874", "latest_title": "头皮大扫除！書荀头疗碳酸泉水循环套餐超绝，碳酸水冲开毛孔。72.8 元让发根“蹦迪”，体验专业级享受，下单赚翻！ （注意"}, {"dy_id": "42009646636", "nickname": "書荀·头疗·美容养生(爱琴海店)", "store_name": "版纳爱琴海", "operator": "夏夏", "city": "西双版纳傣族自治州", "nature": "连锁", "latest": "2025-06-28", "days_since": 443, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7521007409788800314", "latest_title": "花时间 爱自己 这种宝藏店你确定不来试一下？#头疗spa #推荐好店 #洗头按摩 #头疗spa"}, {"dy_id": "20161535573", "nickname": "書荀·头疗·美容养生(木渎万科店)", "store_name": "苏州木渎店", "operator": "慧慧", "city": "苏州", "nature": "连锁", "latest": "2026-09-12", "days_since": 2, "v30": 2, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684506320493713606", "latest_title": "连熬几天赶项目方案，肩颈脑袋绷得紧，去常去的美体店做了头疗加肩颈放松，紧绷感散了，整个人都轻快不少。（注意，叠加立减后的"}, {"dy_id": "76369869151", "nickname": "書荀·头疗·美容养生(横泾店)", "store_name": "苏州横泾店", "operator": "慧慧", "city": "苏州", "nature": "陪跑", "latest": "2026-09-14", "days_since": 0, "v30": 18, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685218125180167025", "latest_title": "忙碌的一天～#书荀 #沉浸式头疗"}, {"dy_id": "28615153753", "nickname": "書荀·头疗美容养生(吉安泰和店)", "store_name": "赣州嘉和府", "operator": "夏夏", "city": "吉安", "nature": "连锁", "latest": "2026-09-12", "days_since": 2, "v30": 5, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684630202912285673", "latest_title": "#养发馆 #拓客 #花式采耳 #改善 #去想去的地方 書荀碳酸泉头疗太舒服，4.9分高评，现88元享套餐，做完解压养生超"}, {"dy_id": "52778377311", "nickname": "書荀·头疗·美容养生(昆明店)", "store_name": "昆明润城店", "operator": "夏夏", "city": "昆明", "nature": "连锁", "latest": "2026-09-08", "days_since": 6, "v30": 7, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683148923284330486", "latest_title": "把外出学到的理念转化落地，吸收优秀经验，打磨服务细节\n回归门店，更用心对待每一位顾客#书荀 #学习收获自信"}, {"dy_id": "96883603417", "nickname": "書荀·头疗·美容养生(苏州龙湖店)", "store_name": "苏州龙湖店", "operator": "慧慧", "city": "苏州", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 7, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685013483452171465", "latest_title": "压力大想放松就来书荀！88元享碳酸泉头疗套餐，下单有额外优惠，随时可退、过期自动退，左下角链接快和小伙伴囤起来～（注意，"}, {"dy_id": "94252022047", "nickname": "書荀·头疗·美容养生(万科美好广场店)", "store_name": "苏州园区店", "operator": "慧慧", "city": "苏州", "nature": "连锁", "latest": "2026-09-12", "days_since": 2, "v30": 8, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684636572512039348", "latest_title": "#养生"}, {"dy_id": "91588924000", "nickname": "書荀·头疗·美容养生(天骄店)", "store_name": "番禺天骄店", "operator": "慧慧", "city": "广州", "nature": "连锁", "latest": "2026-07-02", "days_since": 74, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7657864043222519478", "latest_title": "不让掀开非不听#00后美容师 #美业店上班 #書荀"}, {"dy_id": "49418697576", "nickname": "書荀·头疗·美容养生(新丰店)", "store_name": "潮州新丰店", "operator": "夏夏", "city": "潮州", "nature": "连锁", "latest": "2026-09-09", "days_since": 5, "v30": 5, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683521397469061986", "latest_title": "#头疗的禁忌人群 #头皮护理 #头疗可不可以改善睡眠 #跟着抖音去度假 #周末时光 书荀家碳酸泉头疗套餐88元：含肩颈按"}, {"dy_id": "69300358878", "nickname": "書荀·头疗·美容养生(建业凯旋广场店)", "store_name": "南阳万达坊", "operator": "夏夏", "city": "南阳", "nature": "连锁", "latest": "2026-04-28", "days_since": 139, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7633838538136340843", "latest_title": "88块能干啥？来書荀做碳酸泉头疗！专业师傅手法好，泉水洗走头皮油。做完能吃水果，按效果算，发根支棱发丝滑，血赚不亏！ （"}, {"dy_id": "60411083293", "nickname": "書荀·头疗·美容·养生(吉祥路店)", "store_name": "金华吉祥店", "operator": "琦琦", "city": "金华", "nature": "连锁", "latest": "2025-06-09", "days_since": 462, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7513801639968951587", "latest_title": "东阳書荀头疗SPA服务流程#書荀#头疗SPA#美容护肤"}, {"dy_id": "66314439844", "nickname": "書荀·头疗·美容养生(吴江吾悦广场店)", "store_name": "苏州吾悦店", "operator": "慧慧", "city": "苏州", "nature": "连锁", "latest": "2026-09-14", "days_since": 0, "v30": 9, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685310562289902769", "latest_title": "微笑服务，真诚待人😊 都说要做到微笑服务，我现在笑成这样，能不能赚一个优秀标兵的称号呀？ \n#打工人 #前台 #上班时间"}, {"dy_id": "48375999072", "nickname": "書荀·头疗·美容养生(君尚购物中心店)", "store_name": "赣州君尚店", "operator": "夏夏", "city": "赣州", "nature": "连锁", "latest": "2026-06-25", "days_since": 81, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7655252073898587115", "latest_title": "在这个人手一杯冰咖啡的时代，你觉得肠胃身体能受得了不？ 你认为寒湿是怎样的症状呢#越灸越舒服 #温灸养护 #上热门"}, {"dy_id": "20164329031", "nickname": "書荀·头疗·美容养生(清泰街店)", "store_name": "杭州清泰店", "operator": "夏夏", "city": "杭州", "nature": "连锁", "latest": "2026-09-07", "days_since": 7, "v30": 1, "avg_like": "0", "updated7": "否", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7682701010468824561", "latest_title": "清泰街店月度会议圆满落幕🌙\n非常感谢任总、店长和顾问的深度赋能。\n我们对上一月工作进行复盘总结，梳理流程，找准待改进点，"}, {"dy_id": "81280047218", "nickname": "書荀·头疗·美容养生(银泰红城店)", "store_name": "衡阳银泰店", "operator": "琦琦", "city": "衡阳", "nature": "连锁", "latest": "2026-09-09", "days_since": 5, "v30": 1, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683476981309081274", "latest_title": "#优秀团队优秀的我们 #优秀团队未来可期"}, {"dy_id": "82537914745", "nickname": "書荀·头疗·美容养生(天宁吾悦广场店)", "store_name": "常州吾悦店", "operator": "夏夏", "city": "常州", "nature": "连锁", "latest": "2025-07-29", "days_since": 412, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7532380533764148480", "latest_title": "常州人专属空间✨\n逃离 996 喧嚣🌆，躲进私密「静音结界」🔕\n专业指尖揉开肩颈紧绷💆‍♂，精油香氛隔离纷扰🌿\n水疗声中"}, {"dy_id": "80336229724", "nickname": "書荀·头疗·美容养生(佳兆业广场店)", "store_name": "揭阳雅南店", "operator": "夏夏", "city": "揭阳", "nature": "连锁", "latest": "2026-09-11", "days_since": 3, "v30": 10, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684224118724610225", "latest_title": "#上班族肩颈保养"}, {"dy_id": "41239625254", "nickname": "書荀·头疗·美容养生(水郡世家店)", "store_name": "随州水郡店", "operator": "琦琦", "city": "随州", "nature": "连锁", "latest": "2026-03-11", "days_since": 187, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7615898162461817590", "latest_title": "#头疗spa"}, {"dy_id": "22474336758", "nickname": "書荀·头疗·美容养生(江北之芯店)", "store_name": "金华江北店", "operator": "琦琦", "city": "金华", "nature": "连锁", "latest": "2026-08-03", "days_since": 42, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7669797306660852218", "latest_title": "#書荀 #江北之芯 #东阳"}, {"dy_id": "91687069535", "nickname": "書荀·头疗·美容养生(蜀山万象汇店)", "store_name": "合肥万象汇", "operator": "夏夏", "city": "合肥", "nature": "连锁", "latest": "2026-09-14", "days_since": 0, "v30": 16, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685237585619589486", "latest_title": "書荀头疗美容养生（合肥万象汇店）于20211009发布的作品"}, {"dy_id": "76554946837", "nickname": "書荀·头疗·美容养生(辰河世家店)", "store_name": "衡阳紫霞园", "operator": "小梅", "city": "邵阳", "nature": "连锁", "latest": "2026-09-11", "days_since": 3, "v30": 9, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684254410058788849", "latest_title": "每周快乐日常#幸福感拉满的日常 #会议甜品台茶歇"}, {"dy_id": "34022661530", "nickname": "書荀·头疗·美容养生(荣和天誉店)", "store_name": "柳州天誉店", "operator": "琦琦", "city": "柳州", "nature": "连锁", "latest": "2026-09-09", "days_since": 5, "v30": 3, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683542902958436160", "latest_title": "打工人的解压"}, {"dy_id": "58872702594", "nickname": "書荀·头疗·美容养生(南悦城店)", "store_name": "昆明南悦城", "operator": "夏夏", "city": "昆明", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 7, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684966566311835876", "latest_title": "昆明的朋友看过来！書荀家碳酸泉头疗超棒，十分钟专业按摩，四千回头客认证，八十八元get蓬松秀发，快约姐妹冲！（注意，叠加"}, {"dy_id": "87160441703", "nickname": "書荀·头疗·美容养生(丰柏路店)", "store_name": "潮州上饶店", "operator": "夏夏", "city": "潮州", "nature": "连锁", "latest": "2026-09-10", "days_since": 4, "v30": 3, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683875135132249728", "latest_title": "書荀家清透焕肤套餐仅99元！深层清洁净黑头、T区去油，补水嘭弹，毛孔清爽，速来get自带反光板的好皮肤～（注意，叠加立减"}, {"dy_id": "47906521953", "nickname": "書荀·头疗·美容养生(曲靖万达广场店)", "store_name": "曲靖万达店", "operator": "夏夏", "city": "曲靖", "nature": "连锁", "latest": "2025-09-28", "days_since": 351, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7555164874143075643", "latest_title": "听说好多宝贝们找不到我们家的店在哪里？曲靖書荀万达店详细指引来啦#强烈推荐 #書荀 #头疗养生"}, {"dy_id": "23354727153", "nickname": "書荀·头疗美容养生(曲靖雄业店)", "store_name": "曲靖218", "operator": "夏夏", "city": "曲靖", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 20, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685010227448361320", "latest_title": "#放松式护肤 面膜简单补水还不够\n書荀压缩膜充分浸透\n配合指轮增加吸收\n脸部层层舒展才能水润\n#書荀悦颜管理SPA"}, {"dy_id": "36467768528", "nickname": "書荀·头疗·美容养生(龙江店)", "store_name": "苏州龙江店", "operator": "慧慧", "city": "南京", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 18, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684864459130564283", "latest_title": "不止是放松，更是给头皮一场深呼吸🍃\n肩颈舒缓＋头部养护\n释压、助眠、改善紧绷\n好好爱自己，从一场头疗开始～\n#書荀#头疗"}, {"dy_id": "66057054526", "nickname": "書荀·头疗·美容养生(观府壹号店)", "store_name": "贵阳观府店", "operator": "琦琦", "city": "贵阳", "nature": "连锁", "latest": "2026-09-08", "days_since": 6, "v30": 5, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683112107794350502", "latest_title": "#00后早已走上不一样的养生路"}, {"dy_id": "94880461877", "nickname": "書荀·头疗美容养生(古城店)", "store_name": "版纳古城店", "operator": "夏夏", "city": "西双版纳傣族自治州", "nature": "连锁", "latest": "2026-05-24", "days_since": 113, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7643434924922703227", "latest_title": "沉浸式#头疗"}, {"dy_id": "60538826741", "nickname": "書荀·头疗美容养生(艺海北路店)", "store_name": "金华艺海店", "operator": "琦琦", "city": "金华", "nature": "连锁", "latest": "2026-08-01", "days_since": 44, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7668980009670913210", "latest_title": "护理怎么可能找谁做都一样 #書荀 #美疗师日常 #丝滑重启下午更顺"}, {"dy_id": "78454184374", "nickname": "書荀·头疗·美容养生(盛和嘉园店)", "store_name": "保定嘉园店", "operator": "琦琦", "city": "保定", "nature": "连锁", "latest": "2025-09-15", "days_since": 364, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7550154901437025599", "latest_title": "好喜欢我们家的环境呀！马上就要试营业啦！保定的小伙伴们欢迎来体验！试营业期间有超值优惠喔！#强烈推荐 #头疗"}, {"dy_id": "58596159660", "nickname": "書荀·头疗·美容养生(中海东郡店)", "store_name": "赣州中海店", "operator": "夏夏", "city": "赣州", "nature": "连锁", "latest": "2026-09-12", "days_since": 2, "v30": 6, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684533020980218085", "latest_title": "去做具体的事 然后稳稳托举自己#团队力量 #团队管理 #头疗spa"}, {"dy_id": "75178093908", "nickname": "書荀·头疗·美容养生(森林半岛店)", "store_name": "森林半岛店", "operator": "夏夏", "city": "南阳", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 9, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684928291447032421", "latest_title": "您好，很高兴为您服务！！！\n#微笑服务 #搞笑 #書荀 #头疗"}, {"dy_id": "52650210032", "nickname": "書荀·头疗·美容养生(华鼎天下城店)", "store_name": "河南驻马店", "operator": "琦琦", "city": "驻马店", "nature": "连锁", "latest": "2026-08-20", "days_since": 25, "v30": 2, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7676060609611592869", "latest_title": "書荀·头疗·美容养生(华鼎天下城店)于20211009发布的作品"}, {"dy_id": "98757708175", "nickname": "書荀·头疗·美容养生(金鑫名城店)", "store_name": "随州金鑫店", "operator": "琦琦", "city": "随州", "nature": "连锁", "latest": "2026-09-10", "days_since": 4, "v30": 2, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683770744430557819", "latest_title": "書荀今日茶点~\n#不吃饱哪有力气减肥 #沉浸式头疗 #自己熬制"}, {"dy_id": "23232796731", "nickname": "書荀·头疗·美容养生(浏阳碧桂园店)", "store_name": "浏阳碧桂园", "operator": "琦琦", "city": "长沙", "nature": "连锁", "latest": "2026-06-07", "days_since": 99, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7648617803771036082", "latest_title": "头皮大扫除！碳酸泉水冲油腻，五二三达人亲测头疗套餐，70 分钟按摩配茶点。88 元享清爽，书荀师傅手艺棒，边泡发边喝茶，"}, {"dy_id": "69351909984", "nickname": "書荀·头疗美容养生(衡园.莘光里店)", "store_name": "上海衡园店", "operator": "小梅", "city": "上海", "nature": "连锁", "latest": "2026-09-10", "days_since": 4, "v30": 4, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683722749746932923", "latest_title": "#碳酸泉头疗spa #舒适氛围感空间 #spa疗愈空间设计 #碳酸泉头皮护理"}, {"dy_id": "67382509971", "nickname": "書荀·头疗·美容养生(歌林公园店)", "store_name": "歌林公园店", "operator": "夏夏", "city": "常州", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 7, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685013802732531451", "latest_title": "给顾客准备的小蛋糕🥰"}, {"dy_id": "76091445902", "nickname": "書荀头疗·美容养生(合肥政务银泰城店)", "store_name": "合肥银泰店", "operator": "夏夏", "city": "合肥", "nature": "连锁", "latest": "2026-09-12", "days_since": 2, "v30": 3, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684489239577771402", "latest_title": "肩颈酸得像背山？書荀老师傅纯手工精油穴位按摩，手法讲究，298让僵硬脖子变灵活，价优舒服，快约闺蜜来放松！#发现好地 #"}, {"dy_id": "64740126572", "nickname": "書荀·头疗·美容养生(高新吾悦广场店)", "store_name": "南阳吾悦店", "operator": "夏夏", "city": "南阳", "nature": "连锁", "latest": "2026-09-09", "days_since": 5, "v30": 1, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683523102278504869", "latest_title": "#美容工作氛围 #美容店员工日常 #皮肤管理师的快乐 #皮肤管理师的初心 #美疗师的日常工作生活"}, {"dy_id": "44205746172", "nickname": "書荀·头疗·美容养生(万昌中路店)", "store_name": "台州万昌店", "operator": "琦琦", "city": "台州", "nature": "连锁", "latest": "2026-08-05", "days_since": 40, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7670534871856668646", "latest_title": "为什么总有排不完的毒和去不完的湿？因为总有吹不完的空调、吃不完的冷饮和熬不完的夜。三伏天，抓住“以热逼寒”的时机#艾灸养"}, {"dy_id": "23890598756", "nickname": "書荀·头疗美容养生(凤起路店)", "store_name": "杭州凤起店", "operator": "夏夏", "city": "杭州", "nature": "连锁", "latest": "2026-09-10", "days_since": 4, "v30": 2, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683829258624204258", "latest_title": "反正要放松就冲書荀！70分钟碳酸泉头疗团购仅88，含头皮检测、按摩、冰镇面膜，解压舒适，4.8分门店全国通用，姐妹们快囤"}, {"dy_id": "40144865965", "nickname": "書荀·头疗·美容养生(九原万达广场店)", "store_name": "九原万达店", "operator": "琦琦", "city": "包头", "nature": "连锁", "latest": "2026-09-14", "days_since": 0, "v30": 11, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685288942430832006", "latest_title": "書荀·头疗·美容养生(九原万达广场店)于20211009发布的作品"}, {"dy_id": "63386732878", "nickname": "書荀·头疗·美容养生(叠景路店)", "store_name": "广州和丰店", "operator": "慧慧", "city": "广州", "nature": "陪跑", "latest": "2026-07-16", "days_since": 60, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7662943833874020435", "latest_title": "谁懂啊！跟闺蜜一起来书荀做头疗直接沦陷，店内环境又好看又干净，用品都是一客一换，安全感拉满。\n特意订了闺蜜双人间，两个人"}, {"dy_id": "58067945082", "nickname": "書荀·头疗·美容养生(奥体万达广场店)", "store_name": "沈阳万达店", "operator": "小梅", "city": "沈阳", "nature": "连锁", "latest": "2026-04-13", "days_since": 154, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7628182838173043171", "latest_title": "#书荀"}, {"dy_id": "84528998926", "nickname": "書荀·头疗·美容养生(图腾商业中心店)", "store_name": "陆良图腾店", "operator": "夏夏", "city": "曲靖", "nature": "连锁", "latest": "2026-03-31", "days_since": 167, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7623262085657727987", "latest_title": "#这店环境太好了 #面部护理 #面部护理"}, {"dy_id": "30513516350", "nickname": "書荀·头疗·美容养生(荆州万达广场店)", "store_name": "荆州西路店", "operator": "慧慧", "city": "荆州", "nature": "连锁", "latest": "2026-09-12", "days_since": 2, "v30": 8, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684517841584315739", "latest_title": "在書荀上班除了开心就是开心 #上班突然变得有趣了起来 #职场搞笑日常 #上班可太有意思了 #有爱的一幕 #書荀"}, {"dy_id": "46165095440", "nickname": "書荀·头疗美容养生(隆回凯悦店)", "store_name": "隆回凯悦店", "operator": "小梅", "city": "邵阳", "nature": "连锁", "latest": "2026-09-03", "days_since": 11, "v30": 2, "avg_like": "0", "updated7": "否", "alert_text": "7天未更", "alerts": ["7天未更"], "latest_url": "https://www.douyin.com/video/7681277914238947791", "latest_title": "下雨天有点寂静 #书荀 #下雨天"}, {"dy_id": "57024596186", "nickname": "書荀·头疗·美容养生(市二宫店)", "store_name": "海珠市二宫", "operator": "慧慧", "city": "广州", "nature": "连锁", "latest": "2026-09-11", "days_since": 3, "v30": 7, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684251318105883769", "latest_title": "書荀·头疗·美容养生 SPA(市二宫店）于20211009发布的作品"}, {"dy_id": "66065958114", "nickname": "書荀·头疗美容养生(银都路店)", "store_name": "闵行银都店", "operator": "小梅", "city": "上海", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 11, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685004059593704625", "latest_title": "#沉浸式护肤体验 #治愈系护肤日常 花时间 &爱自己\n用七十分钟静下来\n肩颈松了 头皮通了\n碰铃一响 可以睡了\n＃書荀碳"}, {"dy_id": "dylkl4kfkyu8", "nickname": "書荀·头疗·美容养生(徐汇龙吴路店)", "store_name": "徐汇龙吴店", "operator": "小梅", "city": "上海", "nature": "连锁", "latest": "2026-09-06", "days_since": 8, "v30": 7, "avg_like": "0", "updated7": "否", "alert_text": "7天未更", "alerts": ["7天未更"], "latest_url": "https://www.douyin.com/video/7682415312437130469", "latest_title": "#沉浸式休闲体验"}, {"dy_id": "41154756826", "nickname": "書荀·头疗美容养生SPA(温岭银泰店)", "store_name": "温岭银泰店", "operator": "琦琦", "city": "台州", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 3, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684978728724069094", "latest_title": "#做一份有温度的工作 書荀的伙伴们早早准备好了中秋节礼物送给每一位支持我们的会员宝贝 祝大家在这个团圆的日子平安喜乐万事"}, {"dy_id": "63069922510", "nickname": "書荀·头疗·美容养生(常熟珠江路店)", "store_name": "常熟珠江店", "operator": "琦琦", "city": "苏州", "nature": "连锁", "latest": "2026-08-25", "days_since": 20, "v30": 2, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7677953335077583284", "latest_title": "来书荀体验碳酸泉头疗套餐，含5分钟闻香礼、颂砵仪式，仪式感足超放松，现仅88元，不用随时退、过期退，刷到快囤！（注意，叠"}, {"dy_id": "llqh7990", "nickname": "書荀·头疗·美容养生SPA(信达金茂广场店)", "store_name": "天河金茂店", "operator": "慧慧", "city": "广州", "nature": "连锁", "latest": "2026-09-08", "days_since": 6, "v30": 1, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683147178152817893", "latest_title": "書荀家碳酸泉头疗套餐仅88，气泡泉做头部SPA，油头秒变蓬松，发量显多，快约姐妹冲！（注意，叠加立减后的价格是88元，团"}, {"dy_id": "37793006338", "nickname": "書荀·头疗·美容养生(海口N次方店)", "store_name": "海口N次方", "operator": "琦琦", "city": "海口", "nature": "连锁", "latest": "2026-09-11", "days_since": 3, "v30": 4, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684272656745745061", "latest_title": "前阵子连熬几天赶项目，肩颈发紧头昏沉，去常去的美体店做头肩颈护理，温感漫开后肩背松快，整个人舒展多了。（注意，叠加立减后"}, {"dy_id": "49037927092", "nickname": "書荀·头疗美容养生(古镇明珠店)", "store_name": "中山明珠店", "operator": "慧慧", "city": "中山", "nature": "连锁", "latest": "2026-09-10", "days_since": 4, "v30": 8, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683828212086564209", "latest_title": "#美容界显眼包"}, {"dy_id": "21602766008", "nickname": "書荀·头疗·美容养生(贵阳万象汇店)", "store_name": "贵阳万象汇", "operator": "琦琦", "city": "贵阳", "nature": "连锁", "latest": "未知", "days_since": "", "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "正常", "alerts": [], "latest_url": "", "latest_title": ""}, {"dy_id": "55559605170", "nickname": "書荀·头疗美容养生(佳湖新城店)", "store_name": "西山佳湖店", "operator": "夏夏", "city": "昆明", "nature": "连锁", "latest": "2026-09-12", "days_since": 2, "v30": 8, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684655033221459833", "latest_title": "#放松解压好去处 #美业人日常"}, {"dy_id": "26915823860", "nickname": "書荀·头疗美容养生(徐汇大木桥路店)", "store_name": "徐汇大木桥", "operator": "小梅", "city": "上海", "nature": "连锁", "latest": "2026-09-08", "days_since": 6, "v30": 1, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683141361599962354", "latest_title": "碳酸泉头疗套餐仅88元！气泡在头顶蹦迪，清空油腻烦恼，给天灵盖做瑜伽，打工人快冲，保卫发际线，轻松一整天，手慢无！（注意"}, {"dy_id": "34386020964", "nickname": "書荀·头疗美容养生(株洲华晨御园店)", "store_name": "株洲华晨园", "operator": "琦琦", "city": "株洲", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 8, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684892434992378225", "latest_title": "最近伏案久了总觉得肩颈发僵，特意找了家做养发的店，做完整整一个多小时的头疗加肩颈放松，连着头皮发紧的感觉都散了，整个人都"}, {"dy_id": "32990935131", "nickname": "書荀·头疗美容养生SPA(合肥橡树湾店)", "store_name": "合肥橡树湾", "operator": "夏夏", "city": "合肥", "nature": "连锁", "latest": "2026-09-09", "days_since": 5, "v30": 11, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683457813818048482", "latest_title": "上班主打一个情绪稳定，该笑笑该干干😛#甜蜜日常记录"}, {"dy_id": "20748125460", "nickname": "書荀·头疗美容养生(昆山光明路店)", "store_name": "昆山光明路", "operator": "琦琦", "city": "苏州", "nature": "连锁", "latest": "2026-09-14", "days_since": 0, "v30": 10, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685306808445128293", "latest_title": "无敌是多么的寂寞。 #書荀#头疗#美容#无敌#优雅"}, {"dy_id": "96960784849", "nickname": "書荀·头疗美容养生(昆山金浦路店)", "store_name": "昆山金浦路", "operator": "琦琦", "city": "苏州", "nature": "连锁", "latest": "2026-08-28", "days_since": 17, "v30": 6, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7679030709285325800", "latest_title": "把我的领带拿来#正太扭腰 #发疯日常 #头疗"}, {"dy_id": "43537911944", "nickname": "書荀·头疗美容养生(泰和经四路店)", "store_name": "泰和经四路", "operator": "夏夏", "city": "吉安", "nature": "连锁", "latest": "2026-09-11", "days_since": 3, "v30": 5, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684122523282144738", "latest_title": "天呐！88块享书荀家碳酸泉头疗套餐，冲油光、做按摩，给头皮做SPA，做完发丝柔亮，快约起！（注意，叠加立减后的价格是88"}, {"dy_id": "84955454457", "nickname": "書荀·头疗美容养生(石景山苹果园店)", "store_name": "北京苹果园", "operator": "琳琳", "city": "北京", "nature": "连锁", "latest": "2026-09-10", "days_since": 4, "v30": 5, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683897786837166971", "latest_title": "顾客刚下飞机，就直接来店里做碳酸泉头疗瑜伽，把一身疲惫都赶走啦！花时间 爱自己"}, {"dy_id": "96332834330", "nickname": "書荀·头疗美容养生(十堰万达店)", "store_name": "湖北十堰店", "operator": "琦琦", "city": "十堰", "nature": "连锁", "latest": "2026-09-14", "days_since": 0, "v30": 12, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685277942184910501", "latest_title": "仪式感不是形式 是团队的温度❤️\n一场简单的小仪式 看见彼此的付出✨\n#書荀一家店温暖一座城"}, {"dy_id": "23969895441", "nickname": "書荀·头疗美容养生SPA(昆山花园店)", "store_name": "昆山花园店", "operator": "慧慧", "city": "苏州", "nature": "连锁", "latest": "2026-08-30", "days_since": 15, "v30": 10, "avg_like": "0", "updated7": "否", "alert_text": "7天未更", "alerts": ["7天未更"], "latest_url": "https://www.douyin.com/video/7679769620076995301", "latest_title": "月薪两万不是梦#忙里偷闲皮一下"}, {"dy_id": "24169234710", "nickname": "書荀·头疗美容养生(大连大华锦绣国际店)", "store_name": "大连锦绣店", "operator": "小梅", "city": "大连", "nature": "陪跑", "latest": "2026-07-08", "days_since": 68, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7660059319996012495", "latest_title": "快来体验 #書荀"}, {"dy_id": "75621464143", "nickname": "書荀·头疗美容养生SPA(白云梅花园店)", "store_name": "白云梅花园", "operator": "慧慧", "city": "广州", "nature": "连锁", "latest": "2026-09-11", "days_since": 3, "v30": 11, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684141209782285139", "latest_title": "肉眼看不见的头皮真相✨300-500倍高清放大检测，看透毛囊深处问题！#美业人日常工作"}, {"dy_id": "70733856509", "nickname": "德琳書荀·头疗·美容养生(朝阳店)", "store_name": "德林朝阳店", "operator": "慧慧", "city": "成都", "nature": "陪跑", "latest": "2026-09-14", "days_since": 0, "v30": 17, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685200225758594139", "latest_title": "书荀碳酸泉头疗套餐88元！碳酸泡泡洗头皮，专业手法舒缓紧绷，做完头发柔顺发缝显密，打工人下班放松，性价比超高。（注意，叠"}, {"dy_id": "74255070978", "nickname": "書荀·头疗·美容养生(中山龙湖店)", "store_name": "中山龙湖店", "operator": "慧慧", "city": "中山", "nature": "陪跑", "latest": "2026-09-07", "days_since": 7, "v30": 7, "avg_like": "0", "updated7": "否", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7682736613734552945", "latest_title": "#美容护肤 #美容院团购"}, {"dy_id": "36621797908", "nickname": "書荀·头疗·美容养生(联祥花园店)", "store_name": "中山联祥店", "operator": "慧慧", "city": "中山", "nature": "陪跑", "latest": "2026-08-29", "days_since": 16, "v30": 9, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7679410884008445257", "latest_title": "#红皇后的蛋挞  #意想不到的结局"}, {"dy_id": "40378997752", "nickname": "XC书荀·头疗美容养生(海螺湾店)", "store_name": "陕西海螺湾", "operator": "琦琦", "city": "榆林", "nature": "陪跑", "latest": "2026-07-29", "days_since": 47, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7667773438212550504", "latest_title": "#皮肤管理师使命 #头皮清洁搭子 #沉浸式头皮护理体验"}, {"dy_id": "65673185827", "nickname": "伊丽慧書荀·头疗·美容养生SPA(平江一中店)", "store_name": "儒美平江店", "operator": "琳琳", "city": "岳阳", "nature": "陪跑", "latest": "2026-09-14", "days_since": 0, "v30": 20, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685326043842691305", "latest_title": "日复一日坚持发圈、做直播，不敢有丝毫松懈✨\n只想让每一个刚好有需要的你，能够遇见足够专业的我。\n用心做好美业，不负每一份"}, {"dy_id": "csslnz1893", "nickname": "儒美書荀·头疗·美容养生(天力城店)", "store_name": "儒美天力城", "operator": "琳琳", "city": "岳阳", "nature": "陪跑", "latest": "2026-09-14", "days_since": 0, "v30": 20, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685271457383828550", "latest_title": "#拖地小猫有的是力气 #儒美碳酸泉头疗美容养生#伊丽慧碳酸泉头疗美容养生"}, {"dy_id": "87035480194", "nickname": "梦伟書荀·头疗·美容养生(润城第二大道店)", "store_name": "昆明梦伟3店", "operator": "夏夏", "city": "昆明", "nature": "陪跑", "latest": "2026-03-24", "days_since": 174, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7620657912244078457", "latest_title": "梦伟書荀·头疗美容养生(润城第二大道店）于20211009发布的作品"}, {"dy_id": "PLBFB3331321", "nickname": "書荀·头疗·美容养生(麒麟巷店)", "store_name": "漂亮百分百", "operator": "夏夏", "city": "曲靖", "nature": "陪跑", "latest": "2026-09-09", "days_since": 5, "v30": 20, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683434871364543717", "latest_title": "#高端皮肤管理设备 #高端产品护理 #头疗养生"}, {"dy_id": "91130882052", "nickname": "美源書荀·头疗·美容·养生(活力大道店)", "store_name": "江西抚州店", "operator": "琦琦", "city": "抚州", "nature": "陪跑", "latest": "2026-09-13", "days_since": 1, "v30": 7, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684982266283549402", "latest_title": "连熬几天浑身发沉，偶然找到这家美体店，做了头肩颈放松项目，温热水流扫过头皮，肩颈紧绷感慢慢消散，整个人松快不少，感兴趣可"}, {"dy_id": "1259791374", "nickname": "京盛書荀·头疗·美容养生(吾悦商业广场店)", "store_name": "苏州京盛店", "operator": "慧慧", "city": "苏州", "nature": "陪跑", "latest": "2026-04-03", "days_since": 164, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7624330947425703103", "latest_title": "问京盛書荀头疗套餐咋样，答绝了！168 做碳酸泉减压头疗，按完超通透，像满血复活，性价比高，闭眼冲！ （注意，叠加立减后"}, {"dy_id": "92113264619", "nickname": "云梳月書荀·头疗美容养生(房山印象城店)", "store_name": "YSY印象城", "operator": "琳琳", "city": "北京", "nature": "陪跑", "latest": "2026-07-08", "days_since": 68, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7660133828962880697", "latest_title": "#头部按摩放松疗愈"}, {"dy_id": "42969538301", "nickname": "云梳月書荀·头疗美容养生(昌平万科店)", "store_name": "YSY昌平万科", "operator": "琳琳", "city": "北京", "nature": "陪跑", "latest": "2026-09-13", "days_since": 1, "v30": 6, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684935815004249018", "latest_title": "连着熬几天赶项目，肩颈僵硬头也胀，找美体店放松一个半小时，从头皮到肩颈全舒展开，整个人松快多了，累的朋友真可以试试。#休"}, {"dy_id": "22293222771", "nickname": "云梳月書荀·头疗·美容养生(林肯公园店)", "store_name": "YSY林肯公园", "operator": "琳琳", "city": "北京", "nature": "陪跑", "latest": "2026-07-10", "days_since": 66, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7660773824892294326", "latest_title": "#颂钵与安宁时刻 #一家疗愈空间的温暖小店"}, {"dy_id": "73321310519", "nickname": "云梳月書荀·头疗·美容养生(车公庄店)", "store_name": "YSY车公庄店", "operator": "琳琳", "city": "北京", "nature": "陪跑", "latest": "2026-04-30", "days_since": 137, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7634394952780601578", "latest_title": "书荀家140分钟碳酸泉头疗，碳酸泡泡超解压，肩颈酸胀全消除，168元超值，打工人冲！ （注意，叠加立减后的价格是168元"}, {"dy_id": "72313346319", "nickname": "云梳月書荀·头疗·美容养生(上海沙龙店)", "store_name": "YSY上海沙龙", "operator": "琳琳", "city": "北京", "nature": "陪跑", "latest": "2026-08-27", "days_since": 18, "v30": 1, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7678658849079611803", "latest_title": "#云梳月 女团来啦～\n#碳酸泉头疗瑜伽 #美容养生"}, {"dy_id": "53395564754", "nickname": "云梳月書荀·头疗美容养生(北京中关村店)", "store_name": "YSY中关村店", "operator": "琳琳", "city": "北京", "nature": "陪跑", "latest": "2026-06-19", "days_since": 87, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "15天未更", "alerts": ["15天未更"], "latest_url": "https://www.douyin.com/video/7653032472091117258", "latest_title": "云梳月碳酸泉头疗套餐救场！88 元让碳酸泡泡在颅顶狂欢，去油清爽如重启系统，专业手法配气泡，让发际线锃亮，头顶自带柔光！"}, {"dy_id": "95351188844", "nickname": "書荀·头疗美容养生(南明逸天城店)", "store_name": "南明逸天城", "operator": "琦琦", "city": "贵阳", "nature": "连锁", "latest": "2026-09-12", "days_since": 2, "v30": 16, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684595563609733248", "latest_title": "#氛围感拉满的餐厅 #炙烤美食 #快乐干饭人日常"}, {"dy_id": "74095047290", "nickname": "書荀·头疗美容养生SPA(观山湖悦然时光店)", "store_name": "观山湖悦然", "operator": "琦琦", "city": "贵阳", "nature": "连锁", "latest": "2026-09-14", "days_since": 0, "v30": 10, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685329040262245477", "latest_title": "头疗"}, {"dy_id": "39228567558", "nickname": "書荀·头疗·美容养生(番禺尚上名筑店)", "store_name": "番禺尚上店", "operator": "慧慧", "city": "广州", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 5, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684864328696543473", "latest_title": "每日茶歇 治愈系下午茶上线✨\n焦香嫩滑的烤布丁，表层带着焦糖斑驳的纹路\n还有香蕉烤吐司！吐司边缘烤得酥脆，布丁内馅绵密，"}, {"dy_id": "96666260932", "nickname": "書荀·头疗美容养生SPA(昆山黑龙江路店)", "store_name": "昆山黑龙江", "operator": "琦琦", "city": "苏州", "nature": "连锁", "latest": "2026-09-13", "days_since": 1, "v30": 9, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7684870993702096192", "latest_title": "天呐头皮抗议？书荀碳酸泉头疗来救场！88块碳酸气泡洗油垢、指腹松紧绷，按头皮舒适度定价，做完头发带柔光，这波养生投资超值"}, {"dy_id": "69954116797", "nickname": "書荀·头疗美容养生(白云佳润广场店)", "store_name": "白云佳润店", "operator": "慧慧", "city": "广州", "nature": "连锁", "latest": "2026-08-31", "days_since": 14, "v30": 2, "avg_like": "0", "updated7": "否", "alert_text": "7天未更", "alerts": ["7天未更"], "latest_url": "https://www.douyin.com/video/7680111916488522650", "latest_title": "工作中的女人最美#皮肤管理师忙碌的一天"}, {"dy_id": "30141333308", "nickname": "書荀·头疗美容养生(吾悦楚天都市佳园店)", "store_name": "楚天都市佳园", "operator": "慧慧", "city": "荆州", "nature": "连锁", "latest": "2026-09-10", "days_since": 4, "v30": 3, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683842655050600305", "latest_title": "書荀头疗美容养生 这么高级优美的环境不来体验一下吗#書荀头疗美容养生 #書荀"}, {"dy_id": "49756639468", "nickname": "書荀·头疗美容养生(锦城万达广场店)", "store_name": "成都锦城万达", "operator": "小梅", "city": "成都", "nature": "连锁", "latest": "2026-09-14", "days_since": 0, "v30": 2, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7685234564881977265", "latest_title": "你们知道我们有多少惊喜给你们吗 #抖上热门 #抖音二创激励计划 #流量扶持"}, {"dy_id": "44556983999", "nickname": "書荀·头疗美容养生(庆春银泰店)", "store_name": "杭州庆春银泰", "operator": "夏夏", "city": "杭州", "nature": "连锁", "latest": "2025-09-25", "days_since": 354, "v30": 0, "avg_like": "0", "updated7": "否", "alert_text": "断更", "alerts": ["断更"], "latest_url": "https://www.douyin.com/video/7553860331648912659", "latest_title": "🌾#光影定妆 \n  不脱妆伪素颜心机\n细腻纹出妈生感卧蚕，自然膨润～\n24小时甜笑眼波撩人，睁闭眼都是精致暴击#眉毛 #"}, {"dy_id": "87828251198", "nickname": "書荀·头疗美容养生(奉贤百联南桥店)", "store_name": "上海奉贤百联", "operator": "小梅", "city": "上海", "nature": "连锁", "latest": "2026-09-10", "days_since": 4, "v30": 7, "avg_like": "0", "updated7": "是", "alert_text": "正常", "alerts": [], "latest_url": "https://www.douyin.com/video/7683869232018263546", "latest_title": "#舒适体验空间 #高端美容空间 #头皮检测体验"}];
+const opStats = {"琳琳": {"total": 18, "updated": 7, "v30": 85}, "夏夏": {"total": 30, "updated": 19, "v30": 151}, "慧慧": {"total": 22, "updated": 14, "v30": 152}, "琦琦": {"total": 29, "updated": 14, "v30": 111}, "小梅": {"total": 10, "updated": 6, "v30": 43}};
+const OP_COLORS = {'琳琳':'#D81E8F','夏夏':'#00B4D8','慧慧':'#8AC926','琦琦':'#7B68EE','小梅':'#FFD60A'};
+
+function renderOpCards() {
+  const list = document.getElementById('op-list');
+  list.innerHTML = Object.entries(opStats).map(([op, s]) => {
+    const rate = s.total ? Math.round(s.updated/s.total*100) : 0;
+    const color = OP_COLORS[op] || '#00B4D8';
+    return '<div class="op-row">' +
+      '<div class="op-name" onclick="filterBy(\'operator\', \'' + op + '\')" title="点击只看：' + op + ' 的账号">' + op + '</div>' +
+      '<div class="op-bar-wrap"><div class="op-bar" style="width:' + rate + '%;background:' + color + '"></div></div>' +
+      '<div class="op-stat"><div class="num">' + s.total + '</div><div class="lbl">门店</div></div>' +
+      '<div class="op-stat"><div class="num">' + s.updated + '</div><div class="lbl">已更新</div></div>' +
+      '<div class="op-stat"><div class="num">' + s.v30 + '</div><div class="lbl">30天发片</div></div>' +
+    '</div>';
+  }).join('');
+}
+renderOpCards();
+
+const FIELD_NAME = {operator:'运营人', city:'城市', latest:'最近发布', alert_text:'状态'};
+
+function renderDetailTable(data, field, value) {
+  const tbody = document.getElementById('detail-tbody');
+  tbody.innerHTML = data.map(a => {
+    const daysClass = a.days_since === '' ? '' : (a.days_since <= 7 ? 'fresh' : a.days_since <= 14 ? 'warn' : 'danger');
+    const daysText = a.days_since === '' ? '-' : a.days_since + 'Day';
+    const alertBadge = '<span class="badge ' + (a.alerts.length ? 'danger' : 'normal') + '">' + a.alert_text + '</span>';
+    const videoCell = a.latest_url
+      ? '<button class="copy-btn" onclick="openVideo(this, \'' + a.latest_url + '\')">打开</button> <button class="copy-btn" onclick="copyText(this, \'' + a.latest_url + '\')">复制</button>'
+      : '-';
+    const cityFull = a.city || '';
+    const cityShort = cityFull.length > 3 ? cityFull.substring(0,3) + '...' : (cityFull || '-');
+    const id = a.dy_id;
+    function cell(f, val, inner, tipText) {
+      const noVal = (val === '' || val === '-' || val === null || val === undefined);
+      const active = (!noVal && field === f && String(val) === String(value)) ? ' hl' : '';
+      const cls = noVal ? '' : 'clickable' + active;
+      const onclick = noVal ? '' : ' onclick="filterBy(\'' + f + '\', \'' + val + '\')"';
+      const tip = noVal ? '' : ' title="点击只看：' + (tipText || val) + '"';
+      return '<td class="' + cls + '"' + onclick + tip + '>' + inner + '</td>';
+    }
+    return '<tr>' +
+      cell('operator', a.operator, a.operator || '-', a.operator) +
+      '<td class="long-text"><b>' + (a.store_name||'-') + '</b></td>' +
+      cell('city', cityFull, cityShort, cityFull) +
+      cell('latest', a.latest, a.latest || '-', a.latest) +
+      '<td><span class="days-tag ' + daysClass + '">' + daysText + '</span></td>' +
+      '<td><b>' + a.v30 + '</b></td>' +
+      cell('alert_text', a.alert_text, alertBadge, a.alert_text) +
+      '<td><code style="font-size:11px;cursor:pointer;text-decoration:underline dotted;" onclick="copyText(this, \'' + id + '\')" title="点击复制抖音号">' + id + '</code></td>' +
+      '<td>' + videoCell + '</td>' +
+    '</tr>';
+  }).join('');
+}
+renderDetailTable(accounts);
+
+function applyFilter(list, label, field, value) {
+  renderDetailTable(list, field, value);
+  const bar = document.getElementById('filter-bar');
+  if (!label) {
+    bar.style.display = 'none';
+  } else {
+    bar.style.display = 'block';
+    document.getElementById('filter-label').textContent = label;
+    document.getElementById('filter-count').textContent = list.length;
+  }
+  const sec = document.getElementById('detail-section');
+  if (sec) sec.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// 点击单元格 / 运营人名字 → 只看同类（单条件，点新的就替换）
+function filterBy(field, value) {
+  if (value === '' || value === '-' || value === null || value === undefined) return;
+  const list = accounts.filter(x => String(x[field]) === String(value));
+  applyFilter(list, (FIELD_NAME[field] || field) + '：' + value, field, value);
+}
+
+function filterAccounts(type) {
+  let filtered = accounts;
+  let label = '';
+  if (type === 'updated') {
+    filtered = accounts.filter(a => a.updated7 === '是' || a.updated7 === '1' || a.updated7 === 'true');
+    label = '近7天已更新';
+  } else if (type === '7d') {
+    filtered = accounts.filter(a => typeof a.days_since === 'number' && a.days_since > 7 && a.days_since <= 15);
+    label = '7-15天未更新';
+  } else if (type === '15d') {
+    filtered = accounts.filter(a => typeof a.days_since === 'number' && a.days_since > 15 && a.days_since <= 90);
+    label = '15-90天未更新';
+  } else if (type === 'broken') {
+    filtered = accounts.filter(a => typeof a.days_since === 'number' && a.days_since > 90);
+    label = '90天以上断更';
+  }
+  applyFilter(filtered, label, null, null);
+}
+
+function openVideo(btn, url) {
+  const win = window.open(url, '_blank');
+  if (!win) {
+    btn.textContent = '弹窗被拦截，请复制链接';
+    setTimeout(() => btn.textContent = '打开', 2000);
+  }
+}
+
+function copyText(el, text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  const original = el.textContent;
+  el.textContent = '已复制';
+  setTimeout(() => el.textContent = original, 1500);
+}
+</script>
+</body>
+</html>
