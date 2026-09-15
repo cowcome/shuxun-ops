@@ -246,9 +246,9 @@
         <div class="stat"><div class="k">对比昨日</div><div class="v dim" id="stDiff">—</div><div class="d">同口径按天对比</div></div>
         <div class="stat"><div class="k">营业门店</div><div class="v" id="stStores">—</div><div class="d" id="stStoresD">以门店主表实际数据为准</div></div>
       </div>
-      <div class="health-banner">
-        数据源接入中：有赞开放平台（自用型应用）正在走「建应用 → 店铺授权 → 获取 token」流程。
-        token 到位后本看板自动开始灌数，届时将展示全部门店的抖音 / 美团购券核销金额（口径：顾客买券实付，不减服务费）。
+      <div class="health-banner" id="yzBanner">
+        数据源：有赞开放平台 · Supabase 实时同步。口径：顾客实付（真实核销订单，不含二维码收款 / 充值）；
+        内购订单不走有赞，故本数据即真实客户业绩（未对账，供经营参考）。
       </div>
     </div>
 
@@ -274,7 +274,7 @@
       <div id="spActiveList"><div class="op">加载中…</div></div>
     </div>
 
-    <div class="foot">書荀连锁板块 · 数据源：有赞开放平台（接入中）</div>
+    <div class="foot">書荀连锁板块 · 数据源：有赞开放平台（实时）</div>
   </div>
 </div>
 
@@ -444,10 +444,12 @@ async function enterApp(){
   $('noPermView').classList.add('hide');
   $('appView').classList.remove('hide');
   $('whoami').textContent = email + ' · 连锁板块内测中（仅主账号可见）';
-  await loadChainStores();
-  await loadSpecials();
-  renderStores();
-}
+   await loadChainStores();
+   await loadSpecials();
+   renderStores();
+   loadYz();                                        // 有赞实时数据（异步灌入，不阻塞首屏）
+   setInterval(() => loadYz(false), 5 * 60 * 1000); // 每 5 分钟自动刷新（缓存 TTL 3 分钟）
+ }
 
 /* ================= 连锁门店（数量与清单动态拉取，永不写死） ================= */
 let allStores = [];     // stores 主表 · 连锁类型
@@ -526,6 +528,7 @@ function renderStores(){
     // 右上角荧光点：绿=营业 / 红=特殊（二选一） + 黄=新店 / 粉=老店（二选一）
     const dots = (sp ? '<i class="dt dt-r"></i>' : '<i class="dt dt-g"></i>') +
                  (cls === 'new' ? '<i class="dt dt-y"></i>' : '<i class="dt dt-p"></i>');
+    const met = storeMetrics[x.id];
     return '<div class="store-card'+(sp?' is-special':'')+'">' +
       '<div class="hd">' +
         '<span class="nm">'+esc(x.short_name || x.std_name)+'</span>' +
@@ -535,21 +538,183 @@ function renderStores(){
       '</div>' +
       (sp ? '<div class="sp-line">特殊 · '+esc(sp.special_type)+' <span class="sp-date">'+esc(String(sp.start_date).slice(5))+' ~ '+esc(String(sp.end_date).slice(5))+'</span></div>' : '') +
       platRows(x) +
-      '<div class="amt-row">今日核销：——（待接入）</div>' +
+      '<div class="amt-row">' + (met
+        ? '今日 <b>'+fmtY(met.today)+'</b> · '+met.todayC+' 单 ｜ 昨日 '+fmtY(met.yday)+' · '+met.ydayC+' 单'
+        : '今日暂无订单') + '</div>' +
     '</div>';
   }).join('');
   renderSpActive();
 }
 
-/* 平台数据行：美团 / 抖音 各一行（¥金额 X人 + ng ¥内购金额/内购张数）
-   数据源：有赞 API（接入中）。storeMetrics 由取数模块填充，键：
-   mtAmt/mtCnt/dyAmt/dyCnt/mtNgAmt/mtNgCnt/dyNgAmt/dyNgCnt */
+/* 平台数据行：美团 / 抖音 各一行（¥金额 + 单数）。数据源：Supabase yz_orders（有赞实时） */
 let storeMetrics = {};
+const fmtY = (x) => '¥' + (Math.round((x||0)*100)/100);
 function platRows(x){
   const m = storeMetrics[x.id] || null;
-  const f = (k) => (m && m[k] != null) ? m[k] : '——';
-  return '<div class="plat-row"><span class="pv">美团</span><span class="pa">¥'+f('mtAmt')+'</span><span class="pc">「'+f('mtCnt')+'人」</span><span class="ng">ng ¥'+f('mtNgAmt')+'/'+f('mtNgCnt')+'</span></div>' +
-         '<div class="plat-row"><span class="pv">抖音</span><span class="pa">¥'+f('dyAmt')+'</span><span class="pc">「'+f('dyCnt')+'人」</span><span class="ng">ng ¥'+f('dyNgAmt')+'/'+f('dyNgCnt')+'</span></div>';
+  const fa = (k) => (m && m[k] != null) ? fmtY(m[k]) : '——';
+  const fc = (k) => (m && m[k] != null) ? m[k] : '——';
+  return '<div class="plat-row"><span class="pv">美团</span><span class="pa">'+fa('mtA')+'</span><span class="pc">「'+fc('mtC')+'单」</span></div>' +
+         '<div class="plat-row"><span class="pv">抖音</span><span class="pa">'+fa('dyA')+'</span><span class="pc">「'+fc('dyC')+'单」</span></div>';
+}
+
+/* ================= 有赞实时数据（yz_orders 直读） =================
+   口径：order_type=0（真实核销），排除 item_type 6/7/9（二维码收款/直接收款/充值）。
+   内购订单不走有赞（2026-09-15 崔姐确认），故有赞金额=真实客户业绩。
+   按天归属暂用 create_time（下单时间），finish_time 口径验证后切换。 */
+const YZ_ITEM_EXCLUDE = [6,7,9];
+const yzCacheKey = 'chain_yz_cache_v2';
+let yz = { ready:false, asOf:null, unmatched:[] };
+
+function yzNorm(s){
+  return String(s||'').replace(/书荀|書荀|头疗|养生|美容|SPA|spa/g,'')
+    .replace(/[（(【\[]/g,'').replace(/[）)】\]]/g,'').replace(/[\s\-—_·・]/g,'').trim();
+}
+/* yz shop_name → 门店主表（四层匹配：全名 / 去省市区前缀 / 剥头2字 / 区县兜底）
+   ctx=被剥掉的地名字，必须出现在有赞店名中才允许用该变体（防错配）。
+   已验证（2026-09-15，9月20302单）：79/93 匹配，其余 14 家主表无对应店（向崔姐确认后补 aliases） */
+function yzKeysOf(x){
+  const pt = String(x.province||'').replace(/省$/,'');
+  const ct = String(x.city||'').replace(/市$/,'');
+  const out = [];
+  const add = (t, ctx) => {
+    if(t && t.length >= 2 && !out.some(o => o[0] === t)) out.push([t, ctx]);
+  };
+  [x.short_name, x.std_name].concat(String(x.aliases||'').split(/[\/、,，;；]+/)).forEach(k => {
+    const kn = yzNorm(k);
+    if(kn.length < 2) return;
+    add(kn, '');
+    [pt, ct].forEach(loc => {
+      if(loc && kn.indexOf(loc) >= 0){
+        const v = kn.split(loc).join('');
+        add(v, loc);
+        add(v.replace(/(店|路)$/,''), loc);
+      }
+    });
+    if(kn.length >= 4){
+      add(kn.slice(2), kn.slice(0,2));
+      add(kn.slice(2).replace(/(店|路)$/,''), kn.slice(0,2));
+    }
+    add(kn.replace(/(店|路)$/,''), '');
+  });
+  return out;
+}
+function matchYzStore(name){
+  const n = yzNorm(name);
+  let best = null, bestLen = 0;
+  allStores.forEach(x => {
+    const ct = String(x.city||'').replace(/市$/,'');
+    const dt = String(x.district||'').replace(/区$|县$|市$/,'');
+    yzKeysOf(x).forEach(p => {
+      if(n.indexOf(p[0]) >= 0 && (!p[1] || n.indexOf(p[1]) >= 0) && p[0].length > bestLen){
+        best = x; bestLen = p[0].length;
+      }
+    });
+    // 区县兜底：同城市内该区县唯一的门店才启用
+    if(dt.length >= 2 && ct && n.indexOf(dt) >= 0 && n.indexOf(ct) >= 0){
+      const same = allStores.filter(y => String(y.city||'').replace(/市$/,'') === ct
+        && String(y.district||'').replace(/区$|县$|市$/,'') === dt);
+      if(same.length === 1 && dt.length - 1 > bestLen){ best = x; bestLen = dt.length - 1; }
+    }
+  });
+  return best;
+}
+/* 毫秒 → 北京时间日期串 */
+function yzDateStr(ms){ return new Date(ms + 8*3600000).toISOString().slice(0,10); }
+function bjStr(iso){ return iso ? new Date(new Date(iso).getTime() + 8*3600000).toISOString().slice(5,16).replace('T',' ') : ''; }
+
+async function loadYz(force){
+  try{
+    const T  = todayStr();
+    const ms = T.slice(0,8) + '01';                      // 本月 1 日
+    const d7 = yzDateStr(Date.now() - 6*86400000);       // 近 7 天起点
+    const yd = yzDateStr(Date.now() - 1*86400000);       // 昨天
+    const start = [ms, d7, yd].sort()[0];
+    const ck = yzCacheKey + '_' + start;
+
+    // 读缓存（3 分钟 TTL，避免每次打开都全量拉）
+    let agg = null, asOf = null;
+    if(!force){
+      try{
+        const c = JSON.parse(localStorage.getItem(ck) || 'null');
+        if(c && Date.now() - c.t < 3*60*1000){ agg = c.agg; asOf = c.asOf; }
+      }catch(e){}
+    }
+    if(!agg){
+      // 分页拉取（Supabase 单次上限 1000 行）
+      const gte = new Date(Date.parse(start + 'T00:00:00+08:00')).toISOString();
+      const sel = 'shop_name,real_pay,order_type,item_type,pay_channel_name,create_time';
+      const raw = [];
+      let from = 0;
+      while(true){
+        const part = await sb('/rest/v1/yz_orders?source=eq.chain&order=create_time.asc&select=' + sel,
+          { headers: { Range: from + '-' + (from+999) } });
+        raw.push(...part);
+        if(part.length < 1000 || from > 150000) break;
+        from += 1000;
+      }
+      asOf = raw.length ? raw[raw.length-1].create_time : null;
+      // 聚合：按有赞门店名 × 日期
+      agg = {};
+      raw.forEach(r => {
+        if(r.order_type !== 0 || YZ_ITEM_EXCLUDE.indexOf(r.item_type) >= 0) return;
+        const amt = (r.real_pay || 0) / 100;
+        const D = yzDateStr(new Date(r.create_time).getTime());
+        let g = agg[r.shop_name];
+        if(!g) g = agg[r.shop_name] = { mtA:0, mtC:0, dyA:0, dyC:0, otA:0, otC:0, days:{} };
+        const ch = String(r.pay_channel_name || '');
+        if(ch.indexOf('美团') >= 0){ g.mtA += amt; g.mtC++; }
+        else if(ch.indexOf('抖音') >= 0){ g.dyA += amt; g.dyC++; }
+        else { g.otA += amt; g.otC++; }
+        const d = g.days[D] || (g.days[D] = [0,0]);
+        d[0] += amt; d[1]++;
+      });
+      try{ localStorage.setItem(ck, JSON.stringify({ t: Date.now(), asOf, agg })); }catch(e){}
+    }
+
+    // 映射到门店主表
+    const metrics = {};
+    yz.unmatched = [];
+    Object.keys(agg).forEach(name => {
+      const st = matchYzStore(name);
+      const g = agg[name];
+      if(st){
+        const t = g.days[T]  || [0,0];
+        const y = g.days[yd] || [0,0];
+        let mtd = 0; Object.keys(g.days).forEach(d => { if(d >= ms) mtd += g.days[d][0]; });
+        metrics[st.id] = { mtA:g.mtA, mtC:g.mtC, dyA:g.dyA, dyC:g.dyC,
+          today:t[0], todayC:t[1], yday:y[0], ydayC:y[1], mtd:mtd };
+      }else{
+        yz.unmatched.push({ name, amt: g.mtA + g.dyA + g.otA });
+      }
+    });
+    storeMetrics = metrics;
+    yz.ready = true; yz.asOf = asOf;
+
+    // 大盘健康度
+    let tA = 0, tC = 0, yA = 0, mA = 0;
+    Object.values(metrics).forEach(m => { tA += m.today; tC += m.todayC; yA += m.yday; mA += m.mtd; });
+    $('stToday').textContent = fmtY(tA);
+    $('stToday').classList.remove('dim');
+    $('stTodayD').textContent = '今日 ' + tC + ' 单 · 本月累计 ' + fmtY(mA);
+    const diff = tA - yA;
+    $('stDiff').innerHTML = (diff >= 0 ? '<span style="color:#4ade80">+' : '<span style="color:#f87171">') + fmtY(diff) + '</span>'
+      + '<span style="font-size:11px;opacity:.6"> vs 昨日 ' + fmtY(yA) + '</span>';
+    const badge = $('healthBadge');
+    badge.textContent = '有赞 · 实时';
+    badge.className = 'badge bg-open';
+    $('asOf').textContent = asOf ? ('数据截至 ' + bjStr(asOf)) : '';
+
+    // 未匹配提示
+    const un = yz.unmatched;
+    $('yzBanner').innerHTML = '数据源：有赞开放平台 · Supabase 实时同步。口径：顾客实付（真实核销订单，不含二维码收款 / 充值）；内购不走有赞，本数据即真实客户业绩（未对账）。'
+      + (un.length ? '<br/>⚠️ 有 ' + un.length + ' 家有赞门店未匹配到门店主表（合计 ' + fmtY(un.reduce((s,x)=>s+x.amt,0)) + '）：'
+        + esc(un.slice(0,8).map(x => x.name).join('、')) : '✅ 有赞门店已全部匹配到门店主表');
+
+    renderStores();
+  }catch(e){
+    $('healthBadge').textContent = '数据加载失败';
+    $('stTodayD').textContent = esc(e.message.slice(0,80));
+  }
 }
 
 /* ================= 周期内特殊门店 + 导出 ================= */
