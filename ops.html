@@ -120,6 +120,7 @@
   /* ---------- 核对 ---------- */
   .diff-pos { color: #f87171; font-weight: 700; }
   .diff-neg { color: #60a5fa; font-weight: 700; }
+  .hint { color: #fbbf24; font-size: 11px; line-height: 1.5; margin-top: 4px; font-weight: 400; text-align: left; }
   .file-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
   .file-row .nm { width: 100px; font-size: 13px; color: rgba(255,255,255,0.7); flex-shrink: 0; }
   .file-row .st { font-size: 12px; color: rgba(255,255,255,0.5); }
@@ -1741,6 +1742,7 @@ async function runRecon(){
       '</tr></thead><tbody>';
 
     let bad = 0;
+    let hintCnt = 0;   // 金额吻合但人数有出入、给出「一人多项目」参考提醒的门店数
     const truth = {};   // 门店 → {mt:美团真值金额, dy:抖音真值金额}（供有赞交叉校验用）
     STORES.forEach(std=>{
       const f = fill[std] || {};
@@ -1770,13 +1772,23 @@ async function runRecon(){
                     dMtP !== 0 || dDyP !== 0;
       if(isBad) bad++;
 
+      // 2026-09-15 顺联店案例沉淀：金额吻合但人数差 1~2，多为「同一客人体验 2 个以上项目」
+      // 或双人套餐仅到店 1 人（券面口径 vs 实际到店口径）。平台明细里没有客人姓名，
+      // 系统无法自动识别，只给参考提醒，由运营核实后按实际到店修正并在备注留痕。
+      let hint = '';
+      if(Math.abs(dMtA) <= TOL && dMtP !== 0)
+        hint += '<div class="hint">美团人数差 '+(dMtP>0?'+':'')+dMtP+'：可能是同一客户体验 2 个以上项目 / 双人套餐仅到店 1 人，请核实后按实际到店修正并在备注留痕</div>';
+      if(Math.abs(dDyA) <= TOL && dDyP !== 0)
+        hint += '<div class="hint">抖音人数差 '+(dDyP>0?'+':'')+dDyP+'：可能是同一客户体验 2 个以上项目 / 双人套餐仅到店 1 人，请核实后按实际到店修正并在备注留痕</div>';
+      if(hint) hintCnt++;
+
       h += '<tr><td class="store">'+esc(std)+'</td>'+
         cell(mtTrueAmt, fMtA, dMtA, true) +
         cell(mtTruePpl, fMtP, dMtP, false) +
         cell(dyTrueAmt, fDyA, dDyA, true) +
         cell(dyTruePpl, fDyP, dDyP, false) +
         cell(innerTrue, fIn,  dIn,  true) +
-        '<td>'+(isBad?'<span class="bad">异常</span>':'<span class="ok">一致</span>')+'</td></tr>';
+        '<td>'+(isBad?'<span class="bad">异常</span>':'<span class="ok">一致</span>')+hint+'</td></tr>';
     });
     h += '</tbody></table></div>';
 
@@ -1845,7 +1857,8 @@ async function runRecon(){
 
     $('rBody').innerHTML = note + h + yzHtml +
       '<div class="msg '+(bad?'err':'ok')+'">核对完成：共 '+STORES.length+' 家，'+
-      (bad ? '<b>'+bad+' 家存在异常</b>' : '全部一致')+'（金额容差 ±'+TOL+' 元，人数差 1 即标红）</div>';
+      (bad ? '<b>'+bad+' 家存在异常</b>' : '全部一致')+'（金额容差 ±'+TOL+' 元，人数差 1 即标红）</div>' +
+      (hintCnt ? '<div class="msg info">'+hintCnt+' 家出现<b>黄色参考提醒</b>（金额吻合但人数有出入）：大概率是同一客户体验 2 个以上项目、或双人套餐仅到店 1 人等实际情况，核实后把该店填报的到店客数改成实际到店数，并在填报备注里写明原因留痕。</div>' : '');
   }catch(err){
     msg('核对失败：'+esc(err.message),'err');
   }
