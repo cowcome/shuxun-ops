@@ -156,6 +156,7 @@
   .plat-row .pc { white-space: nowrap; color: rgba(255,255,255,0.45); }
   .plat-row .ng { color: rgba(255,255,255,0.5); margin-left: auto; }
   .store-card .amt-row { font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 6px; }
+  .store-card .amt-row > div { white-space: nowrap; line-height: 1.6; }
   .store-card .sp-line { margin-bottom: 2px; font-size: 12px; }
   .store-card .sp-date { color: rgba(251,146,60,0.85); }
   .badge {
@@ -540,7 +541,7 @@ function renderStores(){
       (sp ? '<div class="sp-line">特殊 · '+esc(sp.special_type)+' <span class="sp-date">'+esc(String(sp.start_date).slice(5))+' ~ '+esc(String(sp.end_date).slice(5))+'</span></div>' : '') +
       platRows(x) +
       '<div class="amt-row">' + (met
-        ? '今日 <b>'+fmtY(met.today)+'</b> · '+met.todayC+' 单 ｜ 昨日 '+fmtY(met.yday)+' · '+met.ydayC+' 单'
+        ? '<div>今日 <b>'+fmtY(met.today)+'</b> · '+met.todayC+' 单</div><div>昨日 '+fmtY(met.yday)+' · '+met.ydayC+' 单</div>'
         : '本月暂无订单') + '</div>' +
     '</div>';
   }).join('');
