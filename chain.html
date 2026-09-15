@@ -660,11 +660,14 @@ async function loadYz(force){
       agg = {};
       raw.forEach(r => {
         if(r.order_type !== 0 || YZ_ITEM_EXCLUDE.indexOf(r.item_type) >= 0) return;
+        const ch = String(r.pay_channel_name || '');
+        // 2026-09-15 崔姐拍板：只认「核销 / 验券」渠道为真实核销业绩，
+        // 扫码买单（二维码收款）/ 会员余额 / 欠款 / 现金 / 抖音线上买单 等一律不算
+        if(!/核销|验券/.test(ch)) return;
         const amt = (r.real_pay || 0) / 100;
         const D = yzDateStr(new Date(r.create_time).getTime());
         let g = agg[r.shop_name];
         if(!g) g = agg[r.shop_name] = { mtA:0, mtC:0, dyA:0, dyC:0, otA:0, otC:0, days:{} };
-        const ch = String(r.pay_channel_name || '');
         if(ch.indexOf('美团') >= 0){ g.mtA += amt; g.mtC++; }
         else if(ch.indexOf('抖音') >= 0){ g.dyA += amt; g.dyC++; }
         else { g.otA += amt; g.otC++; }
@@ -709,7 +712,7 @@ async function loadYz(force){
 
     // 未匹配提示
     const un = yz.unmatched;
-    $('yzBanner').innerHTML = '数据源：有赞开放平台 · Supabase 实时同步。口径：顾客实付（真实核销订单，不含二维码收款 / 充值）；内购不走有赞，本数据即真实客户业绩（未对账）。'
+    $('yzBanner').innerHTML = '数据源：有赞开放平台 · Supabase 实时同步。口径：真实核销业绩 = 美团验券 + 抖音核销 + 记账核销 + 商城核销；不含扫码买单（二维码收款）/ 会员余额 / 欠款 / 现金 / 抖音线上买单 等非核销支付。内购不走有赞，本数据即真实客户业绩（未对账）。'
       + (un.length ? '<br/>⚠️ 有 ' + un.length + ' 家有赞门店未匹配到门店主表（合计 ' + fmtY(un.reduce((s,x)=>s+x.amt,0)) + '）：'
         + esc(un.slice(0,8).map(x => x.name).join('、')) : '✅ 有赞门店已全部匹配到门店主表');
 
