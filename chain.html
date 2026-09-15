@@ -152,8 +152,8 @@
   .dt-p { background: #ff5edb; box-shadow: 0 0 6px rgba(255,94,219,0.8); }  /* 老店=荧光粉 */
   .plat-row { display: flex; align-items: baseline; font-size: 12.5px; line-height: 1.9; color: rgba(255,255,255,0.8); }
   .plat-row .pv { width: 38px; color: rgba(255,255,255,0.45); }
-  .plat-row .pa { width: 66px; }
-  .plat-row .pc { width: 58px; }
+  .plat-row .pa { margin-right: 10px; white-space: nowrap; }
+  .plat-row .pc { white-space: nowrap; color: rgba(255,255,255,0.45); }
   .plat-row .ng { color: rgba(255,255,255,0.5); margin-left: auto; }
   .store-card .amt-row { font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 6px; }
   .store-card .sp-line { margin-bottom: 2px; font-size: 12px; }
@@ -255,6 +255,7 @@
     <!-- 门店列表 -->
     <div class="card">
       <div class="card-title">门店列表<span class="note" id="storeCount"></span></div>
+      <div class="note" style="margin:-4px 0 10px 2px;opacity:.55">卡片平台金额 = 本月累计（9/1 起）；卡片底部为今日 / 昨日</div>
       <div class="chips" id="storeChips">
         <div class="chip on" data-f="all">全部<span class="cnt" id="cAll"></span></div>
         <div class="chip" data-f="open"><span class="dt dt-g"></span>营业<span class="cnt" id="cOpen"></span></div>
@@ -540,7 +541,7 @@ function renderStores(){
       platRows(x) +
       '<div class="amt-row">' + (met
         ? '今日 <b>'+fmtY(met.today)+'</b> · '+met.todayC+' 单 ｜ 昨日 '+fmtY(met.yday)+' · '+met.ydayC+' 单'
-        : '今日暂无订单') + '</div>' +
+        : '本月暂无订单') + '</div>' +
     '</div>';
   }).join('');
   renderSpActive();
@@ -553,8 +554,8 @@ function platRows(x){
   const m = storeMetrics[x.id] || null;
   const fa = (k) => (m && m[k] != null) ? fmtY(m[k]) : '——';
   const fc = (k) => (m && m[k] != null) ? m[k] : '——';
-  return '<div class="plat-row"><span class="pv">美团</span><span class="pa">'+fa('mtA')+'</span><span class="pc">「'+fc('mtC')+'单」</span></div>' +
-         '<div class="plat-row"><span class="pv">抖音</span><span class="pa">'+fa('dyA')+'</span><span class="pc">「'+fc('dyC')+'单」</span></div>';
+  return '<div class="plat-row"><span class="pv">美团</span><span class="pa">'+fa('mtA')+'</span><span class="pc">'+fc('mtC')+' 单</span></div>' +
+         '<div class="plat-row"><span class="pv">抖音</span><span class="pa">'+fa('dyA')+'</span><span class="pc">'+fc('dyC')+' 单</span></div>';
 }
 
 /* ================= 有赞实时数据（yz_orders 直读） =================
@@ -646,7 +647,8 @@ async function loadYz(force){
       const raw = [];
       let from = 0;
       while(true){
-        const part = await sb('/rest/v1/yz_orders?source=eq.chain&order=create_time.asc&select=' + sel,
+        const part = await sb('/rest/v1/yz_orders?source=eq.chain&order=create_time.asc&select=' + sel
+          + '&create_time=gte.' + encodeURIComponent(gte),
           { headers: { Range: from + '-' + (from+999) } });
         raw.push(...part);
         if(part.length < 1000 || from > 150000) break;
