@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>抖音扫码买单 · 门店明细</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #1a1730 0%, #241b3f 50%, #1b2440 100%);
+    color: #fff;
+    min-height: 100vh;
+    padding: 16px 14px 48px;
+    font-size: 14px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  .hide { display: none !important; }
+  .card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(8px);
+  }
+  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; color: #c4b5fd; }
+  .note { font-size: 12px; color: rgba(255,255,255,0.5); }
+  .banner { font-size: 12.5px; color: rgba(255,255,255,0.6); line-height: 1.7; margin-bottom: 12px; }
+  .login-box { max-width: 380px; margin: 12vh auto 0; }
+  .login-box h1 { font-size: 24px; text-align: center; margin: 0 0 6px; letter-spacing: 1px; }
+  .login-box .sub { text-align: center; font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 24px; }
+  .noperm { max-width: 420px; margin: 14vh auto 0; text-align: center; }
+  .noperm .big { font-size: 44px; margin-bottom: 10px; }
+  .noperm h2 { font-size: 18px; margin: 0 0 8px; }
+  .noperm p { color: rgba(255,255,255,0.55); font-size: 13px; line-height: 1.7; margin: 0 0 20px; }
+  .field { margin-bottom: 12px; }
+  .field-label { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 6px; display: block; }
+  input[type=text], input[type=password], input[type=date] {
+    width: 100%; height: 42px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05); color: #fff;
+    font-size: 14px; padding: 0 12px; outline: none; font-family: inherit;
+  }
+  input::placeholder { color: rgba(255,255,255,0.35); }
+  button {
+    height: 42px; border: none; border-radius: 10px; cursor: pointer;
+    font-size: 14px; font-weight: 600; font-family: inherit; padding: 0 18px;
+  }
+  .primary { background: linear-gradient(135deg,#7c3aed,#9333ea); color: #fff; }
+  .sm { height: 32px; font-size: 12px; padding: 0 12px; border-radius: 8px;
+        background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
+  .chip {
+    height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+    font-size: 12.5px; border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.8);
+    display: inline-flex; align-items: center; margin-right: 8px; font-weight: 500;
+  }
+  .chip.on { background: rgba(139,92,246,0.28); border-color: rgba(139,92,246,0.6); color: #c4b5fd; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row > .date { flex: 1; min-width: 130px; }
+  .msg { padding: 9px 12px; border-radius: 8px; font-size: 12.5px; margin-top: 8px; }
+  .msg.err { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .msg.ok { background: rgba(34,197,94,0.13); color: #86efac; }
+  .msg.info { background: rgba(59,130,246,0.13); color: #93c5fd; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .topbar .who { font-size: 12px; color: rgba(255,255,255,0.5); }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .stats { display: flex; gap: 18px; flex-wrap: wrap; margin: 4px 0 2px; }
+  .stat .v { font-size: 26px; font-weight: 700; color: #fff; }
+  .stat .l { font-size: 12px; color: rgba(255,255,255,0.5); }
+  .stat .v.up { color: #4ade80; }
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  th { text-align: left; font-size: 12px; color: rgba(255,255,255,0.45); font-weight: 500; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13.5px; }
+  tr:hover td { background: rgba(139,92,246,0.10); }
+  .rank { width: 50px; color: rgba(255,255,255,0.5); text-align: center; }
+  .rank.top1 { color: #fbbf24; font-weight: 700; }
+  .rank.top2 { color: #e5e7eb; font-weight: 700; }
+  .rank.top3 { color: #fb923c; font-weight: 700; }
+  .amt { text-align: right; font-weight: 700; color: #c4b5fd; white-space: nowrap; }
+  .cnt { text-align: right; color: rgba(255,255,255,0.6); white-space: nowrap; }
+  .nm { color: rgba(255,255,255,0.92); }
+  .nm .city { color: rgba(255,255,255,0.35); font-size: 11px; margin-left: 6px; }
+  .foot { text-align: center; font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 20px; }
+  .loader { text-align: center; padding: 30px; color: rgba(255,255,255,0.5); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 登录 -->
+  <div id="loginView" class="login-box hide">
+    <h1>抖音扫码买单</h1>
+    <div class="sub">書荀门店经营数据 · 内测版（仅限主账号）</div>
+    <div class="card">
+      <div class="field"><label class="field-label">邮箱</label><input type="text" id="lgEmail" placeholder="工作邮箱" /></div>
+      <div class="field"><label class="field-label">密码</label><input type="password" id="lgPwd" placeholder="密码" /></div>
+      <button class="primary" id="lgBtn" style="width:100%">登 录</button>
+      <div id="loginErr" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- 无权限 -->
+  <div id="noPermView" class="noperm hide">
+    <div class="big">🔒</div>
+    <h2>暂无访问权限</h2>
+    <p>抖音扫码买单看板目前仅对主账号开放。<br/>如需开通请联系管理员。</p>
+    <button class="sm" onclick="doLogout()">退出登录</button>
+  </div>
+
+  <!-- 主视图 -->
+  <div id="appView" class="hide">
+    <div class="topbar">
+      <div>
+        <h1>抖音扫码买单 · 门店明细</h1>
+        <div class="who" id="whoami"></div>
+      </div>
+      <div class="top-actions">
+        <a class="sm" href="chain.html" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18);text-decoration:none;display:inline-flex;align-items:center">← 连锁看板</a>
+        <button class="sm" onclick="doLogout()">退出</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">口径说明</div>
+      <div class="banner" id="yzBanner">
+        数据源：有赞开放平台 · Supabase yz_orders。<b>抖音扫码买单</b> = pay_channel_name 为「抖音线上买单」的订单实付合计（含买单 / 核销型支付，按 create_time 下单时间归属）。
+        属「抖音框架」板块一环，供运营按店叮追；阈值提醒待后续细化。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">日期范围</div>
+      <div class="row" style="margin-bottom:10px">
+        <div class="date"><input type="date" id="dStart" /></div>
+        <div class="date"><input type="date" id="dEnd" /></div>
+        <button class="primary" id="qryBtn" onclick="loadData()">查 询</button>
+      </div>
+      <div class="row">
+        <span class="chip" data-q="today" onclick="pickRange('today')">今天</span>
+        <span class="chip" data-q="week" onclick="pickRange('week')">本周</span>
+        <span class="chip on" data-q="month" onclick="pickRange('month')">本月</span>
+        <span class="chip" data-q="quarter" onclick="pickRange('quarter')">本季</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between; align-items:flex-end">
+        <div class="stats">
+          <div class="stat"><div class="v" id="stAmt">¥0</div><div class="l">扫码买单合计</div></div>
+          <div class="stat"><div class="v" id="stCnt">0</div><div class="l">订单数</div></div>
+          <div class="stat"><div class="v" id="stStores">0</div><div class="l">有单门店</div></div>
+        </div>
+        <div class="note" id="asOf"></div>
+      </div>
+      <div id="tblBox">
+        <div class="loader" id="loading">加载中…</div>
+        <table id="tbl" class="hide">
+          <thead><tr>
+            <th class="rank">#</th><th>门店</th><th class="amt">扫码金额</th><th class="cnt">单数</th>
+          </tr></thead>
+          <tbody id="rBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="foot">書荀 · 抖音框架板块（内测）· 数据未对账，供运营参考</div>
+  </div>
+
+  <div id="globalMsg"></div>
+</div>
+
+<script>
+/* ================= 常量 ================= */
+const SB_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
+const SB_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
+const ADMIN_EMAIL = '411249585@qq.com';
+const CHANNEL = '抖音线上买单';
+
+/* ================= 工具 ================= */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function msg(html, cls){ $('globalMsg').innerHTML = '<div class="msg '+cls+'">'+html+'</div>'; }
+function clearMsg(){ $('globalMsg').innerHTML = ''; }
+function todayStr(){
+  return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Shanghai' });
+}
+function myEmail(){
+  try{ return JSON.parse(atob(session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email || ''; }catch(e){ return ''; }
+}
+const fmtY = (x) => '¥' + (Math.round((x||0)*100)/100);
+
+/* ================= 会话（共用 ops_session） ================= */
+let session = null;
+try{ session = JSON.parse(localStorage.getItem('ops_session') || 'null'); }catch(e){ session = null; }
+
+async function authPost(path, body){
+  const r = await fetch(SB_URL+path, {
+    method:'POST', headers:{ 'apikey':SB_KEY, 'Content-Type':'application/json' }, body: JSON.stringify(body||{})
+  });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.error_description || d.msg || d.message || ('HTTP '+r.status));
+  return d;
+}
+function saveSession(d){ session = d; localStorage.setItem('ops_session', JSON.stringify(d)); }
+async function fetchRole(token){
+  try{
+    const uid = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub;
+    const r = await fetch(SB_URL+'/rest/v1/user_roles?user_id=eq.'+uid+'&select=role', { headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+token } });
+    const d = await r.json();
+    return (d && d[0] && d[0].role) || null;
+  }catch(e){ return null; }
+}
+async function ensureSession(){
+  if(!session) throw new Error('未登录');
+  const exp = session.expires_at || 0;
+  if(exp*1000 - Date.now() < 120000){
+    const d = await authPost('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+    saveSession(d);
+  }
+}
+async function sb(path, opts){
+  opts = opts || {};
+  await ensureSession();
+  const h = Object.assign({ 'apikey': SB_KEY, 'Authorization':'Bearer '+session.access_token, 'Content-Type':'application/json' }, opts.headers||{});
+  let r = await fetch(SB_URL+path, Object.assign({}, opts, { headers:h }));
+  if(r.status === 401){
+    try{ const d = await authPost('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh_token }); saveSession(d); }
+    catch(e){ doLogout(true); throw new Error('登录已过期，请重新登录'); }
+    h['Authorization'] = 'Bearer '+session.access_token;
+    r = await fetch(SB_URL+path, Object.assign({}, opts, { headers:h }));
+  }
+  if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(e){} throw new Error(m||('HTTP '+r.status)); }
+  return r.json();
+}
+function doLogout(silent){
+  session = null; localStorage.removeItem('ops_session');
+  $('appView').classList.add('hide'); $('noPermView').classList.add('hide');
+  $('loginView').classList.remove('hide');
+  $('lgEmail').value=''; $('lgPwd').value=''; $('loginErr').innerHTML='';
+  if(!silent){ $('lgEmail').focus(); }
+}
+async function doLogin(){
+  const email = $('lgEmail').value.trim(); const pwd = $('lgPwd').value;
+  if(!email || !pwd){ $('loginErr').innerHTML='<div class="msg err">请输入邮箱和密码</div>'; return; }
+  $('lgBtn').disabled = true; $('lgBtn').textContent = '登 录 中…';
+  try{
+    const d = await authPost('/auth/v1/token?grant_type=password', { email, password: pwd });
+    const role = await fetchRole(d.access_token);
+    if(role !== 'ops'){ $('loginErr').innerHTML='<div class="msg err">该账号没有运营权限（role='+(role||'无')+'）</div>'; $('lgBtn').disabled=false; $('lgBtn').textContent='登 录'; return; }
+    saveSession(d); await enterApp();
+  }catch(e){ $('loginErr').innerHTML='<div class="msg err">登录失败：'+esc(e.message)+'</div>'; }
+  $('lgBtn').disabled = false; $('lgBtn').textContent = '登 录';
+}
+
+/* ================= 门店主表 + 匹配（复用 chain.html 四层策略） ================= */
+let allStores = [];
+async function loadStores(){
+  try{
+    allStores = await sb('/rest/v1/stores?select=id,std_name,short_name,aliases,province,city,district&order=std_name.asc');
+  }catch(e){ allStores = []; msg('门店主表加载失败：'+esc(e.message),'err'); }
+}
+function yzNorm(s){
+  return String(s||'').replace(/书荀|書荀|头疗|养生|美容|SPA|spa/g,'')
+    .replace(/[（(【\[]/g,'').replace(/[）)】\]]/g,'').replace(/[\s\-—_·・]/g,'').trim();
+}
+function yzKeysOf(x){
+  const pt = String(x.province||'').replace(/省$/,'');
+  const ct = String(x.city||'').replace(/市$/,'');
+  const out = [];
+  const add = (t, ctx) => { if(t && t.length >= 2 && !out.some(o => o[0] === t)) out.push([t, ctx]); };
+  [x.short_name, x.std_name].concat(String(x.aliases||'').split(/[\/、,，;；]+/)).forEach(k => {
+    const kn = yzNorm(k); if(kn.length < 2) return;
+    add(kn, '');
+    [pt, ct].forEach(loc => { if(loc && kn.indexOf(loc) >= 0){ const v = kn.split(loc).join(''); add(v, loc); add(v.replace(/(店|路)$/,''), loc); } });
+    if(kn.length >= 4){ add(kn.slice(2), kn.slice(0,2)); add(kn.slice(2).replace(/(店|路)$/,''), kn.slice(0,2)); }
+    add(kn.replace(/(店|路)$/,''), '');
+  });
+  return out;
+}
+function matchYzStore(name){
+  const n = yzNorm(name); let best = null, bestLen = 0;
+  allStores.forEach(x => {
+    const ct = String(x.city||'').replace(/市$/,'');
+    const dt = String(x.district||'').replace(/区$|县$|市$/,'');
+    yzKeysOf(x).forEach(p => { if(n.indexOf(p[0]) >= 0 && (!p[1] || n.indexOf(p[1]) >= 0) && p[0].length > bestLen){ best = x; bestLen = p[0].length; } });
+    if(dt.length >= 2 && ct && n.indexOf(dt) >= 0 && n.indexOf(ct) >= 0){
+      const same = allStores.filter(y => String(y.city||'').replace(/市$/,'') === ct && String(y.district||'').replace(/区$|县$|市$/,'') === dt);
+      if(same.length === 1 && dt.length - 1 > bestLen){ best = x; bestLen = dt.length - 1; }
+    }
+  });
+  return best;
+}
+
+/* ================= 日期范围 ================= */
+function addDays(s, n){ const d = new Date(s+'T00:00:00+08:00'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+function mondayOf(s){ const d = new Date(s+'T00:00:00+08:00'); const dow = d.getUTCDay(); const off = (dow+6)%7; return addDays(s, -off); }
+function quarterStartOf(s){ const m = +s.slice(5,7); const qm = m<=3?1 : m<=6?4 : m<=9?7 : 10; return s.slice(0,5)+String(qm).padStart(2,'0')+'-01'; }
+function pickRange(q){
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.q === q));
+  const T = todayStr();
+  let s = T, e = T;
+  if(q === 'today'){ s = T; e = T; }
+  else if(q === 'week'){ s = mondayOf(T); e = T; }
+  else if(q === 'month'){ s = T.slice(0,8)+'01'; e = T; }
+  else if(q === 'quarter'){ s = quarterStartOf(T); e = T; }
+  $('dStart').value = s; $('dEnd').value = e;
+  loadData();
+}
+
+/* ================= 取数 ================= */
+let curRange = null;
+async function loadData(){
+  const s = $('dStart').value, e = $('dEnd').value;
+  if(!s || !e){ msg('请选择起止日期','err'); return; }
+  if(s > e){ msg('起始日期不能晚于截止日期','err'); return; }
+  clearMsg();
+  curRange = { s, e };
+  $('tbl').classList.add('hide'); $('loading').classList.remove('hide'); $('loading').textContent = '加载中…';
+  $('qryBtn').disabled = true; $('qryBtn').textContent = '查询中…';
+  $('stAmt').textContent='¥0'; $('stCnt').textContent='0'; $('stStores').textContent='0'; $('asOf').textContent='';
+  try{
+    const gte = new Date(s+'T00:00:00+08:00').toISOString();
+    const lt  = new Date(addDays(e,1)+'T00:00:00+08:00').toISOString();
+    const sel = 'shop_name,real_pay,create_time,order_type';
+    const chEnc = encodeURIComponent(CHANNEL);
+    const raw = [];
+    let from = 0, asOf = null;
+    while(true){
+      const part = await sb('/rest/v1/yz_orders?order=create_time.asc&select='+encodeURIComponent(sel)
+        + '&pay_channel_name=eq.'+chEnc
+        + '&create_time=gte.'+encodeURIComponent(gte)
+        + '&create_time=lt.'+encodeURIComponent(lt),
+        { headers: { Range: from + '-' + (from+999) } });
+      raw.push(...part);
+      if(part.length) asOf = part[part.length-1].create_time;
+      if(part.length < 1000 || from > 150000) break;
+      from += 1000;
+      $('loading').textContent = '加载中… 已拉 '+raw.length+' 行';
+    }
+    // 聚合到门店
+    const agg = {};   // storeId -> {name, city, amt, cnt}; 未匹配 -> 用原始 shop_name
+    const unmatched = {};
+    raw.forEach(r => {
+      const amt = (r.real_pay || 0)/100;
+      const st = matchYzStore(r.shop_name);
+      if(st){
+        let g = agg[st.id]; if(!g) g = agg[st.id] = { name: st.short_name||st.std_name, city: st.city||'', amt:0, cnt:0 };
+        g.amt += amt; g.cnt++;
+      }else{
+        let g = unmatched[r.shop_name]; if(!g) g = unmatched[r.shop_name] = { name: r.shop_name, city:'', amt:0, cnt:0 };
+        g.amt += amt; g.cnt++;
+      }
+    });
+    const list = Object.values(agg).concat(Object.values(unmatched))
+      .filter(x => x.amt !== 0 || x.cnt !== 0)
+      .sort((a,b) => b.amt - a.amt);
+    let tA=0, tC=0; list.forEach(x => { tA += x.amt; tC += x.cnt; });
+    $('stAmt').textContent = fmtY(tA);
+    $('stCnt').textContent = tC;
+    $('stStores').textContent = list.length;
+    $('asOf').textContent = asOf ? '数据截至 ' + new Date(new Date(asOf).getTime()+8*3600000).toISOString().slice(5,16).replace('T',' ') : '';
+    // 渲染
+    let h = '';
+    list.forEach((x, i) => {
+      const rk = i===0?'top1':i===1?'top2':i===2?'top3':'';
+      h += '<tr><td class="rank '+rk+'">'+(i+1)+'</td>'+
+           '<td class="nm">'+esc(x.name)+(x.city?'<span class="city">'+esc(x.city)+'</span>':'')+'</td>'+
+           '<td class="amt">'+fmtY(x.amt)+'</td>'+
+           '<td class="cnt">'+x.cnt+'</td></tr>';
+    });
+    if(!h) h = '<tr><td colspan="4" style="text-align:center;color:rgba(255,255,255,0.4);padding:24px">该时间段内无抖音扫码买单订单</td></tr>';
+    $('rBody').innerHTML = h;
+    $('loading').classList.add('hide'); $('tbl').classList.remove('hide');
+  }catch(e){
+    $('loading').textContent = ''; 
+    msg('查询失败：'+esc(e.message),'err');
+  }
+  $('qryBtn').disabled = false; $('qryBtn').textContent = '查 询';
+}
+
+/* ================= 入口 ================= */
+async function enterApp(){
+  const email = myEmail();
+  if(email !== ADMIN_EMAIL){
+    $('loginView').classList.add('hide'); $('noPermView').classList.remove('hide'); return;
+  }
+  $('loginView').classList.add('hide'); $('noPermView').classList.add('hide');
+  $('appView').classList.remove('hide');
+  $('whoami').textContent = email + ' · 抖音框架板块（仅主账号）';
+  await loadStores();
+  pickRange('month');   // 默认本月并立即查询
+}
+
+/* ================= 启动 ================= */
+(async function init(){
+  $('lgBtn').onclick = doLogin;
+  $('lgPwd').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+  if(session && session.access_token){
+    try{
+      const role = await fetchRole(session.access_token);
+      if(role === 'ops'){ await enterApp(); return; }
+    }catch(e){}
+  }
+  $('loginView').classList.remove('hide');
+  $('lgEmail').focus();
+})();
+</script>
+</body>
+</html>
