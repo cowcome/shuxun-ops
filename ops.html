@@ -1594,8 +1594,12 @@ function parseInner(aoa){
     out[std][plat].amt += toNum(row[iUse]);
     out[std][plat].rebate += toNum(row[iReb]);
     codeIdx.forEach(ci=>{
-      const v = row[ci];
-      if(v!=null && String(v).trim()!=='' && String(v)!=='nan'){ out[std][plat].cnt++; codes[String(v).trim()] = std; }
+      const v = row[ci]==null ? '' : String(row[ci]).trim();
+      // 2026-09-15 修复：内购表「券码」列会混入占位 0 和自付差额数字（如 17/13/27），
+      // 旧版全部当券码计数 → 内购张数虚高（如万科 9 张被数成 12 张），
+      // 人数真值被扣成负数。真券码特征：美团 13 位、抖音 15 位纯数字，
+      // 这里统一要求 ≥10 位纯数字才算券。
+      if(/^\d{10,}$/.test(v)){ out[std][plat].cnt++; codes[v] = std; }
     });
   }
   return { byStore: out, codes: codes };
