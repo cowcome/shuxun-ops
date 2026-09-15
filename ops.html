@@ -1576,20 +1576,34 @@ function colIdx(hd, keys){
 }
 const toNum = (v) => { const x = parseFloat(String(v==null?'':v).replace(/[,\s¥]/g,'')); return isNaN(x)?0:x; };
 
+// 内购表日期匹配：兼容 2026-09-14 / 2026/9/14 / 2026年9月14日 等写法，取年月日比较
+function sameInnerDay(v, date){
+  if(v==null) return true;                       // 无日期 → 不过滤（兼容旧表）
+  const m = String(v).match(/(\d{4})\D*?(\d{1,2})\D*?(\d{1,2})/);
+  if(!m) return true;                            // 解析不出 → 不过滤
+  const ymd = m[1]+'-'+String(+m[2]).padStart(2,'0')+'-'+String(+m[3]).padStart(2,'0');
+  return ymd === date;
+}
+
 // 解析内购登记表 → {门店: {美团:{amt,cnt,rebate}, 抖音:{...}}, codes:Set(券码)}
-function parseInner(aoa){
+// 2026-09-15 修复：内购表是累计多天的流水表，必须按「核销日期」只取核对当天，
+// 否则其他日期的同店行会混入（万科 9/12 的 159/142 混进 9/14 → 真值 166 被顶成 7）。
+function parseInner(aoa, date){
   const hr = headerRow(aoa, '门店');
   if(hr < 0) throw new Error('内购表找不到表头');
   const hd = aoa[hr];
   const iPlat = colIdx(hd, ['平台']), iStore = colIdx(hd, ['门店']);
   const iUse  = colIdx(hd, ['消费金额']), iReb = colIdx(hd, ['报销金额']);
+  const iDate = colIdx(hd, ['核销日期']);
   const codeIdx = [];
   for(let i=0;i<hd.length;i++){ if(String(hd[i]==null?'':hd[i]).indexOf('券码')>=0) codeIdx.push(i); }
   const out = {}, codes = {};
+  let skipped = 0;
   for(let r=hr+1;r<aoa.length;r++){
     const row = aoa[r]; if(!row) continue;
     const std = matchStore(row[iStore]);
     if(!std) continue;
+    if(iDate >= 0 && !sameInnerDay(row[iDate], date)){ skipped++; continue; }
     const plat = String(row[iPlat]==null?'':row[iPlat]).indexOf('美团')>=0 ? '美团' : '抖音';
     if(!out[std]) out[std] = { '美团':{amt:0,cnt:0,rebate:0}, '抖音':{amt:0,cnt:0,rebate:0} };
     out[std][plat].amt += toNum(row[iUse]);
@@ -1603,7 +1617,7 @@ function parseInner(aoa){
       if(/^\d{10,}$/.test(v)){ out[std][plat].cnt++; codes[v] = std; }
     });
   }
-  return { byStore: out, codes: codes };
+  return { byStore: out, codes: codes, skipped: skipped };
 }
 
 // 解析美团 → {门店:{amt,ppl,cnt}}
@@ -1714,7 +1728,7 @@ async function runRecon(){
   try{
     const mt = reconFiles.mt ? parseMt(reconFiles.mt) : { byStore:{}, unmatched:{} };
     const dy = reconFiles.dy ? parseDy(reconFiles.dy) : { byStore:{}, unmatched:{}, innerCodes:[] };
-    const ng = reconFiles.ng ? parseInner(reconFiles.ng) : { byStore:{}, codes:{} };
+    const ng = reconFiles.ng ? parseInner(reconFiles.ng, date) : { byStore:{}, codes:{}, skipped:0 };
     const yz = reconFiles.yz ? parseYz(reconFiles.yz) : null;
 
     // 门店填报
@@ -1831,6 +1845,10 @@ async function runRecon(){
 
     // 提示区
     let note = '';
+    if(ng.skipped){
+      note += '<div class="msg info">内购表已按核销日期 <b>'+esc(date)+'</b> 过滤，跳过其他日期 '+ng.skipped+
+              ' 行（内购登记表是累计多天的流水表，只取当天参与核对）。</div>';
+    }
     if(missingInner.length){
       note += '<div class="msg err"><b>内购漏登记 '+missingInner.length+' 笔</b>（抖音明细里有内购券，但内购表没登记）：<br>'+
         missingInner.map(x=>'· '+esc(x.store||'未知门店')+' 券码 '+esc(x.code||'(空)')).join('<br>')+
