@@ -126,7 +126,7 @@
     <div class="card">
       <div class="card-title">口径说明</div>
       <div class="banner" id="yzBanner">
-        数据源：有赞开放平台 · Supabase yz_orders。<b>抖音扫码买单</b> = pay_channel_name 为「抖音线上买单」的订单实付合计（含买单 / 核销型支付，按 create_time 下单时间归属）。
+        数据源：有赞开放平台 · Supabase yz_orders。<b>抖音扫码买单</b> = pay_channel_name 为「抖音线上买单」的订单实付合计（含买单 / 核销型支付，按 create_time 下单时间归属）。门店归属按 kdt_id 精确映射（yz_shop_map）；未上线门店的测试数据已自动拦截。
         属「抖音框架」板块一环，供运营按店叮追；阈值提醒待后续细化。
       </div>
     </div>
@@ -255,11 +255,15 @@ async function doLogin(){
   $('lgBtn').disabled = false; $('lgBtn').textContent = '登 录';
 }
 
-/* ================= 门店主表 + 匹配（复用 chain.html 四层策略） ================= */
+/* ================= 门店主表 + kdt 映射（yz_shop_map，2026-09-16 崔姐确认） ================= */
 let allStores = [];
+let kdtToStore = {};   // kdt_id → store_id
 async function loadStores(){
   try{
-    allStores = await sb('/rest/v1/stores?select=id,std_name,short_name,aliases,province,city,district&order=std_name.asc');
+    allStores = await sb('/rest/v1/stores?select=id,std_name,short_name,aliases,province,city,district,status&order=std_name.asc');
+    const ymap = await sb('/rest/v1/yz_shop_map?select=kdt_id,store_id');
+    kdtToStore = {};
+    ymap.forEach(r => { kdtToStore[r.kdt_id] = r.store_id; });
   }catch(e){ allStores = []; msg('门店主表加载失败：'+esc(e.message),'err'); }
 }
 function yzNorm(s){
@@ -324,7 +328,7 @@ async function loadData(){
   try{
     const gte = new Date(s+'T00:00:00+08:00').toISOString();
     const lt  = new Date(addDays(e,1)+'T00:00:00+08:00').toISOString();
-    const sel = 'shop_name,real_pay,create_time,order_type';
+    const sel = 'kdt_id,shop_name,real_pay,create_time,order_type';
     const chEnc = encodeURIComponent(CHANNEL);
     const raw = [];
     let from = 0, asOf = null;
@@ -340,12 +344,16 @@ async function loadData(){
       from += 1000;
       $('loading').textContent = '加载中… 已拉 '+raw.length+' 行';
     }
-    // 聚合到门店
+    // 聚合到门店（按 kdt_id 精确映射）
+    // 🛡 防线（2026-09-16 崔姐拍板）：未上线门店的测试数据不显示、不计入
     const agg = {};   // storeId -> {name, city, amt, cnt}; 未匹配 -> 用原始 shop_name
     const unmatched = {};
+    let blAmt = 0, blCnt = 0;
     raw.forEach(r => {
       const amt = (r.real_pay || 0)/100;
-      const st = matchYzStore(r.shop_name);
+      const sid = kdtToStore[r.kdt_id];
+      const st = sid ? allStores.find(x => x.id === sid) : null;
+      if(st && st.status === '待上线'){ blAmt += amt; blCnt++; return; }   // 🛡 拦截未上线门店
       if(st){
         let g = agg[st.id]; if(!g) g = agg[st.id] = { name: st.short_name||st.std_name, city: st.city||'', amt:0, cnt:0 };
         g.amt += amt; g.cnt++;
@@ -361,7 +369,8 @@ async function loadData(){
     $('stAmt').textContent = fmtY(tA);
     $('stCnt').textContent = tC;
     $('stStores').textContent = list.length;
-    $('asOf').textContent = asOf ? '数据截至 ' + new Date(new Date(asOf).getTime()+8*3600000).toISOString().slice(5,16).replace('T',' ') : '';
+    $('asOf').textContent = (asOf ? '数据截至 ' + new Date(new Date(asOf).getTime()+8*3600000).toISOString().slice(5,16).replace('T',' ') : '')
+      + (blCnt ? '；🛡 已拦截 ' + blCnt + ' 笔未上线门店测试数据 ' + fmtY(blAmt) : '');
     // 渲染
     let h = '';
     list.forEach((x, i) => {
