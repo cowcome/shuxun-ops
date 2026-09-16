@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>经营驾驶舱 · 一屏三问</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #141225 0%, #1d1633 50%, #15203a 100%);
+    color: #fff;
+    min-height: 100vh;
+    padding: 16px 14px 48px;
+    font-size: 14px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  .hide { display: none !important; }
+  .card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(8px);
+  }
+  .q-title { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+  .q-title .q { font-size: 14px; font-weight: 700; }
+  .q-title .sub { font-size: 12px; color: rgba(255,255,255,0.45); }
+  .q1 { color: #93c5fd; } .q2 { color: #fcd34d; } .q3 { color: #fca5a5; }
+  .login-box { max-width: 380px; margin: 12vh auto 0; }
+  .login-box h1 { font-size: 24px; text-align: center; margin: 0 0 6px; letter-spacing: 1px; }
+  .login-box .sub { text-align: center; font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 24px; }
+  .noperm { max-width: 420px; margin: 14vh auto 0; text-align: center; }
+  .noperm p { color: rgba(255,255,255,0.55); font-size: 13px; line-height: 1.7; margin: 0 0 20px; }
+  .field { margin-bottom: 12px; }
+  .field-label { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 6px; display: block; }
+  input[type=text], input[type=password] {
+    width: 100%; height: 42px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05); color: #fff;
+    font-size: 14px; padding: 0 12px; outline: none; font-family: inherit;
+  }
+  input::placeholder { color: rgba(255,255,255,0.35); }
+  button {
+    height: 42px; border: none; border-radius: 10px; cursor: pointer;
+    font-size: 14px; font-weight: 600; font-family: inherit; padding: 0 18px;
+  }
+  .primary { background: linear-gradient(135deg,#7c3aed,#9333ea); color: #fff; }
+  .sm { height: 32px; font-size: 12px; padding: 0 12px; border-radius: 8px;
+        background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); text-decoration: none;
+        display: inline-flex; align-items: center; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+  .topbar .who { font-size: 12px; color: rgba(255,255,255,0.5); }
+  h1 { font-size: 22px; margin: 0 0 2px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .stat { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; }
+  .stat .l { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 4px; white-space: nowrap; }
+  .stat .v { font-size: 22px; font-weight: 700; white-space: nowrap; }
+  .stat .d { font-size: 12px; margin-top: 2px; white-space: nowrap; }
+  .d.up { color: #4ade80; } .d.down { color: #f87171; } .d.flat { color: rgba(255,255,255,0.45); }
+  .stat.bad { background: rgba(239,68,68,0.14); }
+  .stat.bad .v, .stat.bad .l { color: #fca5a5; }
+  .funnel { display: flex; gap: 8px; align-items: stretch; margin-bottom: 12px; flex-wrap: wrap; }
+  .fnode { flex: 1; min-width: 140px; border-radius: 12px; padding: 10px 12px; }
+  .fnode .fl { font-size: 12px; margin-bottom: 2px; }
+  .fnode .fv { font-size: 16px; font-weight: 700; white-space: nowrap; }
+  .fnode.blue { background: rgba(59,130,246,0.16); } .fnode.blue .fl { color: #93c5fd; }
+  .fnode.gray { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); }
+  .fnode.gray .fl { color: rgba(255,255,255,0.45); } .fnode.gray .fv { font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.45); }
+  .fnode.green { background: rgba(34,197,94,0.14); } .fnode.green .fl { color: #86efac; }
+  .farrow { align-self: center; color: rgba(255,255,255,0.35); }
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cmp .box { border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 10px 12px; }
+  .cmp .box .cl { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+  .bar-track { height: 10px; background: rgba(255,255,255,0.08); border-radius: 5px; margin-bottom: 6px; }
+  .bar-fill { height: 10px; border-radius: 5px; }
+  .cmp .cv { font-size: 14px; font-weight: 700; }
+  .acts { display: flex; flex-direction: column; gap: 8px; }
+  .act { display: flex; align-items: center; gap: 10px; border-radius: 12px; padding: 10px 12px; }
+  .act.red { background: rgba(239,68,68,0.14); }
+  .act.org { background: rgba(245,158,11,0.13); }
+  .act .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .act.red .dot { background: #ef4444; } .act.org .dot { background: #f59e0b; }
+  .act .txt { flex: 1; font-size: 13px; line-height: 1.55; }
+  .act .txt .names { color: rgba(255,255,255,0.55); font-size: 12px; }
+  .act a { color: #93c5fd; font-size: 12px; text-decoration: none; white-space: nowrap; }
+  .msg { padding: 9px 12px; border-radius: 8px; font-size: 12.5px; margin-top: 8px; }
+  .msg.err { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  .banner { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.7; margin-top: 10px; }
+  .loader { text-align: center; padding: 26px; color: rgba(255,255,255,0.5); font-size: 13px; }
+  .foot { text-align: center; font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 18px; }
+  @media (max-width: 560px){ .cmp { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 登录 -->
+  <div id="loginView" class="login-box hide">
+    <h1>经营驾驶舱</h1>
+    <div class="sub">書荀门店经营数据 · 一屏三问（仅限主账号）</div>
+    <div class="card">
+      <div class="field"><label class="field-label">邮箱</label><input type="text" id="lgEmail" placeholder="工作邮箱" /></div>
+      <div class="field"><label class="field-label">密码</label><input type="password" id="lgPwd" placeholder="密码" /></div>
+      <button class="primary" id="lgBtn" style="width:100%">登 录</button>
+      <div id="loginErr" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- 无权限 -->
+  <div id="noPermView" class="noperm hide">
+    <h2>暂无访问权限</h2>
+    <p>经营驾驶舱目前仅对主账号开放。<br/>如需开通请联系管理员。</p>
+  </div>
+
+  <!-- 主视图 -->
+  <div id="appView" class="hide">
+    <div class="topbar">
+      <div>
+        <h1>经营驾驶舱</h1>
+        <div class="who" id="whoami"></div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a class="sm" href="chain.html">连锁看板 →</a>
+        <a class="sm" href="ops.html">运营后台 →</a>
+      </div>
+    </div>
+
+    <div id="globalMsg"></div>
+    <div id="loading" class="loader">加载中…</div>
+
+    <div id="dash" class="hide">
+
+      <!-- ① 结果 -->
+      <div class="card">
+        <div class="q-title"><span class="q q1">① 现在经营得怎么样</span><span class="sub">结果层 · 有赞核销（仅核销/验券渠道）</span></div>
+        <div class="stats" id="q1Stats"></div>
+      </div>
+
+      <!-- ② 驱动 -->
+      <div class="card">
+        <div class="q-title"><span class="q q2">② 为什么涨 / 为什么跌</span><span class="sub" id="drvAsOf">驱动层 · 抖音发片 → 核销</span></div>
+        <div class="funnel">
+          <div class="fnode blue"><div class="fl" id="fPubL">发片</div><div class="fv" id="fPubV">-</div></div>
+          <div class="farrow">→</div>
+          <div class="fnode gray"><div class="fl">曝光 / 直播</div><div class="fv">API 未开放 · 灰位预留</div></div>
+          <div class="farrow">→</div>
+          <div class="fnode green"><div class="fl">今日核销</div><div class="fv" id="fHxV">-</div></div>
+        </div>
+        <div class="cmp">
+          <div class="box">
+            <div class="cl" id="cmpAL">近期有发片店 · 今日核销均值</div>
+            <div class="bar-track"><div class="bar-fill" id="cmpA" style="width:0%; background:#22c55e;"></div></div>
+            <div class="cv" id="cmpAV">-</div>
+          </div>
+          <div class="box">
+            <div class="cl" id="cmpBL">近期未发片店 · 今日核销均值</div>
+            <div class="bar-track"><div class="bar-fill" id="cmpB" style="width:0%; background:#6b7280;"></div></div>
+            <div class="cv" id="cmpBV">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ③ 行动 -->
+      <div class="card">
+        <div class="q-title"><span class="q q3">③ 今天该抓什么</span><span class="sub">行动层 · 异常标红置顶</span></div>
+        <div class="acts" id="q3Acts"></div>
+      </div>
+
+      <div class="banner" id="footNote"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ================= 常量 ================= */
+const SB_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
+const SB_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
+const ADMIN_EMAIL = '411249585@qq.com';
+const TZ = 'Asia/Shanghai';
+
+/* ================= 工具 ================= */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function msg(html, cls){ $('globalMsg').innerHTML = '<div class="msg '+cls+'">'+html+'</div>'; }
+const fmtY = (x) => '¥' + Math.round(x||0).toLocaleString('en-US');
+const todayStr = () => new Date().toLocaleDateString('sv-SE', { timeZone: TZ });
+function addDays(s, n){ const d = new Date(s+'T00:00:00+08:00'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+function bjDay(ts){ return new Date(new Date(ts).getTime()+8*3600000).toISOString().slice(0,10); }
+function bjHM(ts){ return new Date(new Date(ts).getTime()+8*3600000).toISOString().slice(5,16).replace('T',' '); }
+function myEmail(){
+  try{ return JSON.parse(atob(session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email || ''; }catch(e){ return ''; }
+}
+
+/* ================= 会话（共用 ops_session） ================= */
+let session = null;
+try{ session = JSON.parse(localStorage.getItem('ops_session') || 'null'); }catch(e){ session = null; }
+
+async function authPost(path, body){
+  const r = await fetch(SB_URL+path, {
+    method:'POST', headers:{ 'apikey':SB_KEY, 'Content-Type':'application/json' }, body: JSON.stringify(body||{})
+  });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.error_description || d.msg || d.message || ('HTTP '+r.status));
+  return d;
+}
+function saveSession(d){ session = d; localStorage.setItem('ops_session', JSON.stringify(d)); }
+async function fetchRole(token){
+  try{
+    const uid = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub;
+    const r = await fetch(SB_URL+'/rest/v1/user_roles?user_id=eq.'+uid+'&select=role', { headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+token } });
+    const d = await r.json();
+    return (d && d[0] && d[0].role) || null;
+  }catch(e){ return null; }
+}
+async function ensureSession(){
+  if(!session) throw new Error('未登录');
+  const exp = session.expires_at || 0;
+  if(exp*1000 - Date.now() < 120000){
+    const d = await authPost('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+    saveSession(d);
+  }
+}
+async function sb(path, opts){
+  opts = opts || {};
+  await ensureSession();
+  const h = Object.assign({ 'apikey': SB_KEY, 'Authorization':'Bearer '+session.access_token, 'Content-Type':'application/json' }, opts.headers||{});
+  let r = await fetch(SB_URL+path, Object.assign({}, opts, { headers:h }));
+  if(r.status === 401){
+    try{ const d = await authPost('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh_token }); saveSession(d); }
+    catch(e){ doLogout(true); throw new Error('登录已过期，请重新登录'); }
+    h['Authorization'] = 'Bearer '+session.access_token;
+    r = await fetch(SB_URL+path, Object.assign({}, opts, { headers:h }));
+  }
+  if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(e){} throw new Error(m||('HTTP '+r.status)); }
+  return r.json();
+}
+function doLogout(silent){
+  session = null; localStorage.removeItem('ops_session');
+  $('appView').classList.add('hide'); $('noPermView').classList.add('hide');
+  $('loginView').classList.remove('hide');
+  $('lgEmail').value=''; $('lgPwd').value=''; $('loginErr').innerHTML='';
+  if(!silent){ $('lgEmail').focus(); }
+}
+async function doLogin(){
+  const email = $('lgEmail').value.trim(); const pwd = $('lgPwd').value;
+  if(!email || !pwd){ $('loginErr').innerHTML='<div class="msg err">请输入邮箱和密码</div>'; return; }
+  $('lgBtn').disabled = true; $('lgBtn').textContent = '登 录 中…';
+  try{
+    const d = await authPost('/auth/v1/token?grant_type=password', { email, password: pwd });
+    const role = await fetchRole(d.access_token);
+    if(role !== 'ops'){ $('loginErr').innerHTML='<div class="msg err">该账号没有运营权限（role='+(role||'无')+'）</div>'; $('lgBtn').disabled=false; $('lgBtn').textContent='登 录'; return; }
+    saveSession(d); await enterApp();
+  }catch(e){ $('loginErr').innerHTML='<div class="msg err">登录失败：'+esc(e.message)+'</div>'; }
+  $('lgBtn').disabled = false; $('lgBtn').textContent = '登 录';
+}
+
+/* ================= 数据装载 ================= */
+let stores = [];        // 全部门店
+let storeById = {};
+let kdtToStore = {};    // yz_shop_map: kdt_id → store_id
+let dyAccs = [];        // 最新一轮抖音监控结果（有 store_id 的）
+let dyReportUrl = '';
+let dyRunAt = null;
+
+async function loadBase(){
+  stores = await sb('/rest/v1/stores?select=id,std_name,short_name,city,district,status,store_type&order=id');
+  storeById = {}; stores.forEach(s => { storeById[s.id] = s; });
+  const ymap = await sb('/rest/v1/yz_shop_map?select=kdt_id,store_id');
+  kdtToStore = {}; ymap.forEach(r => { kdtToStore[r.kdt_id] = r.store_id; });
+}
+
+async function loadDy(){
+  try{
+    const runs = await sb('/rest/v1/dy_monitor_runs?select=id,finished_at,report_url&status=eq.success&order=started_at.desc&limit=1');
+    if(!runs.length) return;
+    dyReportUrl = runs[0].report_url || '';
+    dyRunAt = runs[0].finished_at;
+    dyAccs = await sb('/rest/v1/dy_monitor_results?run_id=eq.'+runs[0].id+'&ok=eq.true&select=store_id,last_video_time,total_videos');
+  }catch(e){ dyAccs = []; }
+}
+
+/* 有赞核销拉取（本月 1 日至今，按 kdt 聚合；防线：待上线/非本体系门店拦截） */
+async function loadYz(T){
+  const ms = T.slice(0,8)+'01';
+  const gte = new Date(ms+'T00:00:00+08:00').toISOString();
+  const sel = 'kdt_id,real_pay,create_time,pay_channel_name,order_type,item_type';
+  const raw = [];
+  let from = 0;
+  while(true){
+    const part = await sb('/rest/v1/yz_orders?order=create_time.asc&select='+encodeURIComponent(sel)
+      + '&create_time=gte.'+encodeURIComponent(gte),
+      { headers: { Range: from + '-' + (from+999) } });
+    raw.push(...part);
+    if(part.length < 1000 || from > 200000) break;
+    from += 1000;
+    $('loading').textContent = '加载有赞订单… 已拉 ' + raw.length + ' 行';
+  }
+  const Y = addDays(T,-1);
+  const per = {};    // storeId -> {today:[a,c], yday:[a,c], mtd:[a,c], last7:bool}
+  let blCnt = 0, blAmt = 0;
+  const Y7 = addDays(T,-7);
+  const blActive = {};   // 待上线店 kdt → 本月有测试动作
+  raw.forEach(r => {
+    if(r.order_type !== 0 || [6,7,9].indexOf(r.item_type) >= 0) return;
+    if(!/核销|验券/.test(String(r.pay_channel_name || ''))) return;
+    const amt = (r.real_pay || 0)/100;
+    if(!amt) return;
+    const sid = kdtToStore[r.kdt_id];
+    const st = sid ? storeById[sid] : null;
+    if(!st || (st.store_type !== '连锁' && st.store_type !== '直营')) return;   // 陪跑/未映射不并入
+    if(st.status !== '在营'){ blCnt++; blAmt += amt; blActive[st.id] = 1; return; }   // 🛡 待上线/闭店拦截
+    const d = bjDay(r.create_time);
+    let g = per[st.id]; if(!g) g = per[st.id] = { today:[0,0], yday:[0,0], mtd:[0,0], days:{} };
+    g.mtd[0]+=amt; g.mtd[1]++;
+    if(d === T){ g.today[0]+=amt; g.today[1]++; }
+    else if(d === Y){ g.yday[0]+=amt; g.yday[1]++; }
+    if(d >= Y7) g.days[d] = 1;
+  });
+  return { per, blCnt, blAmt, blActive };
+}
+
+/* ================= 渲染 ================= */
+function render(T, data){
+  const per = data.per, blActive = data.blActive, blCnt = data.blCnt, blAmt = data.blAmt;
+  const Y = addDays(T,-1);
+  const yzOpen = stores.filter(s => s.status === '在营' && (s.store_type==='连锁'||s.store_type==='直营') && kdtToStoreHas(s.id));
+  function kdtToStoreHas(sid){ return Object.values(kdtToStore).indexOf(sid) >= 0; }
+  const allOpen = stores.filter(s => s.status === '在营' && (s.store_type==='连锁'||s.store_type==='直营'));
+
+  let tA=0,tC=0,yA=0,yC=0,mA=0,mC=0, zero=[];
+  Object.keys(per).forEach(sid => {
+    const g = per[sid];
+    tA+=g.today[0]; tC+=g.today[1]; yA+=g.yday[0]; yC+=g.yday[1]; mA+=g.mtd[0]; mC+=g.mtd[1];
+    if(!g.today[0]) zero.push(storeById[sid]);
+  });
+  const diff = yA ? Math.round((tA-yA)/yA*100) : null;
+  const diffTxt = diff===null ? '<span class="d flat">昨日无数据</span>'
+    : '<span class="d '+(diff>=0?'up':'down')+'">'+(diff>=0?'↑ ':'↓ ')+Math.abs(diff)+'% vs 昨日 '+fmtY(yA)+'</span>';
+
+  $('q1Stats').innerHTML =
+    '<div class="stat"><div class="l">今日核销（在营 '+yzOpen.length+' 家有赞店）</div><div class="v">'+fmtY(tA)+'</div>'+diffTxt+'</div>'
+    + '<div class="stat"><div class="l">本月累计</div><div class="v">'+fmtY(mA)+'</div><div class="d flat">'+mC+' 单</div></div>'
+    + '<div class="stat"><div class="l">在营门店</div><div class="v">'+allOpen.length+'</div><div class="d flat">有赞在营 '+yzOpen.length+' · 无有赞 '+(allOpen.length-yzOpen.length)+'</div></div>'
+    + '<div class="stat'+(zero.length?' bad':'')+'"><div class="l">今日 0 核销</div><div class="v">'+zero.length+' 家</div><div class="d">见下方行动清单 ↓</div></div>';
+
+  /* ② 驱动 */
+  const Y00 = new Date(Y+'T00:00:00+08:00').getTime();
+  const pub = dyAccs.filter(a => a.store_id && a.last_video_time && new Date(a.last_video_time).getTime() >= Y00);
+  const noPub = dyAccs.filter(a => a.store_id && (!a.last_video_time || new Date(a.last_video_time).getTime() < Y00));
+  function avgOf(list){
+    let s=0, n=0;
+    list.forEach(a => { const g = per[a.store_id]; if(g && g.today[0]){ s+=g.today[0]; n++; } });
+    return n ? { avg: s/n, n } : { avg: 0, n: 0 };
+  }
+  const A = avgOf(pub), B = avgOf(noPub);
+  const mx = Math.max(A.avg, B.avg, 1);
+  $('fPubL').textContent = dyRunAt ? '发片（截至 '+bjHM(dyRunAt)+'）' : '发片';
+  $('fPubV').textContent = pub.length + ' 家近 2 日有发片';
+  $('fHxV').textContent = fmtY(tA);
+  $('cmpAL').textContent = '近期有发片店（'+A.n+' 家有单）· 今日核销均值';
+  $('cmpBL').textContent = '近期未发片店（'+B.n+' 家有单）· 今日核销均值';
+  $('cmpA').style.width = Math.round(A.avg/mx*100)+'%';
+  $('cmpB').style.width = Math.round(B.avg/mx*100)+'%';
+  $('cmpAV').textContent = fmtY(A.avg) + ' / 店';
+  $('cmpBV').textContent = fmtY(B.avg) + ' / 店';
+  $('drvAsOf').textContent = '驱动层 · 抖音发片 → 核销（曝光/直播 API 未开放，灰位预留）';
+
+  /* ③ 行动 */
+  const acts = [];
+  const nm = (s) => esc(s.short_name || s.std_name);
+  if(zero.length){
+    acts.push('<div class="act red"><span class="dot"></span><span class="txt">'+zero.length+' 家有赞在营店今日 0 核销'
+      + '<span class="names">：' + zero.slice(0,6).map(nm).join('、') + (zero.length>6?' 等':'') + '</span></span>'
+      + '<a href="chain.html">看板 →</a></div>');
+  }
+  const D3 = new Date(addDays(T,-3)+'T00:00:00+08:00').getTime();
+  const stale = dyAccs.filter(a => a.store_id && storeById[a.store_id] && storeById[a.store_id].status==='在营'
+    && (!a.last_video_time || new Date(a.last_video_time).getTime() < D3));
+  if(stale.length){
+    const sample = stale.slice(0,5).map(a => nm(storeById[a.store_id])).join('、');
+    acts.push('<div class="act org"><span class="dot"></span><span class="txt">'+stale.length+' 家门店抖音账号断更 ≥3 天'
+      + '<span class="names">：'+sample+(stale.length>5?' 等':'')+'</span></span>'
+      + (dyReportUrl ? '<a href="'+esc(dyReportUrl)+'" target="_blank">监控报告 →</a>' : '')+'</div>');
+  }
+  const pend = stores.filter(s => s.status === '待上线');
+  if(pend.length){
+    const active = pend.filter(s => blActive[s.id]);
+    const idle = pend.filter(s => !blActive[s.id]);
+    acts.push('<div class="act org"><span class="dot"></span><span class="txt">待上线新店 '+pend.length+' 家：本月有测试动作 '+active.length+' 家，零动作 '+idle.length+' 家'
+      + (idle.length ? '<span class="names">（测试数据已拦截，不计入统计）</span>' : '')
+      + '</span><a href="chain.html">看板 →</a></div>');
+  }
+  if(!acts.length) acts.push('<div class="act" style="background:rgba(34,197,94,0.12)"><span class="dot" style="background:#22c55e"></span><span class="txt">今天没有异常项，各项指标正常 ✅</span></div>');
+  $('q3Acts').innerHTML = acts.join('');
+
+  $('footNote').innerHTML = '口径：核销 = 美团/抖音/记账/商城核销渠道实付（不含扫码买单、会员余额、现金等）；'
+    + '未上线门店测试数据已拦截不计入（本月拦截 ' + blCnt + ' 笔 ' + fmtY(blAmt) + '）；'
+    + '发片数据来自抖音监控最新一轮（'
+    + (dyRunAt ? '截至 '+bjHM(dyRunAt) : '暂无') + '）。数据约 5 分钟自动刷新。';
+}
+
+/* ================= 主流程 ================= */
+async function refresh(){
+  const T = todayStr();
+  try{
+    const per = await loadYz(T);
+    render(T, per);
+    $('loading').classList.add('hide');
+    $('dash').classList.remove('hide');
+  }catch(e){
+    $('loading').classList.add('hide');
+    msg('加载失败：'+esc(e.message),'err');
+  }
+}
+
+async function enterApp(){
+  const email = myEmail();
+  if(email !== ADMIN_EMAIL){
+    $('loginView').classList.add('hide'); $('noPermView').classList.remove('hide'); return;
+  }
+  $('loginView').classList.add('hide'); $('noPermView').classList.add('hide');
+  $('appView').classList.remove('hide');
+  $('whoami').textContent = email + ' · 一屏三问（仅主账号）';
+  $('loading').classList.remove('hide');
+  await loadBase();
+  await loadDy();
+  await refresh();
+  setInterval(refresh, 5*60*1000);   // 5 分钟自动刷新
+}
+
+(async function init(){
+  $('lgBtn').onclick = doLogin;
+  $('lgPwd').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+  if(session && session.access_token){
+    try{
+      const role = await fetchRole(session.access_token);
+      if(role === 'ops'){ await enterApp(); return; }
+    }catch(e){}
+  }
+  $('loginView').classList.remove('hide');
+  $('lgEmail').focus();
+})();
+</script>
+</body>
+</html>
