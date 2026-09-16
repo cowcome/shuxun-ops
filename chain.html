@@ -264,6 +264,7 @@
         <div class="chip" data-f="special"><span class="dt dt-r"></span>特殊<span class="cnt" id="cSp"></span></div>
         <div class="chip" data-f="new"><span class="dt dt-y"></span>新店<span class="cnt" id="cNew"></span></div>
         <div class="chip" data-f="old"><span class="dt dt-p"></span>老店<span class="cnt" id="cOld"></span></div>
+        <div class="chip" data-f="pending">⏳ 待上线<span class="cnt" id="cPending"></span></div>
         <button class="sm" id="spOpenBtn" style="margin-left:auto">＋ 特殊填报</button>
       </div>
       <div class="store-grid" id="storeGrid"><div class="op">加载中…</div></div>
@@ -488,8 +489,9 @@ function activeSpecialOf(x){
   return specials.find(s => s.store_id === x.id && s.start_date <= T && T <= s.end_date) || null;
 }
 
-/* 门店分类：特殊 > 新店 > 老店；营业 = 非特殊 */
+/* 门店分类：待上线 > 特殊 > 新店 > 老店；营业 = 非特殊且非待上线 */
 function classOf(x){
+  if(x.status === '待上线') return 'pending';
   if(activeSpecialOf(x)) return 'special';
   const ld = x.launch_date;
   if(ld){
@@ -507,14 +509,15 @@ function statusBadge(s){
 
 function renderStores(){
   const grid = $('storeGrid');
-  const cnt = { all: allStores.length, open: 0, special: 0, new: 0, old: 0 };
+  const cnt = { all: allStores.length, open: 0, special: 0, new: 0, old: 0, pending: 0 };
   allStores.forEach(x => { cnt[classOf(x)]++; });
-  cnt.open = cnt.all - cnt.special;   // 营业 = 全部 − 特殊
+  cnt.open = cnt.all - cnt.special - cnt.pending;   // 营业 = 全部 − 特殊 − 待上线
   $('cAll').textContent = '('+cnt.all+')';
   $('cOpen').textContent = '('+cnt.open+')';
   $('cSp').textContent = '('+cnt.special+')';
   $('cNew').textContent = '('+cnt.new+')';
   $('cOld').textContent = '('+cnt.old+')';
+  $('cPending').textContent = '('+cnt.pending+')';
   // 健康度卡：营业门店口径与列表一致
   $('stStores').textContent = cnt.open;
   $('stStoresD').textContent = '连锁类型共 ' + allStores.length + ' 家 · 特殊 ' + cnt.special + ' 家（主表实时）';
@@ -565,8 +568,9 @@ function platRows(x){
    内购订单不走有赞（2026-09-15 崔姐确认），故有赞金额=真实客户业绩。
    按天归属暂用 create_time（下单时间），finish_time 口径验证后切换。 */
 const YZ_ITEM_EXCLUDE = [6,7,9];
-const yzCacheKey = 'chain_yz_cache_v2';
+const yzCacheKey = 'chain_yz_cache_v3';
 let yz = { ready:false, asOf:null, unmatched:[] };
+let kdtToStore = {};   // yz_shop_map：kdt_id → store_id（2026-09-16 崔姐飞书确认，99 条）
 
 function yzNorm(s){
   return String(s||'').replace(/书荀|書荀|头疗|养生|美容|SPA|spa/g,'')
@@ -643,9 +647,13 @@ async function loadYz(force){
       }catch(e){}
     }
     if(!agg){
+      // 先拉 kdt_id→store_id 映射（99 行小表，随刷新一起拉）
+      const ymap = await sb('/rest/v1/yz_shop_map?select=kdt_id,store_id');
+      kdtToStore = {};
+      ymap.forEach(r => { kdtToStore[r.kdt_id] = r.store_id; });
       // 分页拉取（Supabase 单次上限 1000 行）
       const gte = new Date(Date.parse(start + 'T00:00:00+08:00')).toISOString();
-      const sel = 'shop_name,real_pay,order_type,item_type,pay_channel_name,create_time';
+      const sel = 'kdt_id,shop_name,real_pay,order_type,item_type,pay_channel_name,create_time';
       const raw = [];
       let from = 0;
       while(true){
@@ -657,7 +665,7 @@ async function loadYz(force){
         from += 1000;
       }
       asOf = raw.length ? raw[raw.length-1].create_time : null;
-      // 聚合：按有赞门店名 × 日期
+      // 聚合：按 kdt_id（有赞门店唯一身份，改名不影响）× 日期
       agg = {};
       raw.forEach(r => {
         if(r.order_type !== 0 || YZ_ITEM_EXCLUDE.indexOf(r.item_type) >= 0) return;
@@ -667,8 +675,8 @@ async function loadYz(force){
         if(!/核销|验券/.test(ch)) return;
         const amt = (r.real_pay || 0) / 100;
         const D = yzDateStr(new Date(r.create_time).getTime());
-        let g = agg[r.shop_name];
-        if(!g) g = agg[r.shop_name] = { mtA:0, mtC:0, dyA:0, dyC:0, otA:0, otC:0, days:{} };
+        let g = agg[r.kdt_id];
+        if(!g) g = agg[r.kdt_id] = { name:r.shop_name, mtA:0, mtC:0, dyA:0, dyC:0, otA:0, otC:0, days:{} };
         if(ch.indexOf('美团') >= 0){ g.mtA += amt; g.mtC++; }
         else if(ch.indexOf('抖音') >= 0){ g.dyA += amt; g.dyC++; }
         else { g.otA += amt; g.otC++; }
@@ -678,20 +686,20 @@ async function loadYz(force){
       try{ localStorage.setItem(ck, JSON.stringify({ t: Date.now(), asOf, agg })); }catch(e){}
     }
 
-    // 映射到门店主表
+    // 映射到门店主表（按 kdt_id 精确映射，弃店名模糊匹配）
     const metrics = {};
     yz.unmatched = [];
-    Object.keys(agg).forEach(name => {
-      const st = matchYzStore(name);
-      const g = agg[name];
-      if(st){
+    Object.keys(agg).forEach(kdt => {
+      const sid = kdtToStore[kdt];
+      const g = agg[kdt];
+      if(sid){
         const t = g.days[T]  || [0,0];
         const y = g.days[yd] || [0,0];
         let mtd = 0; Object.keys(g.days).forEach(d => { if(d >= ms) mtd += g.days[d][0]; });
-        metrics[st.id] = { mtA:g.mtA, mtC:g.mtC, dyA:g.dyA, dyC:g.dyC,
+        metrics[sid] = { mtA:g.mtA, mtC:g.mtC, dyA:g.dyA, dyC:g.dyC,
           today:t[0], todayC:t[1], yday:y[0], ydayC:y[1], mtd:mtd };
       }else{
-        yz.unmatched.push({ name, amt: g.mtA + g.dyA + g.otA });
+        yz.unmatched.push({ name: g.name || ('kdt '+kdt), amt: g.mtA + g.dyA + g.otA });
       }
     });
     storeMetrics = metrics;
@@ -713,9 +721,9 @@ async function loadYz(force){
 
     // 未匹配提示
     const un = yz.unmatched;
-    $('yzBanner').innerHTML = '数据源：有赞开放平台 · Supabase 实时同步。口径：真实核销业绩 = 美团验券 + 抖音核销 + 记账核销 + 商城核销；不含扫码买单（二维码收款）/ 会员余额 / 欠款 / 现金 / 抖音线上买单 等非核销支付。内购不走有赞，本数据即真实客户业绩（未对账）。'
-      + (un.length ? '<br/>⚠️ 有 ' + un.length + ' 家有赞门店未匹配到门店主表（合计 ' + fmtY(un.reduce((s,x)=>s+x.amt,0)) + '）：'
-        + esc(un.slice(0,8).map(x => x.name).join('、')) : '✅ 有赞门店已全部匹配到门店主表');
+    $('yzBanner').innerHTML = '数据源：有赞开放平台 · Supabase 实时同步。口径：真实核销业绩 = 美团验券 + 抖音核销 + 记账核销 + 商城核销；不含扫码买单（二维码收款）/ 会员余额 / 欠款 / 现金 / 抖音线上买单 等非核销支付。内购不走有赞，本数据即真实客户业绩（未对账）。门店归属按 kdt_id 精确映射（yz_shop_map，2026-09-16 确认），有赞店改名不影响对账。'
+      + (un.length ? '<br/>⚠️ 有 ' + un.length + ' 家有赞门店未在映射表中（合计 ' + fmtY(un.reduce((s,x)=>s+x.amt,0)) + '）：'
+        + esc(un.slice(0,8).map(x => x.name).join('、')) : '✅ 有赞门店已全部按 kdt_id 映射到门店主表');
 
     renderStores();
   }catch(e){
