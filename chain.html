@@ -246,8 +246,9 @@
       <div class="hero-grid">
         <div class="stat"><div class="k">今日核销金额</div><div class="v dim" id="stToday">—</div><div class="d" id="stTodayD">数据源接入后展示</div></div>
         <div class="stat"><div class="k">对比昨日</div><div class="v dim" id="stDiff">—</div><div class="d">同口径按天对比</div></div>
-        <div class="stat"><div class="k">营业门店</div><div class="v" id="stStores">—</div><div class="d" id="stStoresD">以门店主表实际数据为准</div></div>
+        <div class="stat" id="stZeroCard" style="cursor:pointer" title="点击展开/收起 0 核销门店明细"><div class="k">今日 0 核销门店</div><div class="v" id="stZero">—</div><div class="d" id="stZeroD">加载中…</div></div>
       </div>
+      <div id="zeroList" style="display:none; margin-top:10px; border-top:1px dashed rgba(255,255,255,0.15); padding-top:10px;"></div>
       <div class="health-banner" id="yzBanner">
         数据源：有赞开放平台 · Supabase 实时同步。口径：顾客实付（真实核销订单，不含二维码收款 / 充值）；
         内购订单不走有赞，故本数据即真实客户业绩（未对账，供经营参考）。
@@ -259,8 +260,8 @@
       <div class="card-title">门店列表<span class="note" id="storeCount"></span></div>
       <div class="note" style="margin:-4px 0 10px 2px;opacity:.55">卡片平台金额 = 本月累计（9/1 起）；卡片底部为今日 / 昨日</div>
       <div class="chips" id="storeChips">
-        <div class="chip on" data-f="all">全部<span class="cnt" id="cAll"></span></div>
-        <div class="chip" data-f="open"><span class="dt dt-g"></span>营业<span class="cnt" id="cOpen"></span></div>
+      <div class="chip" data-f="all">全部<span class="cnt" id="cAll"></span></div>
+      <div class="chip on" data-f="open"><span class="dt dt-g"></span>营业<span class="cnt" id="cOpen"></span></div>
         <div class="chip" data-f="special"><span class="dt dt-r"></span>特殊<span class="cnt" id="cSp"></span></div>
         <div class="chip" data-f="new"><span class="dt dt-y"></span>新店<span class="cnt" id="cNew"></span></div>
         <div class="chip" data-f="old"><span class="dt dt-p"></span>老店<span class="cnt" id="cOld"></span></div>
@@ -458,7 +459,7 @@ async function enterApp(){
 /* ================= 连锁门店（数量与清单动态拉取，永不写死） ================= */
 let allStores = [];     // stores 主表 · 连锁类型
 let specials = [];      // store_special_periods 全量记录
-let storeFilter = 'all';// all | open | special | new | old
+let storeFilter = 'open';// all | open | special | new | old（默认营业中，崔姐 9-17 拍板）
 
 async function loadChainStores(){
   try{
@@ -518,9 +519,6 @@ function renderStores(){
   $('cNew').textContent = '('+cnt.new+')';
   $('cOld').textContent = '('+cnt.old+')';
   $('cPending').textContent = '('+cnt.pending+')';
-  // 健康度卡：营业门店口径与列表一致
-  $('stStores').textContent = cnt.open;
-  $('stStoresD').textContent = '连锁类型共 ' + allStores.length + ' 家 · 特殊 ' + cnt.special + ' 家（主表实时）';
 
   const list = allStores.filter(x => storeFilter==='all' || classOf(x)===storeFilter);
   $('storeCount').textContent = '共 ' + allStores.length + ' 家' + (storeFilter==='all' ? '' : ' · 当前筛选 '+list.length+' 家');
@@ -556,6 +554,7 @@ function renderStores(){
 
 /* 平台数据行：美团 / 抖音 各一行（¥金额 + 单数）。数据源：Supabase yz_orders（有赞实时） */
 let storeMetrics = {};
+let zeroStores = [];    // 今日 0 核销门店（营业中且有有赞映射）
 const fmtY = (x) => '¥' + (Math.round((x||0)*100)/100);
 function platRows(x){
   const m = storeMetrics[x.id] || null;
@@ -573,6 +572,7 @@ const YZ_ITEM_EXCLUDE = [6,7,9];
 const yzCacheKey = 'chain_yz_cache_v3';
 let yz = { ready:false, asOf:null, unmatched:[], blocked:[] };
 let kdtToStore = {};   // yz_shop_map：kdt_id → store_id（2026-09-16 崔姐飞书确认，99 条）
+let storeToKdt = {};   // 反向映射：store_id → kdt_id（判断门店是否接入有赞）
 // 🛡 防线（2026-09-16 崔姐拍板）：未上线门店（status=待上线）的数据是门店学有赞系统的测试脏数据，
 // 一律不显示、不计入看板任何统计；非连锁门店（陪跑/直营）也不计入连锁大盘。
 
@@ -653,8 +653,8 @@ async function loadYz(force){
     if(!agg){
       // 先拉 kdt_id→store_id 映射（99 行小表，随刷新一起拉）
       const ymap = await sb('/rest/v1/yz_shop_map?select=kdt_id,store_id');
-      kdtToStore = {};
-      ymap.forEach(r => { kdtToStore[r.kdt_id] = r.store_id; });
+      kdtToStore = {}; storeToKdt = {};
+      ymap.forEach(r => { kdtToStore[r.kdt_id] = r.store_id; storeToKdt[r.store_id] = r.kdt_id; });
       // 分页拉取（Supabase 单次上限 1000 行）
       const gte = new Date(Date.parse(start + 'T00:00:00+08:00')).toISOString();
       const sel = 'kdt_id,shop_name,real_pay,order_type,item_type,pay_channel_name,create_time';
@@ -726,8 +726,19 @@ async function loadYz(force){
     $('stToday').classList.remove('dim');
     $('stTodayD').textContent = '今日 ' + tC + ' 单 · 本月累计 ' + fmtY(mA);
     const diff = tA - yA;
+    const diffPct = yA ? Math.round(diff / yA * 100) : null;
     $('stDiff').innerHTML = (diff >= 0 ? '<span style="color:#4ade80">+' : '<span style="color:#f87171">') + fmtY(diff) + '</span>'
-      + '<span style="font-size:11px;opacity:.6"> vs 昨日 ' + fmtY(yA) + '</span>';
+      + '<span style="font-size:11px;opacity:.6"> vs 昨日 ' + fmtY(yA) + (diffPct === null ? '' : ' · ' + (diffPct >= 0 ? '+' : '') + diffPct + '%') + '</span>';
+    // 今日 0 核销门店（口径：营业中 + 已接入有赞映射；无有赞系统门店不计入，避免永远挂零）
+    zeroStores = allStores
+      .filter(x => classOf(x) === 'open' && storeToKdt[x.id])
+      .filter(x => !metrics[x.id] || !(metrics[x.id].today > 0))
+      .sort((a,b) => (metrics[b.id] ? metrics[b.id].mtd : 0) - (metrics[a.id] ? metrics[a.id].mtd : 0));
+    const yzOpenN = allStores.filter(x => classOf(x) === 'open' && storeToKdt[x.id]).length;
+    $('stZero').textContent = zeroStores.length + ' 家';
+    $('stZero').style.color = zeroStores.length ? '#f87171' : '#4ade80';
+    $('stZeroD').textContent = '有赞营业店 ' + yzOpenN + ' 家中 · 点击看明细';
+    renderZeroList();
     const badge = $('healthBadge');
     badge.textContent = '有赞 · 实时';
     badge.className = 'badge bg-open';
@@ -797,6 +808,33 @@ function exportSp(){
   XLSX.utils.book_append_sheet(wb, ws, '特殊门店');
   XLSX.writeFile(wb, '周期内特殊门店_' + todayStr() + '.xlsx');
 }
+
+/* ================= 0 核销门店明细（点击卡片切换） ================= */
+function renderZeroList(){
+  const box = $('zeroList');
+  if(box.style.display === 'none') return;
+  if(!zeroStores.length){
+    box.innerHTML = '<div style="font-size:13px;color:#4ade80">✅ 有赞营业门店今日全部有核销</div>';
+    return;
+  }
+  let h = '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px">共 ' + zeroStores.length + ' 家 · 按本月累计降序（核销金额均为 0）</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px">';
+  zeroStores.forEach(s => {
+    const m = storeMetrics[s.id];
+    const city = s.city || '';
+    h += '<div style="background:rgba(248,113,113,0.10);border:1px solid rgba(248,113,113,0.25);border-radius:10px;padding:8px 10px">'
+      + '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(s.short_name || s.std_name) + '</div>'
+      + '<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px">'
+      + esc(city) + (city ? ' · ' : '') + '本月 ' + fmtY(m ? m.mtd : 0) + ' · 昨日 ' + fmtY(m ? m.yday : 0) + '</div></div>';
+  });
+  h += '</div>';
+  box.innerHTML = h;
+}
+$('stZeroCard').addEventListener('click', () => {
+  const box = $('zeroList');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  renderZeroList();
+});
 
 /* ================= 筛选 ================= */
 $('storeChips').addEventListener('click', (ev) => {
