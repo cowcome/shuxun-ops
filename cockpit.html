@@ -292,6 +292,13 @@ let kdtToStore = {};    // yz_shop_map: kdt_id → store_id
 let dyAccs = [];        // 最新一轮抖音监控结果（有 store_id 的）
 let dyReportUrl = '';
 let dyRunAt = null;
+let billDaily = null;   // bill_daily 视图：平台账单日汇总
+
+async function loadBills(){
+  try{
+    billDaily = await sb('/rest/v1/bill_daily?select=platform,record_date,status,is_ng,cnt,amount');
+  }catch(e){ billDaily = null; }
+}
 
 async function loadBase(){
   stores = await sb('/rest/v1/stores?select=id,std_name,short_name,city,district,status,store_type&order=id');
@@ -494,12 +501,51 @@ function render(T, data){
     + (dyRunAt ? '截至 '+bjHM(dyRunAt) : '暂无') + '）。数据约 5 分钟自动刷新。';
 }
 
+/* 真实核销参考值（bill_daily 视图）
+   口径：美团真实 = is_ng=false 全状态求和（含负数冲抵）；抖音真实 = is_ng=false 且已核销 */
+function renderNgRef(T){
+  const el = $('ngRef');
+  if(!billDaily){
+    el.innerHTML = '账单汇总视图未就绪：请在 Supabase SQL Editor 执行 bill_daily_view.sql 后刷新本页。';
+    return;
+  }
+  if(!billDaily.length){ el.innerHTML = '暂无账单数据（等待首次账单导入）。'; return; }
+  const ms = T.slice(0,8)+'01';
+  const Y = addDays(T,-1);
+  let mR=0,mN=0,dR=0,dN=0, mRm=0,dRm=0,mNm=0,dNm=0, maxD='', minD='9999';
+  billDaily.forEach(r => {
+    const d = r.record_date;
+    if(d < minD) minD = d;
+    if(d > maxD) maxD = d;
+    if(d > Y) return;
+    const a = +r.amount || 0;
+    const inM = d >= ms;
+    if(r.platform === 'meituan'){
+      if(r.is_ng){ mN += a; if(inM) mNm += a; }
+      else { mR += a; if(inM) mRm += a; }
+    } else {
+      if(r.status !== '已核销') return;
+      if(r.is_ng){ dN += a; if(inM) dNm += a; }
+      else { dR += a; if(inM) dRm += a; }
+    }
+  });
+  const stats = (l, v, sub) => '<div class="stat"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="d flat">'+sub+'</div></div>';
+  el.innerHTML = '<div class="stats">'
+    + stats('本月真实核销（账单口径 · 至 '+(maxD||'').slice(5)+'）', fmtY(mRm+dRm), '美团 '+fmtY(mRm)+' · 抖音 '+fmtY(dRm))
+    + stats('本月内购剔除', fmtY(mNm+dNm), '美团 '+fmtY(mNm)+' · 抖音 '+fmtY(dNm))
+    + stats('全期真实核销（自 '+minD+'）', fmtY(mR+dR), '美团 '+fmtY(mR)+' · 抖音 '+fmtY(dR))
+    + stats('全期内购剔除', fmtY(mN+dN), '美团 '+fmtY(mN)+' · 抖音 '+fmtY(dN))
+    + '</div><div class="banner">口径：美团核销金额=总收入+商家营销费用；抖音=订单实收；已按内购ID（99%上翻）剔除；美团退款负数行纳入冲抵、抖音撤销核销排除。日常看板为有赞口径，此处为平台账单权威值，每周对账一次。</div>';
+}
+
 /* ================= 主流程 ================= */
 async function refresh(){
   const T = todayStr();
   try{
     const per = await loadYz(T);
+    await loadBills();
     render(T, per);
+    renderNgRef(T);
     $('loading').classList.add('hide');
     $('dash').classList.remove('hide');
   }catch(e){
