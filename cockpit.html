@@ -95,6 +95,22 @@
   .banner { font-size: 12px; color: #8a8f9e; line-height: 1.7; margin-top: 10px; }
   .loader { text-align: center; padding: 26px; color: #8a8f9e; font-size: 13px; }
   .foot { text-align: center; font-size: 12px; color: #b3b8c4; margin-top: 18px; }
+  .gcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+  .gcard { background: #f6f7fa; border: 1px solid #e6e8ef; border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: border-color .15s; }
+  .gcard:hover { border-color: #7c3aed; }
+  .gcard.on { border-color: #7c3aed; background: #f3effc; }
+  .gcard .gn { font-size: 13px; font-weight: 700; color: #1f2330; margin-bottom: 4px; }
+  .gcard .gn .gcnt { font-weight: 400; font-size: 12px; color: #8a8f9e; margin-left: 4px; }
+  .gcard .gv { font-size: 20px; font-weight: 700; color: #1f2330; }
+  .gcard .gl { font-size: 12px; color: #6b7280; margin-top: 2px; white-space: nowrap; }
+  .gcard .gl .warn { color: #A32D2D; font-weight: 600; }
+  .gtable { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
+  .gtable th { text-align: left; color: #8a8f9e; font-weight: 400; padding: 6px 8px; border-bottom: 1px solid #e6e8ef; white-space: nowrap; }
+  .gtable td { padding: 6px 8px; border-bottom: 1px solid #f0f1f4; white-space: nowrap; }
+  .gtable td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .gtable tr.zero td { color: #A32D2D; }
+  .gtable tr.noyz td { color: #b3b8c4; }
+  .gtable .tip { font-size: 12px; color: #8a8f9e; margin-top: 8px; }
   @media (max-width: 560px){ .cmp { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -103,8 +119,8 @@
 
   <!-- 登录 -->
   <div id="loginView" class="login-box hide">
-    <h1>经营驾驶舱</h1>
-    <div class="sub">書荀门店经营数据 · 一屏三问（仅限主账号）</div>
+    <h1>品牌大盘</h1>
+    <div class="sub">書荀经营驾驶舱 · 直营 / 连锁 / 陪跑 · 全员可见</div>
     <div class="card">
       <div class="field"><label class="field-label">邮箱</label><input type="text" id="lgEmail" placeholder="工作邮箱" /></div>
       <div class="field"><label class="field-label">密码</label><input type="password" id="lgPwd" placeholder="密码" /></div>
@@ -123,7 +139,7 @@
   <div id="appView" class="hide">
     <div class="topbar">
       <div>
-        <h1>经营驾驶舱</h1>
+        <h1>品牌大盘 · 書荀</h1>
         <div class="who" id="whoami"></div>
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -136,6 +152,13 @@
     <div id="loading" class="loader">加载中…</div>
 
     <div id="dash" class="hide">
+
+      <!-- ⓪ 品牌大盘 · 事业群 -->
+      <div class="card">
+        <div class="q-title"><span class="q q1">書荀全盘</span><span class="sub">品牌大盘 · 点事业群卡片展开门店清单</span></div>
+        <div class="gcards" id="gcards"></div>
+        <div id="gDetail"></div>
+      </div>
 
       <!-- ① 结果 -->
       <div class="card">
@@ -328,27 +351,91 @@ async function loadYz(T){
 }
 
 /* ================= 渲染 ================= */
+let curGroup = null;      // 当前展开的事业群
+let lastT = null, lastData = null;
+
+function toggleGroup(key){
+  curGroup = (curGroup === key) ? null : key;
+  if(lastT && lastData) render(lastT, lastData);
+}
+
 function render(T, data){
+  lastT = T; lastData = data;
   const per = data.per, blActive = data.blActive, blCnt = data.blCnt, blAmt = data.blAmt;
   const Y = addDays(T,-1);
-  const yzOpen = stores.filter(s => s.status === '在营' && (s.store_type==='连锁'||s.store_type==='直营') && kdtToStoreHas(s.id));
-  function kdtToStoreHas(sid){ return Object.values(kdtToStore).indexOf(sid) >= 0; }
-  const allOpen = stores.filter(s => s.status === '在营' && (s.store_type==='连锁'||s.store_type==='直营'));
 
-  let tA=0,tC=0,yA=0,yC=0,mA=0,mC=0, zero=[];
-  Object.keys(per).forEach(sid => {
-    const g = per[sid];
-    tA+=g.today[0]; tC+=g.today[1]; yA+=g.yday[0]; yC+=g.yday[1]; mA+=g.mtd[0]; mC+=g.mtd[1];
-    if(!g.today[0]) zero.push(storeById[sid]);
-  });
-  const diff = yA ? Math.round((tA-yA)/yA*100) : null;
+  function groupStats(type){
+    const all = stores.filter(s => s.store_type === type);
+    const open = all.filter(s => s.status === '在营');
+    const pend = all.filter(s => s.status === '待上线');
+    let tA=0,tC=0,yA=0,mA=0,mC=0, zero=0;
+    open.forEach(s => { const g = per[s.id]; if(!g) return;
+      tA+=g.today[0]; tC+=g.today[1]; yA+=g.yday[0]; mA+=g.mtd[0]; mC+=g.mtd[1];
+      if(!g.today[0]) zero++; });
+    const covered = open.filter(s => per[s.id]).length;
+    return { all, open, pend, tA, tC, yA, mA, mC, zero, covered };
+  }
+  const G = {
+    '直营': groupStats('直营'),
+    '连锁': groupStats('连锁'),
+    '陪跑': groupStats('陪跑')
+  };
+  const tot = { tA:0, tC:0, yA:0, mA:0, mC:0, zero:0, open:0 };
+  Object.keys(G).forEach(k => { const g = G[k];
+    tot.tA+=g.tA; tot.tC+=g.tC; tot.yA+=g.yA; tot.mA+=g.mA; tot.mC+=g.mC; tot.zero+=g.zero; tot.open+=g.open.length; });
+  const allOpen = stores.filter(s => s.status === '在营' && (s.store_type==='连锁'||s.store_type==='直营'||s.store_type==='陪跑'));
+  const yzOpen = allOpen.filter(s => per[s.id]);
+
+  /* ⓪ 群卡片 */
+  const diffOf = (g) => g.yA ? Math.round((g.tA-g.yA)/g.yA*100) : null;
+  function gcard(key, label, extra){
+    const g = G[key];
+    const d = diffOf(g);
+    const dtxt = d===null ? '昨日无数据' : (d>=0?'↑ ':'↓ ') + Math.abs(d) + '%';
+    const dc = d===null ? '' : (d>=0 ? ' style="color:#0F6E56"' : ' style="color:#A32D2D"');
+    return '<div class="gcard'+(curGroup===key?' on':'')+'" onclick="toggleGroup(\''+key+'\')">'
+      + '<div class="gn">'+label+'<span class="gcnt">在营'+g.open.length+(g.pend.length?' · 待上线'+g.pend.length:'')+'</span></div>'
+      + '<div class="gv">'+fmtY(g.tA)+'</div>'
+      + '<div class="gl">今日'+(dtxt?'<span'+dc+'>'+dtxt+'</span>':'')+' · 本月 '+fmtY(g.mA)+'</div>'
+      + '<div class="gl">'+extra
+      + (g.zero ? ' · <span class="warn">0核销 '+g.zero+'</span>' : ' · 0核销 0')
+      + '</div></div>';
+  }
+  $('gcards').innerHTML =
+    gcard('直营','直营事业群', '有赞覆盖 '+G['直营'].covered+'/'+G['直营'].open.length)
+    + gcard('连锁','连锁事业群', '有赞覆盖 '+G['连锁'].covered+'/'+G['连锁'].open.length)
+    + gcard('陪跑','陪跑事业群', '有赞覆盖 '+G['陪跑'].covered+'/'+G['陪跑'].open.length);
+
+  /* 展开清单 */
+  const gd = $('gDetail');
+  if(curGroup){
+    const g = G[curGroup];
+    const rows = g.open.slice().sort((a,b) => (per[b.id]?per[b.id].mtd[0]:-1) - (per[a.id]?per[a.id].mtd[0]:-1));
+    gd.innerHTML = '<table class="gtable"><thead><tr><th>门店</th><th>城市</th><th style="text-align:right">今日</th><th style="text-align:right">昨日</th><th style="text-align:right">本月</th></tr></thead><tbody>'
+      + rows.map(s => {
+          const r = per[s.id];
+          if(!r) return '<tr class="noyz"><td>'+esc(s.short_name||s.std_name)+'</td><td>'+esc(s.city||'-')+'</td><td class="num">—</td><td class="num">—</td><td class="num">无有赞系统</td></tr>';
+          const zc = r.today[0] ? '' : ' class="zero"';
+          return '<tr'+zc+'><td>'+esc(s.short_name||s.std_name)+'</td><td>'+esc(s.city||'-')+'</td><td class="num">'+fmtY(r.today[0])+' / '+r.today[1]+'单</td><td class="num">'+fmtY(r.yday[0])+'</td><td class="num">'+fmtY(r.mtd[0])+'</td></tr>';
+        }).join('')
+      + '</tbody></table>'
+      + (g.pend.length ? '<div class="tip">另有待上线 '+g.pend.length+' 家：'+g.pend.map(s=>esc(s.short_name||s.std_name)).join('、')+'（测试数据已拦截）</div>' : '');
+    gd.classList.remove('hide');
+  } else {
+    gd.innerHTML = ''; gd.classList.add('hide');
+  }
+
+  /* ① 结果（全盘） */
+  const diff = tot.yA ? Math.round((tot.tA-tot.yA)/tot.yA*100) : null;
   const diffTxt = diff===null ? '<span class="d flat">昨日无数据</span>'
-    : '<span class="d '+(diff>=0?'up':'down')+'">'+(diff>=0?'↑ ':'↓ ')+Math.abs(diff)+'% vs 昨日 '+fmtY(yA)+'</span>';
+    : '<span class="d '+(diff>=0?'up':'down')+'">'+(diff>=0?'↑ ':'↓ ')+Math.abs(diff)+'% vs 昨日 '+fmtY(tot.yA)+'</span>';
+  const zero = [];
+  yzOpen.forEach(s => { if(!per[s.id].today[0]) zero.push(s); });
 
   $('q1Stats').innerHTML =
-    '<div class="stat"><div class="l">今日核销（在营 '+yzOpen.length+' 家有赞店）</div><div class="v">'+fmtY(tA)+'</div>'+diffTxt+'</div>'
-    + '<div class="stat"><div class="l">本月累计</div><div class="v">'+fmtY(mA)+'</div><div class="d flat">'+mC+' 单</div></div>'
-    + '<div class="stat"><div class="l">在营门店</div><div class="v">'+allOpen.length+'</div><div class="d flat">有赞在营 '+yzOpen.length+' · 无有赞 '+(allOpen.length-yzOpen.length)+'</div></div>'
+    '<div class="stat"><div class="l">今日核销（全盘在营 '+allOpen.length+' 家）</div><div class="v">'+fmtY(tot.tA)+'</div>'+diffTxt+'</div>'
+    + '<div class="stat"><div class="l">本月累计</div><div class="v">'+fmtY(tot.mA)+'</div><div class="d flat">'+tot.mC+' 单</div></div>'
+    + '<div class="stat"><div class="l">在营门店</div><div class="v">'+allOpen.length+'</div><div class="d flat">有赞覆盖 '+yzOpen.length+' · 无有赞 '+(allOpen.length-yzOpen.length)+'</div></div>'
     + '<div class="stat'+(zero.length?' bad':'')+'"><div class="l">今日 0 核销</div><div class="v">'+zero.length+' 家</div><div class="d">见下方行动清单 ↓</div></div>';
 
   /* ② 驱动 */
@@ -401,7 +488,7 @@ function render(T, data){
   if(!acts.length) acts.push('<div class="act" style="background:rgba(34,197,94,0.12)"><span class="dot" style="background:#22c55e"></span><span class="txt">今天没有异常项，各项指标正常 ✅</span></div>');
   $('q3Acts').innerHTML = acts.join('');
 
-  $('footNote').innerHTML = '口径：核销 = 美团/抖音/记账/商城核销渠道实付（不含扫码买单、会员余额、现金等）；'
+  $('footNote').innerHTML = '口径：全盘 = 直营 + 连锁 + 陪跑（在营、有赞映射门店）；核销 = 美团/抖音/记账/商城核销渠道实付（不含扫码买单、会员余额、现金等）；'
     + '未上线门店测试数据已拦截不计入（本月拦截 ' + blCnt + ' 笔 ' + fmtY(blAmt) + '）；'
     + '发片数据来自抖音监控最新一轮（'
     + (dyRunAt ? '截至 '+bjHM(dyRunAt) : '暂无') + '）。数据约 5 分钟自动刷新。';
