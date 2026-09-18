@@ -458,7 +458,7 @@ function render(T, data){
   const mx = Math.max(A.avg, B.avg, 1);
   $('fPubL').textContent = dyRunAt ? '发片（截至 '+bjHM(dyRunAt)+'）' : '发片';
   $('fPubV').textContent = pub.length + ' 家近 2 日有发片';
-  $('fHxV').textContent = fmtY(tA);
+  $('fHxV').textContent = fmtY(tot.tA);
   $('cmpAL').textContent = '近期有发片店（'+A.n+' 家有单）· 今日核销均值';
   $('cmpBL').textContent = '近期未发片店（'+B.n+' 家有单）· 今日核销均值';
   $('cmpA').style.width = Math.round(A.avg/mx*100)+'%';
