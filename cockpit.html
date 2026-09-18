@@ -196,6 +196,12 @@
         <div class="acts" id="q3Acts"></div>
       </div>
 
+      <!-- 真实核销参考值（bill_daily 视图） -->
+      <div class="card">
+        <div class="q-title"><span class="q q2">真实核销参考值</span><span class="sub">平台账单权威口径 · 每周对账更新</span></div>
+        <div id="ngRef">加载中…</div>
+      </div>
+
       <div class="banner" id="footNote"></div>
     </div>
   </div>
@@ -505,6 +511,7 @@ function render(T, data){
    口径：美团真实 = is_ng=false 全状态求和（含负数冲抵）；抖音真实 = is_ng=false 且已核销 */
 function renderNgRef(T){
   const el = $('ngRef');
+  if(!el) return;
   if(!billDaily){
     el.innerHTML = '账单汇总视图未就绪：请在 Supabase SQL Editor 执行 bill_daily_view.sql 后刷新本页。';
     return;
