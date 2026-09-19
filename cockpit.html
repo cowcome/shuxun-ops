@@ -299,11 +299,15 @@ let dyAccs = [];        // 最新一轮抖音监控结果（有 store_id 的）
 let dyReportUrl = '';
 let dyRunAt = null;
 let billDaily = null;   // bill_daily 视图：平台账单日汇总
+let pendingKdts = [];   // 待认领有赞店（同步器自动发现）
 
 async function loadBills(){
   try{
     billDaily = await sb('/rest/v1/bill_daily?select=platform,record_date,status,is_ng,cnt,amount');
   }catch(e){ billDaily = null; }
+  try{
+    pendingKdts = await sb('/rest/v1/yz_pending_kdts?select=kdt_id,shop_name,order_cnt,amount&status=eq.pending&order=amount.desc&limit=50');
+  }catch(e){ pendingKdts = []; }   // 表未建时静默
 }
 
 async function loadBase(){
@@ -476,6 +480,13 @@ function render(T, data){
   /* ③ 行动 */
   const acts = [];
   const nm = (s) => esc(s.short_name || s.std_name);
+  if(pendingKdts.length){
+    const names = pendingKdts.slice(0,3).map(p => p.shop_name || ('kdt '+p.kdt_id)).join('、');
+    const amt = pendingKdts.reduce((a,p)=>a+(Number(p.amount)||0),0);
+    acts.push('<div class="act red"><span class="dot"></span><span class="txt">🔎 '+pendingKdts.length+' 家新有赞门店待认领（共 '+pendingKdts.reduce((a,p)=>a+(p.order_cnt||0),0)+' 单 ¥'+fmtY(amt)+'，未认领不计入看板）'
+      + '<span class="names">：' + esc(names) + (pendingKdts.length>3?' 等':'') + '</span></span>'
+      + '<a href="ops.html">去认领 →</a></div>');
+  }
   if(zero.length){
     acts.push('<div class="act red"><span class="dot"></span><span class="txt">'+zero.length+' 家有赞在营店今日 0 核销'
       + '<span class="names">：' + zero.slice(0,6).map(nm).join('、') + (zero.length>6?' 等':'') + '</span></span>'
