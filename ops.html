@@ -190,8 +190,12 @@
       <div class="tab" data-tab="recon" onclick="switchTab('recon')" data-page-node-id="GyfZDCXqzBJan1Xm0eb02h">数据核对</div>
       <div class="tab" data-tab="logs" id="tabBtnLogs" onclick="switchTab('logs')" data-page-node-id="JZcRcF6LSD3T9DyrMNFqv8">操作日志</div>
       <div class="tab" data-tab="stores" onclick="switchTab('stores')" data-page-node-id="CJh0AG01eDigHR558nFNEl">门店管理</div>
+      <div class="tab hide" data-tab="operators" id="tabBtnOps" onclick="switchTab('operators')">运营人员</div>
       <div class="tab" data-tab="dy" id="tabBtnDy" onclick="switchTab('dy')">抖音监控</div>
     </div>
+
+    <!-- 待认领有赞店横幅（同步器自动发现，全员可见，认领/忽略仅主账号） -->
+    <div id="pendingBar" class="hide" style="margin-bottom:14px"></div>
 
     <div id="globalMsg" data-page-node-id="VBNixWpDfJcWvjHeBHMpKf"></div>
 
@@ -441,6 +445,31 @@
       </div>
     </div>
 
+    <!-- ---------- 运营人员（仅主账号） ---------- -->
+    <div id="tab-operators" class="hide">
+      <div class="card">
+        <div class="card-title">新增运营人员</div>
+        <div class="inline">
+          <div><label class="field-label">姓名（与填报署名一致，全局唯一）</label><input type="text" id="opNewName" placeholder="如：小林" /></div>
+          <div><label class="field-label">登录邮箱</label><input type="text" id="opNewEmail" placeholder="xxx@qq.com" /></div>
+          <div style="flex:0 0 auto;display:flex;align-items:flex-end"><button class="primary" onclick="addOperator()">新增</button></div>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:rgba(255,255,255,0.55)">新增后立即出现在门店表单的「运营人」下拉里；给 TA 分配门店（下方「转移」或在门店编辑里选 TA）后，TA 登录即可编辑自己名下门店。</div>
+      </div>
+      <div class="card">
+        <div class="card-title">人员列表（离职=保留历史署名，编辑权立即失效）</div>
+        <div id="opsListBody"><div class="empty">加载中…</div></div>
+      </div>
+      <div class="card hide" id="opTransferCard">
+        <div class="card-title" id="opTransferTitle">转移门店</div>
+        <div id="opTransferBody"></div>
+        <div class="inline" style="margin-top:10px">
+          <div><label class="field-label">转移给</label><select id="opTransferTo"></select></div>
+          <div style="flex:0 0 auto;display:flex;align-items:flex-end"><button class="primary" onclick="doTransferStores()">确认转移</button><button onclick="closeTransfer()">取消</button></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -517,6 +546,7 @@ let isAdmin = false;
 let myName = '';          // 当前登录运营人中文名（主账号=admin）
 let isXiaoai = false;     // 小艾：编辑范围=全部门店（仅次于主账号），但无删除权
 // 登录邮箱 → 运营人中文名（与 stores.operator 字段对应）
+// 2026-09-19 起以 operators 配置表为准，此硬编码仅作表读取失败时的兜底
 const OPS_MAP = {
   '411249585@qq.com': 'admin',
   '2574274699@qq.com': '琦琦',
@@ -526,6 +556,18 @@ const OPS_MAP = {
   '516265753@qq.com': '小艾',
   '3263073614@qq.com': '夏夏',
 };
+let operatorsDB = null;   // operators 表内容（[{id,name,email,status}]），null=表未建/读取失败
+function activeOpNames(){
+  if(operatorsDB) return operatorsDB.filter(o=>o.status==='active').map(o=>o.name);
+  return Object.values(OPS_MAP);   // 兜底
+}
+function opNameByEmail(email){
+  if(operatorsDB){
+    const hit = operatorsDB.find(o=>String(o.email).toLowerCase()===String(email).toLowerCase() && o.status==='active');
+    if(hit) return hit.name;
+  }
+  return OPS_MAP[String(email).toLowerCase()] || '';
+}
 // 是否有权编辑某门店：主账号+小艾=全部；其他运营=仅自己名下
 function canEditStore(x){ return isAdmin || isXiaoai || !!(myName && x.operator === myName); }
 const canDeleteStore = () => isAdmin;                 // 删除仅主账号
@@ -636,9 +678,15 @@ function enterApp(){
   $('whoAmI').textContent = '已登录：'+email;
   isAdmin = String(email).toLowerCase() === ADMIN_EMAIL;   // 管理类按钮仅主账号可见
   userEmail = email;
-  myName = OPS_MAP[String(email).toLowerCase()] || '';
+  myName = opNameByEmail(email);
   isXiaoai = myName === '小艾';
   applyPerms();
+  loadOperators().then(()=>{           // operators 表加载后重算本人身份（新入职兜底外的人）
+    myName = opNameByEmail(email);
+    isXiaoai = myName === '小艾';
+    if(isAdmin) renderOpsManager();
+  });
+  loadPendingBar();
   initDefaults();
   loadInnerIds();
   loadStoreMaster().then(()=>loadDash());   // 先加载主表（停业剔除/别名依赖），再画看板
@@ -647,6 +695,7 @@ let userEmail = '';
 /* 权限可见性：主账号 411249585@qq.com 才显示 操作日志 tab / 新增门店 / 操作列 */
 function applyPerms(){
   const t = $('tabBtnLogs'); if(t) t.classList.toggle('hide', !isAdmin);
+  const to = $('tabBtnOps'); if(to) to.classList.toggle('hide', !isAdmin);   // 运营人员仅主账号
   const td = $('tabBtnDy'); if(td) td.classList.toggle('hide', !isAdmin);   // 抖音监控：整个 tab 仅主账号
   const b = $('btnAddStore'); if(b) b.classList.toggle('hide', !isAdmin);
   const c = $('lnkChain'); if(c) c.classList.toggle('hide', !isAdmin);   // 连锁板块：内测仅主账号
@@ -1340,13 +1389,44 @@ function setStType(t){
   }
   renderStores();
 }
-function openStoreEdit(id){
+let kdtMapRows = [];                       // yz_shop_map 全量（kdt_id→store_id）
+async function loadKdtMap(){
+  try{
+    const r = await sb('/rest/v1/yz_shop_map?select=kdt_id,store_id&limit=2000');
+    if(r.ok) kdtMapRows = await r.json();
+  }catch(e){ kdtMapRows = []; }
+}
+function kdtOfStore(sid){ const m = kdtMapRows.find(x=>x.store_id===sid); return m ? m.kdt_id : ''; }
+function openStoreEdit(id, prefill){
+  prefill = prefill || {};
   editingStoreId = id || null;
+  pendingClaimKdt = (prefill && prefill.yz_kdt) || null;
   const x = id ? storeRows.find(v=>v.id===id) : null;
-  $('smTitle').textContent = x ? '编辑门店 · '+x.std_name : '新增门店';
+  $('smTitle').textContent = x ? '编辑门店 · '+x.std_name : (prefill.yz_kdt ? '认领有赞新店' : '新增门店');
+  // 运营人：下拉选择（杜绝错别字/别名导致权限失灵），历史遗留值不在列表时自动补上防丢
+  const curOp = x ? (x.operator||'') : (prefill.operator||'');
+  const opNames = activeOpNames().slice();
+  if(curOp && opNames.indexOf(curOp)<0 && curOp!=='admin') opNames.push(curOp);
+  const opSel = '<option value="">（未分配）</option>' + opNames.map(o=>'<option'+(o===curOp?' selected':'')+'>'+esc(o)+'</option>').join('');
+  const stSel = (x ? (x.status||'在营') : (prefill.status||'在营'));
+  const tySel = (x ? (x.store_type||'') : (prefill.store_type||'连锁'));
   let h = '<div class="grid2">';
   STORE_FIELDS.forEach(f=>{
-    const v = x ? (x[f[0]]==null?'':x[f[0]]) : '';
+    const v = x ? (x[f[0]]==null?'':x[f[0]]) : (prefill[f[0]]!=null?prefill[f[0]]:'');
+    if(f[0]==='operator'){
+      h += '<div class="field"><label class="field-label">'+f[1]+'</label><select id="sm_operator">'+opSel+'</select></div>';
+      return;
+    }
+    if(f[0]==='status'){
+      h += '<div class="field"><label class="field-label">'+f[1]+'</label><select id="sm_status">'+
+        ['在营','闭店','待上线'].map(o=>'<option'+(o===stSel?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';
+      return;
+    }
+    if(f[0]==='store_type'){
+      h += '<div class="field"><label class="field-label">'+f[1]+'</label><select id="sm_store_type">'+
+        ['直营','连锁','陪跑','共管'].map(o=>'<option'+(o===tySel?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';
+      return;
+    }
     if(f[2]==='select'){
       h += '<div class="field"><label class="field-label">'+f[1]+'</label><select id="sm_'+f[0]+'">'+
         f[3].split('|').map(o=>'<option'+(o===v?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';
@@ -1355,10 +1435,16 @@ function openStoreEdit(id){
         '<input type="'+f[2]+'" id="sm_'+f[0]+'" value="'+esc(v)+'" /></div>';
     }
   });
+  // 有赞 kdt_id：仅主账号可见（认领新店时预填，编辑时反查当前映射）
+  if(isAdmin || prefill.yz_kdt){
+    const curKdt = prefill.yz_kdt || (x ? kdtOfStore(x.id) : '');
+    h += '<div class="field"><label class="field-label">有赞 kdt_id（保存后自动写入映射，看板即刻可见）</label>'+
+      '<input type="text" id="sm_yz_kdt" value="'+esc(curKdt)+'" placeholder="如 179482533" /></div>';
+  }
   h += '</div>';
   $('smBody').innerHTML = h;
   if(statusLocked()){   // 非主账号：状态/闭店日期/运营人 锁定，防误改影响报表口径
-    ['sm_status','sm_closed_date','sm_operator'].forEach(id=>{ const el=$(id); if(el){ el.disabled=true; el.style.opacity=.5; el.title='该字段仅主账号可修改'; } });
+    ['sm_status','sm_closed_date','sm_operator'].forEach(id2=>{ const el=$(id2); if(el){ el.disabled=true; el.style.opacity=.5; el.title='该字段仅主账号可修改'; } });
     $('smBody').insertAdjacentHTML('beforeend','<div style="margin-top:8px;font-size:12px;color:#fbbf24">⚠️ 状态 / 闭店日期 / 运营人 由主账号锁定，不可修改</div>');
   }
   $('storeMask').classList.remove('hide');
@@ -1369,7 +1455,9 @@ async function saveStore(){
   for(const f of STORE_FIELDS){
     const el = $('sm_'+f[0]);
     if(!el) continue;
-    body[f[0]] = el.value === '' ? null : el.value;
+    let v = el.value;
+    if(f[2]==='text') v = v.trim();                     // 防首尾空格造成权限/匹配失灵
+    body[f[0]] = v === '' ? null : v;
   }
   if(statusLocked()){   // 非主账号：即使前端被绕过，也不允许改状态/闭店日期/运营人
     delete body.status; delete body.closed_date; delete body.operator;
@@ -1377,6 +1465,7 @@ async function saveStore(){
   if(!body.std_name) return msg('公司内部标准名称为必填','err');
   if(!body.status) body.status = '在营';
   if(!body.store_type) body.store_type = '直营';
+  const yzKdt = (($('sm_yz_kdt')||{}).value||'').trim();
   try{
     const id = editingStoreId;
     const r = await sb('/rest/v1/stores'+(id?'?id=eq.'+id:''), {
@@ -1385,9 +1474,30 @@ async function saveStore(){
       body: JSON.stringify(body)
     });
     if(!r.ok) throw new Error('保存失败 HTTP '+r.status+'：'+await r.text());
+    const saved = await r.json().catch(()=>[]);
+    const savedId = id || (saved[0] && saved[0].id) || null;
+    // 有赞映射：填了 kdt_id 就自动 upsert，无需再跑 SQL
+    if(yzKdt && isAdmin && /^\d+$/.test(yzKdt)){
+      const mr = await sb('/rest/v1/yz_shop_map?on_conflict=kdt_id', {
+        method:'POST',
+        headers:{ 'Prefer':'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify([{ kdt_id: parseInt(yzKdt,10), store_id: savedId }])
+      });
+      if(mr.ok) kdtMapRows = kdtMapRows.filter(m=>m.kdt_id!==parseInt(yzKdt,10)).concat([{kdt_id:parseInt(yzKdt,10), store_id:savedId}]);
+      else msg('⚠️ 门店已保存，但有赞映射写入失败（HTTP '+mr.status+'），请截图反馈','err');
+    }
+    // 认领闭环：新店来自待认领横幅 → 标记 claimed 并关联门店
+    if(pendingClaimKdt && savedId){
+      await sb('/rest/v1/yz_pending_kdts?kdt_id=eq.'+pendingClaimKdt, {
+        method:'PATCH',
+        body: JSON.stringify({ status:'claimed', claimed_store_id:savedId, handled_at:new Date().toISOString() })
+      }).catch(()=>{});
+      pendingClaimKdt = null;
+      loadPendingBar();
+    }
     editingStoreId = null;
     closeStoreEdit(); await loadStores();
-    msg(id?'门店已更新（已写入操作日志）':'门店已新增（已写入操作日志）','ok');
+    msg(id?'门店已更新（已写入操作日志）':'门店已新增（已写入操作日志）'+(yzKdt?'，有赞映射已自动写入':''),'ok');
   }catch(err){ msg(esc(err.message),'err'); }
 }
 let pendingDel = null; // {id, name}
@@ -1423,6 +1533,170 @@ async function doDelete(){
     msg(esc(err.message),'err');
   }
   $('delBtn').disabled = false;
+}
+
+/* ============================================================================
+   运营人员管理（仅主账号）+ 待认领有赞店横幅
+   ========================================================================== */
+async function loadOperators(){
+  try{
+    const r = await sb('/rest/v1/operators?select=*&order=name.asc&limit=200');
+    operatorsDB = r.ok ? await r.json() : null;
+  }catch(e){ operatorsDB = null; }   // 表未建/读取失败 → 用 OPS_MAP 兜底
+}
+function renderOpsManager(){
+  if(!isAdmin) return;
+  const body = $('opsListBody');
+  if(!body) return;
+  if(!operatorsDB){
+    body.innerHTML = '<div class="empty">operators 配置表未就绪（需执行 ops_upgrade_20260919.sql），当前使用内置名单兜底。</div>';
+    return;
+  }
+  let h = '<div class="tbl-wrap"><table><thead><tr><th>姓名</th><th>登录邮箱</th><th>状态</th><th>名下门店</th><th>操作</th></tr></thead><tbody>';
+  operatorsDB.forEach(o=>{
+    const cnt = storeRows.filter(x=>x.operator===o.name).length;
+    h += '<tr>'+
+      '<td style="font-weight:700">'+esc(o.name)+'</td>'+
+      '<td>'+esc(o.email)+'</td>'+
+      '<td style="color:'+(o.status==='active'?'#4ade80':'#f87171')+'">'+(o.status==='active'?'在职':'离职')+'</td>'+
+      '<td>'+cnt+' 家</td>'+
+      '<td>'+
+        '<button class="sm" onclick="editOperator('+o.id+')">改名</button> '+
+        (o.name!=='admin'?'<button class="sm" onclick="toggleOpStatus('+o.id+')">'+(o.status==='active'?'标记离职':'复职')+'</button> ':'')+
+        (cnt>0 && o.name!=='admin'?'<button class="sm" onclick="openTransfer('+o.id+')">转移门店</button>':'')+
+      '</td></tr>';
+  });
+  h += '</tbody></table></div>';
+  body.innerHTML = h;
+}
+async function addOperator(){
+  const name = ($('opNewName').value||'').trim();
+  const email = ($('opNewEmail').value||'').trim().toLowerCase();
+  if(!name || !email) return msg('姓名和邮箱都必填','err');
+  if(operatorsDB && operatorsDB.some(o=>o.name===name)) return msg('已存在同名人员，姓名必须全局唯一','err');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return msg('邮箱格式不正确','err');
+  try{
+    const r = await sb('/rest/v1/operators', { method:'POST', headers:{'Prefer':'return=minimal'},
+      body: JSON.stringify({ name:name, email:email, status:'active' }) });
+    if(!r.ok && r.status!==409) throw new Error('HTTP '+r.status+'：'+await r.text());
+    $('opNewName').value=''; $('opNewEmail').value='';
+    await loadOperators(); renderOpsManager();
+    msg('已新增「'+esc(name)+'」，TA 现在出现在门店表单的运营人下拉里','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+async function editOperator(id){
+  const o = (operatorsDB||[]).find(v=>v.id===id); if(!o) return;
+  const newName = prompt('修改姓名（当前：'+o.name+'）\n改名会自动同步所有门店的运营人字段：', o.name);
+  if(!newName) return;
+  const nn = newName.trim();
+  if(!nn || nn===o.name) return;
+  if(operatorsDB.some(v=>v.id!==id && v.name===nn)) return msg('已存在同名人员，姓名必须全局唯一','err');
+  try{
+    const r = await sb('/rest/v1/operators?id=eq.'+id, { method:'PATCH', body: JSON.stringify({ name:nn }) });
+    if(!r.ok) throw new Error('HTTP '+r.status+'：'+await r.text());
+    // 名单同步：该运营名下门店的 operator 一并更新，权限不失灵
+    const mine = storeRows.filter(x=>x.operator===o.name);
+    for(const s of mine){
+      await sb('/rest/v1/stores?id=eq.'+s.id, { method:'PATCH', body: JSON.stringify({ operator:nn }) });
+    }
+    await loadOperators();
+    if(myName===o.name){ myName=nn; }
+    await loadStores(); renderOpsManager();
+    msg('已改名「'+esc(o.name)+'」→「'+esc(nn)+'」，'+mine.length+' 家门店同步更新','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+async function toggleOpStatus(id){
+  const o = (operatorsDB||[]).find(v=>v.id===id); if(!o) return;
+  const toStatus = o.status==='active' ? 'resigned' : 'active';
+  try{
+    const r = await sb('/rest/v1/operators?id=eq.'+id, { method:'PATCH', body: JSON.stringify({ status:toStatus }) });
+    if(!r.ok) throw new Error('HTTP '+r.status+'：'+await r.text());
+    await loadOperators();
+    if(userEmail && o.email===userEmail.toLowerCase()) myName = opNameByEmail(userEmail);
+    renderOpsManager();
+    msg(toStatus==='resigned' ? '「'+esc(o.name)+'」已标记离职：编辑权立即失效，历史填报署名保留；名下 '+storeRows.filter(x=>x.operator===o.name).length+' 家门店建议尽快转移' : '「'+esc(o.name)+'」已复职','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+let transferFrom = null;
+function openTransfer(id){
+  const o = (operatorsDB||[]).find(v=>v.id===id); if(!o) return;
+  transferFrom = o;
+  const mine = storeRows.filter(x=>x.operator===o.name);
+  $('opTransferTitle').textContent = '转移「'+o.name+'」名下门店（已勾选全部）';
+  $('opTransferBody').innerHTML = mine.length
+    ? '<div style="max-height:260px;overflow:auto">' + mine.map(s=>
+        '<label style="display:block;padding:4px 0"><input type="checkbox" class="opTrStore" value="'+s.id+'" checked /> '+esc(s.std_name)+'（'+esc(s.store_type||'')+'）</label>').join('') + '</div>'
+    : '<div class="empty">该运营名下暂无门店</div>';
+  $('opTransferTo').innerHTML = (operatorsDB||[]).filter(v=>v.id!==id && v.status==='active' && v.name!=='admin')
+    .map(v=>'<option value="'+esc(v.name)+'">'+esc(v.name)+'</option>').join('');
+  $('opTransferCard').classList.remove('hide');
+  if($('opTransferCard').scrollIntoView) $('opTransferCard').scrollIntoView({behavior:'smooth'});
+}
+function closeTransfer(){ transferFrom=null; $('opTransferCard').classList.add('hide'); }
+async function doTransferStores(){
+  if(!transferFrom) return;
+  const to = ($('opTransferTo').value||'').trim();
+  if(!to) return msg('请选择接收人','err');
+  const ids = Array.from(document.querySelectorAll('.opTrStore:checked')).map(el=>parseInt(el.value,10));
+  if(!ids.length) return msg('请至少勾选一家门店','err');
+  try{
+    for(const sid of ids){
+      const r = await sb('/rest/v1/stores?id=eq.'+sid, { method:'PATCH', body: JSON.stringify({ operator:to }) });
+      if(!r.ok) throw new Error('门店 '+sid+' 转移失败：HTTP '+r.status);
+    }
+    closeTransfer(); await loadStores(); renderOpsManager();
+    msg('已将 '+ids.length+' 家门店从「'+esc(transferFrom.name)+'」转移给「'+esc(to)+'」','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+
+/* ---- 待认领有赞店横幅（同步器自动发现） ---- */
+let pendingKdts = [];
+async function loadPendingBar(){
+  try{
+    const r = await sb('/rest/v1/yz_pending_kdts?select=*&status=eq.pending&order=amount.desc&limit=50');
+    pendingKdts = r.ok ? await r.json() : [];
+  }catch(e){ pendingKdts = []; }   // 表未建时静默
+  renderPendingBar();
+}
+function renderPendingBar(){
+  const el = $('pendingBar'); if(!el) return;
+  if(!pendingKdts.length){ el.classList.add('hide'); el.innerHTML=''; return; }
+  let h = '<div class="card" style="border:1px solid rgba(251,191,36,0.5);background:rgba(251,191,36,0.08)">'+
+    '<div class="card-title" style="color:#fbbf24">🔎 发现 '+pendingKdts.length+' 家新有赞门店待认领（未认领前不计入任何看板）</div>';
+  pendingKdts.forEach(p=>{
+    h += '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06)">'+
+      '<div style="flex:1;min-width:240px"><b>'+esc(p.shop_name || ('有赞店 kdt '+p.kdt_id))+'</b>'+
+      '<span style="font-size:12px;color:rgba(255,255,255,0.55)">　kdt '+p.kdt_id+'　'+(p.order_cnt||0)+' 单　¥'+fmtAmt(p.amount||0)+
+      '　首次出现 '+(p.first_seen?fmtTime(p.first_seen):'—')+'</span></div>'+
+      (isAdmin
+        ? '<button class="primary sm" onclick="claimPending('+p.kdt_id+')">✓ 认领建店</button>'+
+          '<button class="sm danger" onclick="ignorePending('+p.kdt_id+')">忽略（弃用）</button>'
+        : '<span style="font-size:12px;color:rgba(255,255,255,0.45)">等待主账号认领</span>')+
+      '</div>';
+  });
+  h += '</div>';
+  el.classList.remove('hide');
+  el.innerHTML = h;
+}
+function claimPending(kdt){
+  const p = pendingKdts.find(v=>v.kdt_id===kdt);
+  if(!p) return;
+  openStoreEdit(null, {
+    std_name: p.shop_name || '',
+    yz_kdt: kdt,
+    store_type: '连锁',
+    status: '待上线'
+  });
+}
+async function ignorePending(kdt){
+  if(!confirm('确认忽略该有赞店？标记后：预警不再提示，其订单永久排除在所有看板之外（适用于开错/弃用有赞的店）。')) return;
+  try{
+    const r = await sb('/rest/v1/yz_pending_kdts?kdt_id=eq.'+kdt, { method:'PATCH',
+      body: JSON.stringify({ status:'ignored', handled_at:new Date().toISOString() }) });
+    if(!r.ok) throw new Error('HTTP '+r.status+'：'+await r.text());
+    await loadPendingBar();
+    msg('已忽略 kdt '+kdt+'，之后不会再提示','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
 }
 
 /* ============================================================================
