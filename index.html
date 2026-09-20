@@ -286,6 +286,25 @@ async function authHeaders() {
   return { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' };
 }
 
+// 动态门店列表（2026-09-21）：以 stores 主表为准（直营+在营），新店建完自动出现；
+// 失败或为空时保留硬编码 STORES，保证填报永远可用
+async function loadStoresDynamic() {
+  try {
+    const h = await authHeaders();
+    const q = '/rest/v1/stores?select=std_name&store_type=eq.' + encodeURIComponent('直营')
+            + '&status=eq.' + encodeURIComponent('在营') + '&order=std_name.asc';
+    const r = await fetch(SUPABASE_URL + q, { headers: h });
+    if (!r.ok) return;
+    const arr = await r.json();
+    const list = (arr || []).map(x => x.std_name).filter(Boolean);
+    if (list.length) {
+      STORES.length = 0;
+      list.forEach(s => STORES.push(s));
+      renderStores();
+    }
+  } catch (e) { /* 静默回退硬编码 */ }
+}
+
 // ---------------------------------------------------------------------------
 // 表单结构：与小程序 pages/report/report.js 完全一致
 // 快捷按钮 0~5，超出用右侧 [>] 手动输入
@@ -602,6 +621,7 @@ document.getElementById('submitBtn').addEventListener('click', submit);
 renderStores();
 renderGroups();
 checkSubmittedStores();
+loadStoresDynamic();   // 动态门店：异步以 stores 主表刷新按钮列表（失败保留硬编码）
 if (selectedStore) reloadExisting();
 
 // 从运营后台点进来的（index.html?from=ops）才显示返回入口，门店直接打开时看不到
