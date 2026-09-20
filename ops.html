@@ -525,9 +525,11 @@ const SB_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
 const SB_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
 
 // 2026-09-08 起统一使用标准名称（与门店主表 stores.std_name 一致），历史口径名已迁移
-const STORES = ['佛山顺联店','佛山印象城','佛山国金店','佛山恒福店','佛山新塘店',
-                '佛山绿地店','佛山高明店','佛山星耀店','佛山万科店','佛山水城店',
-                '佛山悦汇店'];
+// ★ 权威来源 = stores 主表（store_type=直营 且 status=在营），loadStoreMaster 成功后动态重算，
+//   新店在后台建完即自动进看板/下拉/漏填清单；下方硬编码仅作主表加载失败时的兜底
+let STORES = ['佛山顺联店','佛山印象城','佛山国金店','佛山恒福店','佛山新塘店',
+              '佛山绿地店','佛山高明店','佛山星耀店','佛山万科店','佛山水城店',
+              '佛山悦汇店'];
 
 // 双层表头：大指标 → 美 / 抖 子列
 const COL_GROUPS = [
@@ -848,7 +850,15 @@ let storeMaster = [];   // stores 主表缓存（全字段），登录后加载�
 async function loadStoreMaster(){
   try{
     const r = await sb('/rest/v1/stores?select=*&order=store_type.asc,std_name.asc&limit=500');
-    if(r.ok) storeMaster = await r.json();
+    if(r.ok){
+      storeMaster = await r.json();
+      // 直营门店名单动态化：以主表（直营+在营）为准，新店建完自动生效
+      const dyn = storeMaster.filter(x=>x.store_type==='直营' && x.status==='在营').map(x=>x.std_name);
+      if(dyn.length){
+        STORES.length = 0; dyn.forEach(s=>STORES.push(s));
+        fillStoreOptions();
+      }
+    }
   }catch(e){ /* 读取失败时退回硬编码兜底，不影响页面其他功能 */ }
 }
 function closedStores(){
@@ -858,14 +868,18 @@ function closedStores(){
   return EXCLUDED_STORES;
 }
 
+function fillStoreOptions(){
+  const opts = '<option value="">全部门店</option>' + STORES.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+  $('qStore').innerHTML = opts; $('lStore').innerHTML = opts;
+}
+
 function initDefaults(){
   $('dashStart').value = daysAgo(1); $('dashEnd').value = daysAgo(1);   // 默认昨日
   $('qStart').value = daysAgo(1);   $('qEnd').value = daysAgo(1);       // 默认昨日
   markQuick('dash','yest'); markQuick('query','yest');
   $('rDate').value = daysAgo(1);
   $('lStart').value = daysAgo(6); $('lEnd').value = today();
-  const opts = '<option value="">全部门店</option>' + STORES.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
-  $('qStore').innerHTML = opts; $('lStore').innerHTML = opts;
+  fillStoreOptions();
 }
 
 /* ---------------- 快捷日期（昨日 / 近七天 / 本月 / 上月） ---------------- */
