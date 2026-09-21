@@ -1350,6 +1350,8 @@ const STORE_FIELDS = [
   ['operator','运营人','text',''],
   ['launch_date','上线日期','date',''],
   ['status','状态','select','在营|闭店|待上线'],
+  ['special_status','特殊营业','select','无|装修|店庆|暂停'],
+  ['special_until','特殊营业截止','date',''],
   ['closed_date','闭店日期','date',''],
   ['aliases','核对别名（逗号分隔）','text',''],
   ['note','备注','text','']
@@ -1380,7 +1382,7 @@ function renderStores(){
   const stColor = {'在营':'#4ade80','闭店':'#f87171','待上线':'#fbbf24'};
   list.forEach(x=>{
     h += '<tr>'+
-      '<td style="color:'+(stColor[x.status]||'#fff')+';font-weight:700">'+esc(x.status)+'</td>'+
+      '<td style="color:'+(stColor[x.status]||'#fff')+';font-weight:700">'+esc(x.status)+storeBadges(x)+'</td>'+
       '<td class="store">'+esc(x.std_name)+'</td>'+
       '<td>'+esc(x.store_type||'')+'</td>'+
       '<td>'+esc(x.operator||'')+'</td>'+
@@ -1391,6 +1393,27 @@ function renderStores(){
   });
   const activeCnt = storeRows.filter(x=>x.status==='在营').length;
   h += '</tbody></table></div><div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.55)">在营门店 <b style="color:#4ade80;font-size:15px">'+activeCnt+'</b> 家 ｜ 当前显示 '+list.length+' / '+storeRows.length+' 家（美团ID / 抖音ID / 别名 在「编辑」里查看；增删改自动写入操作日志）</div>';
+  return h;
+}
+// 状态灯判定（2026-09-21 拍板）：新店徽章=launch_date 起 30 天内自动；
+// 特殊营业琥珀灯=special_status 非空且未过 special_until（截止当天仍算）
+function isNewStore(x){
+  if(!x.launch_date) return false;
+  const d = new Date(x.launch_date);
+  return !isNaN(d.getTime()) && (Date.now() - d.getTime()) < 30*864e5;
+}
+function isSpecialOpen(x){
+  if(!x.special_status || x.special_status==='无') return false;
+  if(x.special_until){
+    const u = new Date(x.special_until);
+    if(!isNaN(u.getTime()) && u.getTime() < new Date().setHours(0,0,0,0)) return false;
+  }
+  return true;
+}
+function storeBadges(x){
+  let h = '';
+  if(isNewStore(x)) h += '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;background:rgba(59,130,246,.22);color:#93c5fd;font-size:11px;font-weight:700;vertical-align:middle">新</span>';
+  if(isSpecialOpen(x)) h += '<span title="特殊营业：'+esc(x.special_status||'')+(x.special_until?'（至 '+esc(x.special_until)+'）':'')+'" style="display:inline-block;margin-left:6px;width:10px;height:10px;border-radius:50%;background:#f59e0b;vertical-align:middle"></span>';
   return h;
 }
 function setStType(t){
@@ -1480,6 +1503,7 @@ async function saveStore(){
   if(!body.std_name) return msg('公司内部标准名称为必填','err');
   if(!body.status) body.status = '在营';
   if(!body.store_type) body.store_type = '直营';
+  if(body.special_status === '无') body.special_status = null;   // 「无」存 NULL=正常营业（琥珀灯灭）
   const yzKdt = (($('sm_yz_kdt')||{}).value||'').trim();
   try{
     const id = editingStoreId;
