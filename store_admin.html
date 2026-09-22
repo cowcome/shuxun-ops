@@ -146,6 +146,10 @@
           </div>
         </div>
         <div>
+          <label class="field-label">运营人</label>
+          <select id="stOp" onchange="renderStores()"><option value="">全部</option></select>
+        </div>
+        <div>
           <label class="field-label">搜索（名称 / 别名 / ID）</label>
           <input type="text" id="stSearch" oninput="renderStores()" placeholder="如：顺联 / 十亩地" />
         </div>
@@ -342,6 +346,7 @@ async function loadStores(){
     const r = await sb('/rest/v1/stores?select=*&order=store_type.asc,std_name.asc&limit=500');
     if(!r.ok) throw new Error('读取失败 HTTP '+r.status+'：'+await r.text());
     storeRows = await r.json();
+    fillOpFilter();
     setStType(stTypeFilter);
     $('stBody').innerHTML = storeRows.length ? renderStores() : '<div class="empty">主表为空，请先执行 stores_master_setup.sql</div>';
   }catch(err){
@@ -350,9 +355,10 @@ async function loadStores(){
 }
 function renderStores(){
   const st = $('stStatus').value, ty = stTypeFilter;
+  const op = ($('stOp')||{}).value || '';
   const kw = ($('stSearch').value||'').trim().toLowerCase();
   const list = storeRows.filter(x=>
-    (!st || x.status===st) && (!ty || x.store_type===ty) &&
+    (!st || x.status===st) && (!ty || x.store_type===ty) && (!op || x.operator===op) &&
     (!kw || [x.std_name,x.short_name,x.aliases,x.meituan_name,x.douyin_name,x.meituan_id,x.douyin_id,x.operator]
       .some(v=>String(v==null?'':v).toLowerCase().indexOf(kw)>=0)));
   const stColShown = storeOpsShown();
@@ -407,6 +413,15 @@ function setStType(t){
     c.style.borderColor = on ? '#7c3aed' : '';
   }
   renderStores();
+}
+// 运营人筛选项：operators 在职名单优先，主表里出现过的历史运营人也补上（防丢）
+function fillOpFilter(){
+  const sel = $('stOp'); if(!sel) return;
+  const cur = sel.value;
+  const names = [];
+  (operatorsDB||[]).filter(o=>o.status==='active').forEach(o=>names.push(o.name));
+  storeRows.forEach(x=>{ if(x.operator && x.operator!=='admin' && names.indexOf(x.operator)<0) names.push(x.operator); });
+  sel.innerHTML = '<option value="">全部</option>' + names.map(n=>'<option'+(n===cur?' selected':'')+'>'+esc(n)+'</option>').join('');
 }
 let kdtMapRows = [];
 async function loadKdtMap(){
