@@ -122,6 +122,7 @@
     <a href="ops.html">佛山直营</a>
     <a href="chain.html" data-sx="admin" hidden>书荀连锁</a>
     <a href="douyin_pay.html" data-sx="admin" hidden>扫码上翻</a>
+    <a href="store_admin.html">门店管理</a>
     <a href="index.html">每日填报</a>
   </div>
   <span class="sx-me" id="sxMe"></span>
@@ -527,7 +528,7 @@ function render(T, data){
     const amt = pendingKdts.reduce((a,p)=>a+(Number(p.amount)||0),0);
     acts.push('<div class="act red"><span class="dot"></span><span class="txt">🔎 '+pendingKdts.length+' 家新有赞门店待认领（共 '+pendingKdts.reduce((a,p)=>a+(p.order_cnt||0),0)+' 单 ¥'+fmtY(amt)+'，未认领不计入看板）'
       + '<span class="names">：' + esc(names) + (pendingKdts.length>3?' 等':'') + '</span></span>'
-      + '<a href="ops.html">去认领 →</a></div>');
+      + '<a href="store_admin.html">去认领 →</a></div>');
   }
   if(zero.length){
     acts.push('<div class="act red"><span class="dot"></span><span class="txt">'+zero.length+' 家有赞在营店今日 0 核销'
