@@ -32,6 +32,9 @@
   button.sm { height:30px; padding:0 10px; font-size:12px; border-radius:8px; }
   .inline { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
   .inline > div { flex:1; min-width:150px; }
+  .inline > div { min-width:110px; }
+  #stTypeChips { flex-wrap:nowrap; }
+  #stTypeChips .sm { padding:5px 9px; font-size:12px; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
   th { text-align:left; color:#6b7280; font-weight:600; font-size:12px; padding:8px 10px; border-bottom:1px solid #e6e8ef; white-space:nowrap; }
   td { padding:9px 10px; border-bottom:1px solid #f0f1f4; white-space:nowrap; }
@@ -100,7 +103,7 @@
     }else if(email){
       nav.querySelectorAll('.sx-links a, .sx-brand').forEach(function(a){
         var href=(a.getAttribute('href')||'').split('?')[0].toLowerCase();
-        if(href!=='ops.html'){
+        if(href!=='ops.html' && href!=='store_admin.html'){
           a.classList.add('sx-off'); a.title='暂未开放';
           a.addEventListener('click', function(ev){ ev.preventDefault(); });
         }
@@ -145,7 +148,7 @@
     <h1>门店管理</h1>
     <div class="sub">品牌级门店主数据（唯一权威源 = Supabase stores 主表），覆盖直营 / 连锁 / 陪跑 / 共管全部门店；原属「佛山直营」板块，2026-09-22 拆分为品牌级独立页</div>
 
-    <!-- 待认领有赞店横幅（同步器自动发现，全员可见，认领/忽略仅主账号） -->
+    <!-- 待认领有赞店横幅（同步器自动发现，全员可见；认领建店全员可用，忽略仅主账号） -->
     <div id="pendingBar" class="hide" style="margin-bottom:14px"></div>
 
     <div id="globalMsg"></div>
@@ -160,7 +163,7 @@
           </select>
         </div>
         <div>
-          <label class="field-label">性质（快捷筛选）</label>
+          <label class="field-label">性质</label>
           <div id="stTypeChips" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; height:38px">
             <button class="sm" onclick="setStType('')">全部</button>
             <button class="sm" onclick="setStType('直营')">直营</button>
@@ -515,7 +518,7 @@ async function saveStore(){
     if(f[2]==='text') v = v.trim();
     body[f[0]] = v === '' ? null : v;
   }
-  if(statusLocked()){
+  if(statusLocked() && editingStoreId){
     delete body.status; delete body.closed_date; delete body.operator;
   }
   if(!body.std_name) return msg('公司内部标准名称为必填','err');
@@ -533,7 +536,7 @@ async function saveStore(){
     if(!r.ok) throw new Error('保存失败 HTTP '+r.status+'：'+await r.text());
     const saved = await r.json().catch(()=>[]);
     const savedId = id || (saved[0] && saved[0].id) || null;
-    if(yzKdt && isAdmin && /^\d+$/.test(yzKdt)){
+    if(yzKdt && /^\d+$/.test(yzKdt)){
       const mr = await sb('/rest/v1/yz_shop_map?on_conflict=kdt_id', {
         method:'POST',
         headers:{ 'Prefer':'resolution=merge-duplicates,return=minimal' },
@@ -609,10 +612,8 @@ function renderPendingBar(){
       '<div style="flex:1;min-width:240px"><b>'+esc(p.shop_name || ('有赞店 kdt '+p.kdt_id))+'</b>'+
       '<span style="font-size:12px;color:#6b7280">　kdt '+p.kdt_id+'　'+(p.order_cnt||0)+' 单　¥'+fmtAmt(p.amount||0)+
       '　首次出现 '+(p.first_seen?fmtTime(p.first_seen):'—')+'</span></div>'+
-      (isAdmin
-        ? '<button class="primary sm" onclick="claimPending('+p.kdt_id+')">✓ 认领建店</button>'+
-          '<button class="sm danger" onclick="ignorePending('+p.kdt_id+')">忽略（弃用）</button>'
-        : '<span style="font-size:12px;color:#8a8f9e">等待主账号认领</span>')+
+      '<button class="primary sm" onclick="claimPending('+p.kdt_id+')">✓ 认领建店</button>'+
+      (isAdmin ? '<button class="sm danger" onclick="ignorePending('+p.kdt_id+')">忽略（弃用）</button>' : '')+
       '</div>';
   });
   h += '</div>';
