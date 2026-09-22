@@ -153,13 +153,19 @@
   <!-- 主体 -->
   <div id="appView" class="hide">
     <h1>门店管理</h1>
-    <div class="sub">品牌级门店主数据（唯一权威源 = Supabase stores 主表），覆盖直营 / 连锁 / 陪跑 / 共管全部门店；原属「佛山直营」板块，2026-09-22 拆分为品牌级独立页</div>
+    <div class="sub">品牌级门店主数据（唯一权威源 = Supabase stores 主表），覆盖直营 / 连锁 / 陪跑 / 共管全部门店</div>
+
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="sm" id="chipStores" onclick="switchView('stores')">门店主数据</button>
+      <button class="sm" id="chipStaff" onclick="switchView('staff')" style="display:none">运营人员</button>
+    </div>
 
     <!-- 待认领有赞店横幅（同步器自动发现，全员可见；认领建店全员可用，忽略仅主账号） -->
     <div id="pendingBar" class="hide" style="margin-bottom:14px"></div>
 
     <div id="globalMsg"></div>
 
+    <div id="viewStores">
     <!-- 筛选 -->
     <div class="card">
       <div class="inline">
@@ -198,6 +204,32 @@
     <div class="card">
       <div class="card-title">门店主数据（Supabase stores 主表 · 唯一权威源）</div>
       <div id="stBody"><div class="empty">加载中…</div></div>
+    </div>
+    </div>
+
+    <div id="viewStaff" class="hide">
+      <!-- 运营人员（仅主账号视角；2026-09-22 自佛山直营搬入） -->
+      <div class="card">
+        <div class="card-title">新增运营人员</div>
+        <div class="inline">
+          <div><label class="field-label">姓名（与填报署名一致，全局唯一）</label><input type="text" id="opNewName" placeholder="如：小林" /></div>
+          <div><label class="field-label">登录邮箱</label><input type="text" id="opNewEmail" placeholder="xxx@qq.com" /></div>
+          <div style="flex:0 0 auto;display:flex;align-items:flex-end"><button class="primary" onclick="addOperator()">新增</button></div>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:rgba(15,23,42,0.55)">新增后立即出现在门店表单的「运营人」下拉里；给 TA 分配门店（下方「转移」或在门店编辑里选 TA）后，TA 登录即可编辑自己名下门店。</div>
+      </div>
+      <div class="card">
+        <div class="card-title">人员列表（离职=保留历史署名，编辑权立即失效）</div>
+        <div id="opsListBody"><div class="empty">加载中…</div></div>
+      </div>
+      <div class="card hide" id="opTransferCard">
+        <div class="card-title" id="opTransferTitle">转移门店</div>
+        <div id="opTransferBody"></div>
+        <div class="inline" style="margin-top:10px">
+          <div><label class="field-label">转移给</label><select id="opTransferTo"></select></div>
+          <div style="flex:0 0 auto;display:flex;align-items:flex-end"><button class="primary" onclick="doTransferStores()">确认转移</button><button onclick="closeTransfer()">取消</button></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -657,12 +689,14 @@ async function enterApp(){
   myName = opNameByEmail(userEmail);
   isXiaoai = myName === '小艾';
   $('btnAddStore').style.display = isAdmin ? '' : 'none';
+  $('chipStaff').style.display = isAdmin ? '' : 'none';   // 运营人员视角仅主账号
   await loadOperators();          // operators 表加载后重算本人身份
   myName = opNameByEmail(userEmail);
   isXiaoai = myName === '小艾';
   loadPendingBar();
   loadKdtMap();
   loadStores();
+  renderOpsManager();
 }
 async function loadOperators(){
   try{
@@ -670,6 +704,126 @@ async function loadOperators(){
     operatorsDB = r.ok ? await r.json() : null;
   }catch(e){ operatorsDB = null; }
 }
+/* ---------------- 视角切换：门店主数据 | 运营人员 ---------------- */
+function switchView(v){
+  const st = v==='stores';
+  $('viewStores').classList.toggle('hide', !st);
+  $('viewStaff').classList.toggle('hide', st);
+  $('chipStores').style.background = st ? '#7c3aed' : '';
+  $('chipStores').style.color = st ? '#fff' : '';
+  $('chipStores').style.borderColor = st ? '#7c3aed' : '';
+  $('chipStaff').style.background = st ? '' : '#7c3aed';
+  $('chipStaff').style.color = st ? '' : '#fff';
+  $('chipStaff').style.borderColor = st ? '' : '#7c3aed';
+  if(!st) renderOpsManager();
+}
+
+/* ---------------- 运营人员管理（仅主账号；2026-09-22 自佛山直营搬入） ---------------- */
+function renderOpsManager(){
+  if(!isAdmin) return;
+  const body = $('opsListBody');
+  if(!body) return;
+  if(!operatorsDB){
+    body.innerHTML = '<div class="empty">operators 配置表未就绪（需执行 ops_upgrade_20260919.sql），当前使用内置名单兜底。</div>';
+    return;
+  }
+  let h = '<div class="tbl-wrap"><table><thead><tr><th>姓名</th><th>登录邮箱</th><th>状态</th><th>名下门店</th><th>操作</th></tr></thead><tbody>';
+  operatorsDB.forEach(o=>{
+    const cnt = storeRows.filter(x=>x.operator===o.name).length;
+    h += '<tr>'+
+      '<td style="font-weight:700">'+esc(o.name)+'</td>'+
+      '<td>'+esc(o.email)+'</td>'+
+      '<td style="color:'+(o.status==='active'?'#16a34a':'#dc2626')+'">'+(o.status==='active'?'在职':'离职')+'</td>'+
+      '<td>'+cnt+' 家</td>'+
+      '<td>'+
+        '<button class="sm" onclick="editOperator('+o.id+')">改名</button> '+
+        (o.name!=='admin'?'<button class="sm" onclick="toggleOpStatus('+o.id+')">'+(o.status==='active'?'标记离职':'复职')+'</button> ':'')+
+        (cnt>0 && o.name!=='admin'?'<button class="sm" onclick="openTransfer('+o.id+')">转移门店</button>':'')+
+      '</td></tr>';
+  });
+  h += '</tbody></table></div>';
+  body.innerHTML = h;
+}
+async function addOperator(){
+  const name = ($('opNewName').value||'').trim();
+  const email = ($('opNewEmail').value||'').trim().toLowerCase();
+  if(!name || !email) return msg('姓名和邮箱都必填','err');
+  if(operatorsDB && operatorsDB.some(o=>o.name===name)) return msg('已存在同名人员，姓名必须全局唯一','err');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return msg('邮箱格式不正确','err');
+  try{
+    const r = await sb('/rest/v1/operators', { method:'POST', headers:{'Prefer':'return=minimal'},
+      body: JSON.stringify({ name:name, email:email, status:'active' }) });
+    if(!r.ok && r.status!==409) throw new Error('HTTP '+r.status+'：'+await r.text());
+    $('opNewName').value=''; $('opNewEmail').value='';
+    await loadOperators(); renderOpsManager();
+    msg('已新增「'+esc(name)+'」，TA 现在出现在门店表单的运营人下拉里','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+async function editOperator(id){
+  const o = (operatorsDB||[]).find(v=>v.id===id); if(!o) return;
+  const newName = prompt('修改姓名（当前：'+o.name+'）\n改名会自动同步所有门店的运营人字段：', o.name);
+  if(!newName) return;
+  const nn = newName.trim();
+  if(!nn || nn===o.name) return;
+  if(operatorsDB.some(v=>v.id!==id && v.name===nn)) return msg('已存在同名人员，姓名必须全局唯一','err');
+  try{
+    const r = await sb('/rest/v1/operators?id=eq.'+id, { method:'PATCH', body: JSON.stringify({ name:nn }) });
+    if(!r.ok) throw new Error('HTTP '+r.status+'：'+await r.text());
+    // 名单同步：该运营名下门店的 operator 一并更新，权限不失灵
+    const mine = storeRows.filter(x=>x.operator===o.name);
+    for(const s of mine){
+      await sb('/rest/v1/stores?id=eq.'+s.id, { method:'PATCH', body: JSON.stringify({ operator:nn }) });
+    }
+    await loadOperators();
+    if(myName===o.name){ myName=nn; }
+    await loadStores(); renderOpsManager();
+    msg('已改名「'+esc(o.name)+'」→「'+esc(nn)+'」，'+mine.length+' 家门店同步更新','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+async function toggleOpStatus(id){
+  const o = (operatorsDB||[]).find(v=>v.id===id); if(!o) return;
+  const toStatus = o.status==='active' ? 'resigned' : 'active';
+  try{
+    const r = await sb('/rest/v1/operators?id=eq.'+id, { method:'PATCH', body: JSON.stringify({ status:toStatus }) });
+    if(!r.ok) throw new Error('HTTP '+r.status+'：'+await r.text());
+    await loadOperators();
+    if(userEmail && o.email===userEmail.toLowerCase()) myName = opNameByEmail(userEmail);
+    renderOpsManager();
+    msg(toStatus==='resigned' ? '「'+esc(o.name)+'」已标记离职：编辑权立即失效，历史填报署名保留；名下 '+storeRows.filter(x=>x.operator===o.name).length+' 家门店建议尽快转移' : '「'+esc(o.name)+'」已复职','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+let transferFrom = null;
+function openTransfer(id){
+  const o = (operatorsDB||[]).find(v=>v.id===id); if(!o) return;
+  transferFrom = o;
+  const mine = storeRows.filter(x=>x.operator===o.name);
+  $('opTransferTitle').textContent = '转移「'+o.name+'」名下门店（已勾选全部）';
+  $('opTransferBody').innerHTML = mine.length
+    ? '<div style="max-height:260px;overflow:auto">' + mine.map(s=>
+        '<label style="display:block;padding:4px 0"><input type="checkbox" class="opTrStore" value="'+s.id+'" checked /> '+esc(s.std_name)+'（'+esc(s.store_type||'')+'）</label>').join('') + '</div>'
+    : '<div class="empty">该运营名下暂无门店</div>';
+  $('opTransferTo').innerHTML = (operatorsDB||[]).filter(v=>v.id!==id && v.status==='active' && v.name!=='admin')
+    .map(v=>'<option value="'+esc(v.name)+'">'+esc(v.name)+'</option>').join('');
+  $('opTransferCard').classList.remove('hide');
+  if($('opTransferCard').scrollIntoView) $('opTransferCard').scrollIntoView({behavior:'smooth'});
+}
+function closeTransfer(){ transferFrom=null; $('opTransferCard').classList.add('hide'); }
+async function doTransferStores(){
+  if(!transferFrom) return;
+  const to = ($('opTransferTo').value||'').trim();
+  if(!to) return msg('请选择接收人','err');
+  const ids = Array.from(document.querySelectorAll('.opTrStore:checked')).map(el=>parseInt(el.value,10));
+  if(!ids.length) return msg('请至少勾选一家门店','err');
+  try{
+    for(const sid of ids){
+      const r = await sb('/rest/v1/stores?id=eq.'+sid, { method:'PATCH', body: JSON.stringify({ operator:to }) });
+      if(!r.ok) throw new Error('门店 '+sid+' 转移失败：HTTP '+r.status);
+    }
+    closeTransfer(); await loadStores(); renderOpsManager();
+    msg('已将 '+ids.length+' 家门店从「'+esc(transferFrom.name)+'」转移给「'+esc(to)+'」','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+
 (async function init(){
   if(!session){ $('loginView').classList.remove('hide'); return; }
   try{ await enterApp(); }
