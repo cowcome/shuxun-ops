@@ -115,13 +115,13 @@
 </style>
 </head>
 <body>
-<!-- ===== 统一导航壳（2026-09-22 逻辑批）：驾驶舱=家；书荀连锁/扫码上翻仅主账号可见 ===== -->
+<!-- ===== 统一导航壳（2026-09-22 逻辑批）：驾驶舱=家；导航全员可见，非主账号仅开放佛山直营点击 ===== -->
 <nav class="sx-nav" id="sxNav">
   <a class="sx-brand" href="cockpit.html">書荀 · 驾驶舱</a>
   <div class="sx-links">
     <a href="ops.html">佛山直营</a>
-    <a href="chain.html" data-sx="admin" hidden>书荀连锁</a>
-    <a href="douyin_pay.html" data-sx="admin" hidden>扫码上翻</a>
+    <a href="chain.html" data-sx="admin">书荀连锁</a>
+    <a href="douyin_pay.html" data-sx="admin">扫码上翻</a>
     <a href="store_admin.html">门店管理</a>
     <a href="index.html">每日填报</a>
   </div>
@@ -135,6 +135,10 @@
   .sx-nav .sx-links{display:flex;gap:4px;flex-wrap:wrap}
   .sx-nav .sx-me{margin-left:auto;font-size:12px;color:#8a8f9e;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sx-nav a.cur{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .sx-nav a.sx-off{opacity:.4}
+  .sx-nav .sx-name{font-weight:700;color:inherit}
+  .sx-nav .sx-email{opacity:.65}
+  .sx-nav a.sx-out{color:#ef4444;font-weight:700;margin-left:2px}
   .sx-nav.sx-dark{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
   .sx-nav.sx-dark a{color:rgba(255,255,255,.92)}
   .sx-nav.sx-dark a:hover{border-color:rgba(255,255,255,.2)}
@@ -155,10 +159,33 @@
     var tok=s&&s.access_token,email='';
     if(tok){ try{ email=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email||''; }catch(e){} }
     if(email==='411249585@qq.com'){
-      nav.classList.add('sx-admin');
       nav.querySelectorAll('[data-sx="admin"]').forEach(function(a){ a.hidden=false; });
+    }else if(email){
+      nav.querySelectorAll('.sx-links a, .sx-brand').forEach(function(a){
+        var href=(a.getAttribute('href')||'').split('?')[0].toLowerCase();
+        if(href!=='ops.html'){
+          a.classList.add('sx-off'); a.title='暂未开放';
+          a.addEventListener('click', function(ev){ ev.preventDefault(); });
+        }
+      });
     }
-    var me=document.getElementById('sxMe'); if(me) me.textContent=email;
+    var me=document.getElementById('sxMe');
+    if(me && email){
+      me.innerHTML='<span class="sx-name"></span> <span class="sx-email"></span>';
+      me.querySelector('.sx-email').textContent=email;
+      setTimeout(function(){
+        var K=(typeof SB_KEY!=='undefined')?SB_KEY:((typeof ANON_KEY!=='undefined')?ANON_KEY:'');
+        if(!K) return;
+        fetch('https://fgrjdaizgjpqdimgtxrp.supabase.co/rest/v1/operators?select=name&email=eq.'+encodeURIComponent(email),
+          {headers:{apikey:K,Authorization:'Bearer '+tok}})
+          .then(function(r){ return r.ok?r.json():[]; })
+          .then(function(rows){ var n=(rows&&rows[0]&&rows[0].name)||''; if(n) me.querySelector('.sx-name').textContent=n+' \u00b7 '; })
+          .catch(function(){});
+      }, 0);
+      var out=document.createElement('a'); out.href='#'; out.className='sx-out'; out.textContent='\u9000\u51fa';
+      out.onclick=function(ev){ ev.preventDefault(); localStorage.removeItem('ops_session'); location.reload(); };
+      me.appendChild(out);
+    }
   }catch(e){}
 })();
 </script>
