@@ -337,6 +337,7 @@ body.sx-legacy .sp-item,
 body.sx-legacy .store-btn,
 body.sx-legacy .num-btn,
 body.sx-legacy .chip,
+body.sx-legacy .sm,
 body.sx-legacy .rank,
 body.sx-legacy .cnt,
 body.sx-legacy .banner,
@@ -425,6 +426,12 @@ body.sx-legacy .num-btn.selected,
 body.sx-legacy .chip.on{ background: var(--sx-accent) !important; color: #fff !important; box-shadow: none !important; }
 body.sx-legacy .switch-track{ background: var(--sx-fill-2) !important; }
 body.sx-legacy .switch input:checked + .switch-track{ background: var(--sx-accent) !important; }
+body.sx-legacy .switch-track::after{ box-shadow: 0 1px 3px rgba(16,24,40,.22) !important; }
+/* 圆角统一到 8px（遗留 5~6px 偏尖） */
+body.sx-legacy .store-btn,
+body.sx-legacy .num-btn,
+body.sx-legacy .num-input,
+body.sx-legacy .amt-input{ border-radius: var(--sx-r-sm) !important; }
 
 /* 16.4 描边：白边 → 发丝线 */
 body.sx-legacy .card,
@@ -449,7 +456,7 @@ body.sx-legacy td,
 body.sx-legacy .msg,
 body.sx-legacy .health-banner,
 body.sx-legacy .badge{ border-color: var(--sx-separator) !important; }
-body.sx-legacy .store-card.is-special{ border-color: rgba(180,83,9,.45) !important; }
+body.sx-legacy .store-card.is-special{ border-color: rgba(180,83,9,.45) !important; background: var(--sx-amber-bg) !important; }
 
 /* 16.5 填报页（index）专属控件 */
 body.sx-legacy .num-input,
