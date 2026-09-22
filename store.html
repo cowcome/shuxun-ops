@@ -95,7 +95,7 @@
     }else if(email){
       nav.querySelectorAll('.sx-links a, .sx-brand').forEach(function(a){
         var href=(a.getAttribute('href')||'').split('?')[0].toLowerCase();
-        if(href!=='ops.html'){
+        if(href!=='ops.html' && href!=='store_admin.html'){
           a.classList.add('sx-off'); a.title='暂未开放';
           a.addEventListener('click', function(ev){ ev.preventDefault(); });
         }
