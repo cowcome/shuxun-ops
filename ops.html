@@ -35,6 +35,11 @@
   .card-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #c4b5fd; }
   .fill-dot { color: #4ade80; font-weight: 700; }
   .fill-note { color: rgba(255,255,255,0.55); font-size: 12px; font-weight: 400; margin-left: 8px; }
+  /* 门店数据汇总：可点击行（多日区间下点选查看单店趋势） */
+  #dashStoreTable tr[data-st] { cursor: pointer; }
+  #dashStoreTable tr[data-st]:hover { background: rgba(139,92,246,0.14); }
+  #dashStoreTable tr.sel { background: rgba(139,92,246,0.24); }
+  #dashStoreTable tr.sel td.store { background: #2f2757; color: #c4b5fd; }
 
   /* ---------- 表单 ---------- */
   .field { margin-bottom: 12px; }
@@ -285,6 +290,11 @@
       <div class="card" data-page-node-id="LnAbUXE5JEKLet1O0TzBhz">
         <div class="card-title" id="dashTableTitle" data-page-node-id="CyXrGZ0ZIVsIR9o9UnUazl">门店数据汇总</div>
         <div id="dashStoreTable" data-page-node-id="vqznOBUJJdfbHTg70rMvzA"></div>
+      </div>
+      <div class="card hide" id="cardStoreTrend">
+        <div class="card-title" id="storeTrendTitle">单店每日趋势</div>
+        <div class="chart-box hide" id="chStoreTrendBox"><canvas id="chStoreTrend"></canvas></div>
+        <div class="hint" id="storeTrendHint">点击上方「门店数据汇总」表格里的任意门店，即可查看该门店在本周期的每日趋势（再点一次关闭）</div>
       </div>
       <div class="card hide" id="cardTrend" data-page-node-id="e2K0jTHNnhToB4z4NKknWV">
         <div class="card-title" id="trendTitle" data-page-node-id="3kH4JicV9gYPJB3hFgcn2W">每日核销金额趋势</div>
@@ -779,7 +789,54 @@ function shortName(n){
   return String(n==null?'':n).replace(/^佛山/,'').slice(0,2) || n;
 }
 
+let selTrendStore = null;                       // 汇总表里被点选的门店
+let STORE_DAILY = {}, DASH_DAYS = [], DASH_LBLS = [], DASH_COLORS = [], DASH_S = '', DASH_E = '';
+
+function pickStoreTrend(el){
+  const n = el.getAttribute('data-st') || '';
+  selTrendStore = (selTrendStore === n) ? null : n;
+  document.querySelectorAll('#dashStoreTable tr[data-st]').forEach(tr=>{
+    tr.classList.toggle('sel', tr.getAttribute('data-st') === selTrendStore);
+  });
+  renderStoreTrend();
+  const card = $('cardStoreTrend');
+  if(card && selTrendStore && card.scrollIntoView) card.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function renderStoreTrend(){
+  const card = $('cardStoreTrend'); if(!card) return;
+  const box = $('chStoreTrendBox'), hint = $('storeTrendHint'), ttl = $('storeTrendTitle');
+  if(!DASH_DAYS.length || DASH_S === DASH_E){      // 单日或无数据：不显示
+    card.classList.add('hide'); selTrendStore = null; return;
+  }
+  card.classList.remove('hide');
+  if(!selTrendStore){
+    if(box) box.classList.add('hide');
+    if(hint) hint.classList.remove('hide');
+    if(ttl) ttl.textContent = '单店每日趋势';
+    return;
+  }
+  if(box) box.classList.remove('hide');
+  if(hint) hint.classList.add('hide');
+  const per = STORE_DAILY[selTrendStore] || {};
+  const amt = [], ppl = [], inner = [];
+  DASH_DAYS.forEach(d=>{
+    const x = per[d] || {};
+    amt.push(round2(num(x.mt)+num(x.dy)));
+    ppl.push(Math.round(num(x.ppl)));
+    inner.push(Math.round(num(x.inner)));
+  });
+  if(ttl) ttl.innerHTML = esc(shortName(selTrendStore)) + ' · 每日趋势 · ' + DASH_S + ' ~ ' + DASH_E +
+    '<span class="fill-note">再点一次该门店可关闭</span>';
+  mkLine('chStoreTrend', DASH_LBLS, [
+    {label:'核销金额（元）', data:amt, bc:'#8b5cf6', unit:'¥'},
+    {label:'到店客数（人）', data:ppl, bc:'#7dff5a', yAxisID:'y1', unit:''},
+    {label:'内购数量（单）', data:inner, bc:'#fbbf24', yAxisID:'y1', unit:''}
+  ], DASH_COLORS, true);
+}
+
 function renderCharts(rows, s, e){
+  const isRange = (s !== e);
   // 各门店核销（美/抖）
   const byStore = {};
   STORES.forEach(x=>byStore[x]={mt:0,dy:0,ppl:0,unable:0,inner:0});
@@ -805,7 +862,8 @@ function renderCharts(rows, s, e){
     let th = '<tr><th class="store">门店</th><th class="mei">美团</th><th class="dou">抖音</th><th>核销合计</th><th>客单数</th><th>约不上</th><th>内购金额</th></tr>';
     let tb = namesSort.map(n=>{
       const x = byStore[n], mt = Math.round(x.mt), dy = Math.round(x.dy);
-      return '<tr><td class="store">'+(filled&&filled.has(n)?'<span class="fill-dot">●</span> ':'')+esc(shortName(n))+'</td>'+
+      const rowAttr = isRange ? (' data-st="'+esc(n)+'" onclick="pickStoreTrend(this)"'+(n===selTrendStore?' class="sel"':'')) : '';
+      return '<tr'+rowAttr+'><td class="store">'+(filled&&filled.has(n)?'<span class="fill-dot">●</span> ':'')+esc(shortName(n))+'</td>'+
         '<td class="mei">'+mt+'</td>'+
         '<td class="dou">'+dy+'</td>'+
         '<td style="font-weight:700">'+(mt+dy)+'</td>'+
@@ -820,16 +878,23 @@ function renderCharts(rows, s, e){
   }
 
   // 每日趋势：多日区间 →「核销金额 / 到店客数 / 内购数量」三线折线图（替代门店对比柱状图）
-  const byDay = {};
+  const byDay = {}, byDayStore = {};
   rows.forEach(r=>{
     if(!byDay[r.form_date]) byDay[r.form_date]={mt:0,dy:0,ppl:0,inner:0};
     byDay[r.form_date].mt += num(r.meituan_verify_amount);
     byDay[r.form_date].dy += num(r.douyin_verify_amount);
     byDay[r.form_date].ppl += num(r.meituan_visitors)+num(r.douyin_visitors);
     byDay[r.form_date].inner += num(r.meituan_inner_orders)+num(r.douyin_inner_orders);
+    // 同时按门店拆出每日明细（供单店趋势图）
+    const _sn = r.store_name, _d = r.form_date;
+    if(!byDayStore[_sn]) byDayStore[_sn]={};
+    if(!byDayStore[_sn][_d]) byDayStore[_sn][_d]={mt:0,dy:0,ppl:0,inner:0};
+    byDayStore[_sn][_d].mt += num(r.meituan_verify_amount);
+    byDayStore[_sn][_d].dy += num(r.douyin_verify_amount);
+    byDayStore[_sn][_d].ppl += num(r.meituan_visitors)+num(r.douyin_visitors);
+    byDayStore[_sn][_d].inner += num(r.meituan_inner_orders)+num(r.douyin_inner_orders);
   });
   const days = Object.keys(byDay).sort();
-  const isRange = (s !== e);
   const trendCard = $('cardTrend');
   if(trendCard) trendCard.classList.toggle('hide', !isRange);
   $('trendTitle').textContent = '每日趋势：核销金额 / 到店客数 / 内购数量 · ' + s + ' ~ ' + e;
@@ -838,6 +903,11 @@ function renderCharts(rows, s, e){
     const w = new Date(d+'T00:00:00').getDay();
     return w===6 ? '#ff5fd7' : (w===0 ? '#7dff5a' : 'rgba(255,255,255,0.6)');
   });
+  // 缓存给单店趋势图使用；单日视图清空选中
+  DASH_DAYS = days; DASH_LBLS = dayLbls; DASH_COLORS = dayColors; DASH_S = s; DASH_E = e; STORE_DAILY = byDayStore;
+  if(!isRange) selTrendStore = null;
+  else if(selTrendStore && !byDayStore[selTrendStore]) selTrendStore = null;
+  renderStoreTrend();
 
   if(isRange){
     mkLine('chTrend', dayLbls, [
