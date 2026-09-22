@@ -295,10 +295,6 @@
         <div class="card-title" id="trendTitle" data-page-node-id="3kH4JicV9gYPJB3hFgcn2W">每日核销金额趋势</div>
         <div class="chart-box" data-page-node-id="DejdQiVmd3DzyOf6O69Ajz"><canvas id="chTrend" data-page-node-id="iLuoJyg3YYtH39czMM2QGo"></canvas></div>
       </div>
-      <div class="card" data-page-node-id="ueBjnDsNbcuXfJXdWUMhU6">
-        <div class="card-title" data-page-node-id="c2FOkYDPG1fR4vWnkmz9KJ">各门店客单数</div>
-        <div class="chart-box" data-page-node-id="jTnNVMqSSCksOjF2dmVWX5"><canvas id="chPeople" data-page-node-id="jFJajIUpqH0NntmWlPICTA"></canvas></div>
-      </div>
     </div>
 
     <!-- ---------- 查询与导出 ---------- -->
@@ -827,7 +823,7 @@ function renderCharts(rows, s, e){
     if(dtEl) dtEl.innerHTML = '<div class="tbl-wrap"><table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table></div>';
   }
 
-  // 每日趋势：多日区间 →「核销金额 / 到店客数 / 约内购」三线折线图（替代门店对比柱状图）
+  // 每日趋势：多日区间 →「核销金额 / 到店客数 / 内购数量」三线折线图（替代门店对比柱状图）
   const byDay = {};
   rows.forEach(r=>{
     if(!byDay[r.form_date]) byDay[r.form_date]={mt:0,dy:0,ppl:0,inner:0};
@@ -843,7 +839,7 @@ function renderCharts(rows, s, e){
   // 多日：柱状图换成明细表标题；单日：保留对比柱状图
   const sBox = $('chStoreBox'); if(sBox) sBox.classList.toggle('hide', isRange);
   $('storeChartTitle').textContent = (isRange ? '各门店核销金额明细（美+抖合计 · 降序）' : '各门店核销金额对比（美+抖合计 · 降序）') + ' · ' + s + (isRange?' ~ '+e:'');
-  $('trendTitle').textContent = '每日趋势：核销金额 / 到店客数 / 约内购 · ' + s + ' ~ ' + e;
+  $('trendTitle').textContent = '每日趋势：核销金额 / 到店客数 / 内购数量 · ' + s + ' ~ ' + e;
   const dayLbls = days.map(d=>String(parseInt(d.slice(8),10)));
   const dayColors = days.map(d=>{
     const w = new Date(d+'T00:00:00').getDay();
@@ -874,7 +870,7 @@ function renderCharts(rows, s, e){
     mkLine('chTrend', dayLbls, [
       {label:'核销金额（元）', data:days.map(d=>round2(byDay[d].mt+byDay[d].dy)), bc:'#8b5cf6', unit:'¥'},
       {label:'到店客数（人）', data:days.map(d=>Math.round(byDay[d].ppl)), bc:'#7dff5a', yAxisID:'y1', unit:''},
-      {label:'约内购（单）',   data:days.map(d=>Math.round(byDay[d].inner)), bc:'#fbbf24', yAxisID:'y1', unit:''}
+      {label:'内购数量（单）', data:days.map(d=>Math.round(byDay[d].inner)), bc:'#fbbf24', yAxisID:'y1', unit:''}
     ], dayColors, true);
   }else{
     mkLine('chTrend', dayLbls, [
@@ -882,9 +878,6 @@ function renderCharts(rows, s, e){
       {label:'抖音', data:days.map(d=>round2(byDay[d].dy)), bc:'#a78bfa'}
     ], dayColors);
   }
-  mkBar('chPeople', names.map(shortName), [
-    {label:'客单数', data:names.map(n=>Math.round(byStore[n].ppl)), bg:'#8b5cf6'}
-  ], true);
 }
 function mkBar(id, labels, sets, intY, xTickColors){
   if(charts[id]) charts[id].destroy();
