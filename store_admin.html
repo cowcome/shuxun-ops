@@ -35,6 +35,12 @@
   .inline > div { min-width:110px; }
   #stTypeChips { flex-wrap:nowrap; }
   #stTypeChips .sm { padding:5px 9px; font-size:12px; }
+  /* 主账号比他人多「新增门店」按钮，整体再收一档保证一行 */
+  .inline { gap:6px; }
+  .inline > div:last-child { gap:6px; }
+  .inline > div:last-child button { padding:8px 10px; font-size:13px; }
+  .inline select, .inline input[type=text] { height:38px; font-size:13px; }
+  .inline > div:nth-child(4) { min-width:90px; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
   th { text-align:left; color:#6b7280; font-weight:600; font-size:12px; padding:8px 10px; border-bottom:1px solid #e6e8ef; white-space:nowrap; }
   td { padding:9px 10px; border-bottom:1px solid #f0f1f4; white-space:nowrap; }
@@ -182,7 +188,7 @@
         </div>
         <div style="flex:0 0 auto; display:flex; gap:8px; align-items:flex-end">
           <button onclick="loadStores()">刷新</button>
-          <button class="primary" id="btnAddStore" onclick="openStoreEdit()" style="display:none">+ 新增门店</button>
+          <button class="primary" id="btnAddStore" onclick="openStoreEdit()" style="display:none">+ 新增</button>
         </div>
       </div>
     </div>
