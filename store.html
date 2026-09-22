@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>書荀 · 门店经营详情</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         background:#f4f5f9; color:#1f2330; min-height:100vh; padding:16px 14px 48px; font-size:14px; }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  .hide { display:none !important; }
+  .card { background:#fff; border:1px solid #e6e8ef; border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(31,35,48,.05); }
+  .crumb { font-size:13px; margin-bottom:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .crumb a { color:#4b5563; text-decoration:none; padding:4px 10px; border:1px solid #d6d9e2; border-radius:8px; background:#fff; }
+  .crumb a:hover { border-color:#7c3aed; }
+  h1 { font-size:22px; margin:0; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .sub { font-size:13px; color:#8a8f9e; margin-top:4px; }
+  .badge { font-size:11px; padding:2px 9px; border-radius:20px; font-weight:600; white-space:nowrap; }
+  .bg-open { background:#E5F5EF; color:#0F6E56; }
+  .bg-pending { background:#FFF4E0; color:#8a5b00; }
+  .bg-closed { background:#F0F1F4; color:#6b7280; }
+  .bg-new { background:#E8F1FD; color:#185FA5; }
+  .bg-special { background:#FCEBEB; color:#A32D2D; }
+  .login-box { max-width:380px; margin:12vh auto 0; }
+  .login-box h1 { justify-content:center; }
+  .field { margin-bottom:12px; }
+  .field-label { font-size:13px; color:#4b5563; margin-bottom:6px; display:block; }
+  input[type=text], input[type=password] { width:100%; height:42px; border-radius:10px; border:1px solid #d6d9e2;
+    background:#fff; color:#1f2330; font-size:14px; padding:0 12px; outline:none; font-family:inherit; }
+  input:focus { border-color:#7c3aed; }
+  button { height:42px; border:none; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; font-family:inherit; padding:0 18px; }
+  .primary { background:#7c3aed; color:#fff; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+  .stat { background:#f6f7fa; border-radius:12px; padding:12px; }
+  .stat .l { font-size:12px; color:#6b7280; margin-bottom:4px; white-space:nowrap; }
+  .stat .v { font-size:22px; font-weight:700; white-space:nowrap; color:#1f2330; }
+  .stat .d { font-size:12px; margin-top:2px; white-space:nowrap; }
+  .d.up { color:#0F6E56; } .d.down { color:#A32D2D; } .d.flat { color:#8a8f9e; }
+  .chart { display:flex; align-items:flex-end; gap:6px; height:160px; padding:8px 2px 0; }
+  .bar-w { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:4px; min-width:0; }
+  .bar { width:100%; max-width:44px; border-radius:6px 6px 2px 2px; background:#7c3aed; min-height:2px; position:relative; }
+  .bar .seg-mt { background:#7c3aed; } .bar .seg-dy { background:#f59e0b; } .bar .seg-ot { background:#94a3b8; }
+  .bar-l { font-size:10px; color:#8a8f9e; white-space:nowrap; }
+  .bar-v { font-size:10px; color:#4b5563; white-space:nowrap; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:#6b7280; font-weight:600; font-size:12px; padding:8px 10px; border-bottom:1px solid #e6e8ef; white-space:nowrap; }
+  td { padding:9px 10px; border-bottom:1px solid #f0f1f4; white-space:nowrap; }
+  tr.total td { font-weight:700; background:#fafbfc; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; }
+  .empty { text-align:center; color:#8a8f9e; padding:36px 0; font-size:13px; }
+  .foot { font-size:11px; color:#a3a8b5; line-height:1.7; margin-top:10px; }
+  .err { color:#A32D2D; font-size:12px; margin-top:8px; }
+</style>
+</head>
+<body>
+<!-- ===== 统一导航壳（2026-09-22 逻辑批）：驾驶舱=家；书荀连锁/扫码上翻仅主账号可见 ===== -->
+<nav class="sx-nav" id="sxNav">
+  <a class="sx-brand" href="cockpit.html">書荀 · 驾驶舱</a>
+  <div class="sx-links">
+    <a href="ops.html">佛山直营</a>
+    <a href="chain.html" data-sx="admin" hidden>书荀连锁</a>
+    <a href="douyin_pay.html" data-sx="admin" hidden>扫码上翻</a>
+    <a href="index.html">每日填报</a>
+  </div>
+  <span class="sx-me" id="sxMe"></span>
+</nav>
+<style>
+  .sx-nav{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:12px;margin-bottom:12px;flex-wrap:wrap;background:rgba(255,255,255,.92);border:1px solid #e6e8ef}
+  .sx-nav a{font-size:13px;font-weight:600;color:#1f2330;text-decoration:none;padding:5px 11px;border-radius:8px;border:1px solid transparent;white-space:nowrap}
+  .sx-nav a:hover{border-color:#d6d9e2}
+  .sx-nav .sx-brand{font-weight:800;font-size:14px;padding-left:0}
+  .sx-nav .sx-links{display:flex;gap:4px;flex-wrap:wrap}
+  .sx-nav .sx-me{margin-left:auto;font-size:12px;color:#8a8f9e;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sx-nav a.cur{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+</style>
+<script>
+(function(){
+  var nav=document.getElementById('sxNav'); if(!nav) return;
+  nav.querySelectorAll('a').forEach(function(a){
+    var href=(a.getAttribute('href')||'').split('?')[0].toLowerCase();
+    if(href===(location.pathname.split('/').pop()||'').toLowerCase()) a.classList.add('cur');
+  });
+  try{
+    var s=JSON.parse(localStorage.getItem('ops_session')||'null');
+    var tok=s&&s.access_token,email='';
+    if(tok){ try{ email=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email||''; }catch(e){} }
+    if(email==='411249585@qq.com'){
+      nav.querySelectorAll('[data-sx="admin"]').forEach(function(a){ a.hidden=false; });
+    }
+    var me=document.getElementById('sxMe'); if(me) me.textContent=email;
+  }catch(e){}
+})();
+</script>
+
+<div class="wrap">
+  <!-- 登录 -->
+  <div id="loginView" class="login-box hide">
+    <h1>门店经营详情</h1>
+    <div class="sub">書荀门店数据 · 全员可见（只读）</div>
+    <div class="card">
+      <div class="field"><label class="field-label">邮箱</label><input type="text" id="lgEmail" placeholder="工作邮箱" /></div>
+      <div class="field"><label class="field-label">密码</label><input type="password" id="lgPwd" placeholder="密码" /></div>
+      <button class="primary" id="lgBtn" style="width:100%">登 录</button>
+      <div id="loginErr" class="err"></div>
+    </div>
+  </div>
+
+  <!-- 无该门店 -->
+  <div id="noStoreView" class="card hide"><div class="empty">未找到该门店（链接参数缺失或门店已删除）<br/><br/><a href="chain.html" style="color:#7c3aed">← 返回书荀连锁</a></div></div>
+
+  <!-- 主体 -->
+  <div id="appView" class="hide">
+    <div class="crumb">
+      <a href="cockpit.html">← 驾驶舱</a>
+      <a href="chain.html">← 书荀连锁</a>
+    </div>
+    <div class="card">
+      <h1><span id="stName">—</span><span id="stBadge"></span><span id="stNew"></span><span id="stSpecial"></span></h1>
+      <div class="sub" id="stMeta"></div>
+    </div>
+
+    <div class="card" id="sumCard">
+      <div class="stats">
+        <div class="stat"><div class="l">本月核销（月初至今）</div><div class="v" id="sMtd">—</div><div class="d" id="sMtdD"></div></div>
+        <div class="stat"><div class="l">上月合计</div><div class="v" id="sPrev">—</div><div class="d" id="sPrevD"></div></div>
+        <div class="stat"><div class="l">环比上月同期*</div><div class="v" id="sMom">—</div><div class="d" id="sMomD"></div></div>
+        <div class="stat"><div class="l">近 7 天</div><div class="v" id="s7">—</div><div class="d" id="s7D"></div></div>
+        <div class="stat"><div class="l">近 12 个月合计</div><div class="v" id="s12">—</div><div class="d" id="s12D"></div></div>
+      </div>
+      <div class="foot">* 环比口径：本月 1 日至今日 vs 上月 1 日至同一天（同月龄对比，避免「本月还没过完」造成的假跌）。</div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700;font-size:14px;margin-bottom:8px">逐月核销履历 <span style="font-weight:400;font-size:12px;color:#8a8f9e">（近 12 个月 · 柱内紫=美团 / 橙=抖音 / 灰=其他渠道）</span></div>
+      <div class="chart" id="chart"></div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700;font-size:14px;margin-bottom:8px">月度明细</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>月份</th><th class="num">核销金额</th><th class="num">单数</th><th class="num">美团</th><th class="num">抖音</th><th class="num">其他</th><th class="num">环比</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="foot">口径与连锁大盘一致：真实核销 = 美团验券 + 抖音核销 + 记账/商城等核销渠道；不含扫码买单 / 会员余额 / 欠款 / 现金 / 抖音线上买单；排除充值、直接收款类目（item_type 6/7/9）；按下单时间（create_time）归属月份；内购不走有赞，故本金额即真实客户业绩（未经账单对账）。金额单位：元。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
+const ANON_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
+const ADMIN_EMAIL = '411249585@qq.com';
+const NEW_STORE_DAYS = 30;
+const YZ_ITEM_EXCLUDE = [6,7,9];
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtY = (x) => '¥' + (Math.round((x||0)*100)/100).toLocaleString('zh-CN');
+function todayStr(){ return new Date(Date.now() + 8*3600000).toISOString().slice(0,10); }
+
+let session = null;
+try{ session = JSON.parse(localStorage.getItem('ops_session') || 'null'); }catch(e){ session = null; }
+
+function authHeaders(){
+  return { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' };
+}
+async function sb(path, opts){
+  opts = opts || {};
+  const h = Object.assign({}, authHeaders(), opts.headers || {});
+  let r = await fetch(SB_URL+path, Object.assign({}, opts, { headers:h }));
+  if(r.status === 401 || r.status === 403){
+    // 会话失效：清掉回登录
+    session = null; localStorage.removeItem('ops_session');
+    throw new Error('登录已过期，请刷新页面重新登录');
+  }
+  if(!r.ok){
+    let m = ''; try{ m = (await r.json()).message || ''; }catch(e){}
+    throw new Error('HTTP ' + r.status + (m ? ' ' + m : ''));
+  }
+  if(r.status === 204) return [];
+  const ct = r.headers.get('content-type') || '';
+  return ct.indexOf('json') >= 0 ? r.json() : r.text();
+}
+async function authPost(path, body){
+  const r = await fetch(SB_URL+path, {
+    method:'POST', headers:{ 'apikey': ANON_KEY, 'Content-Type':'application/json' }, body: JSON.stringify(body)
+  });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.error_description || d.msg || ('HTTP ' + r.status));
+  return d;
+}
+
+async function doLogin(){
+  const btn = $('lgBtn'); btn.disabled = true; btn.textContent = '登录中…'; $('loginErr').textContent = '';
+  try{
+    const d = await authPost('/auth/v1/token?grant_type=password', { email: $('lgEmail').value.trim(), password: $('lgPwd').value });
+    session = d; localStorage.setItem('ops_session', JSON.stringify(d));
+    location.reload();
+  }catch(e){
+    $('loginErr').textContent = '登录失败：' + e.message;
+    btn.disabled = false; btn.textContent = '登 录';
+  }
+}
+$('lgBtn').addEventListener('click', doLogin);
+$('lgPwd').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+
+/* ---------- 状态灯（与 chain.html classOf 同口径） ---------- */
+let specials = [];
+function activeSpecialOf(store){
+  const T = todayStr();
+  return specials.find(s => s.store_id === store.id && s.start_date <= T && T <= s.end_date) || null;
+}
+function classOf(x){
+  if(x.status === '待上线') return 'pending';
+  if(activeSpecialOf(x)) return 'special';
+  const ld = x.launch_date;
+  if(ld){
+    const days = Math.floor((new Date(todayStr()+'T00:00:00') - new Date(ld+'T00:00:00')) / 86400000);
+    if(days >= 0 && days <= NEW_STORE_DAYS) return 'new';
+  }
+  return 'old';
+}
+function lightBadges(x){
+  let h = '';
+  if(x.status === '在营') h += '<span class="badge bg-open">在营</span>';
+  else if(x.status === '待上线') h += '<span class="badge bg-pending">待上线</span>';
+  else h += '<span class="badge bg-closed">' + esc(x.status || '—') + '</span>';
+  const sp = activeSpecialOf(x);
+  if(sp) h += '<span class="badge bg-special">特殊 · ' + esc(sp.special_type) + '</span>';
+  if(classOf(x) === 'new') h += '<span class="badge bg-new">新店</span>';
+  return h;
+}
+
+/* ---------- 有赞订单 → 逐月聚合 ---------- */
+function bjMonth(iso){ return new Date(new Date(iso).getTime() + 8*3600000).toISOString().slice(0,7); }
+function bjDate(ms){ return new Date(ms + 8*3600000).toISOString().slice(0,10); }
+
+async function loadOrders(kdtId){
+  const start = bjDate(Date.now() - 395*86400000);   // 近 13 个月，算环比与 12 个完整月
+  const gte = new Date(Date.parse(start + 'T00:00:00+08:00')).toISOString();
+  const sel = 'real_pay,order_type,item_type,pay_channel_name,create_time';
+  const raw = [];
+  let from = 0;
+  while(true){
+    const part = await sb('/rest/v1/yz_orders?source=eq.chain&kdt_id=eq.' + kdtId
+      + '&order=create_time.asc&select=' + sel + '&create_time=gte.' + encodeURIComponent(gte),
+      { headers: { Range: from + '-' + (from+999) } });
+    raw.push(...part);
+    if(part.length < 1000 || from > 100000) break;
+    from += 1000;
+  }
+  return raw;
+}
+
+function aggregate(raw, T){
+  const months = {};
+  raw.forEach(r => {
+    if(r.order_type !== 0 || YZ_ITEM_EXCLUDE.indexOf(r.item_type) >= 0) return;
+    const ch = String(r.pay_channel_name || '');
+    if(!/核销|验券/.test(ch)) return;
+    const amt = (r.real_pay || 0) / 100;
+    const M = bjMonth(r.create_time);
+    let g = months[M];
+    if(!g) g = months[M] = { mtA:0, mtC:0, dyA:0, dyC:0, otA:0, otC:0 };
+    if(ch.indexOf('美团') >= 0){ g.mtA += amt; g.mtC++; }
+    else if(ch.indexOf('抖音') >= 0){ g.dyA += amt; g.dyC++; }
+    else { g.otA += amt; g.otC++; }
+  });
+  Object.values(months).forEach(g => { g.A = g.mtA + g.dyA + g.otA; g.C = g.mtC + g.dyC + g.otC; });
+  return months;
+}
+
+function render(store, raw){
+  const T = todayStr();
+  const ms = T.slice(0,8) + '01';
+  const months = aggregate(raw, T);
+
+  // 完整的近 12 个月份键（含本月）——按年月精确推算，无天数近似漂移
+  const keys = [];
+  const nowBj = new Date(Date.now() + 8*3600000);
+  const y = nowBj.getUTCFullYear(), m = nowBj.getUTCMonth();
+  for(let i = 11; i >= 0; i--){
+    keys.push(new Date(Date.UTC(y, m - i, 1)).toISOString().slice(0,7));
+  }
+  const cur = g(keys[11]), prev = g(keys[10]);
+
+  // 同月龄环比：上月日均 × 本月已过天数
+  const dayOfMonth = parseInt(T.slice(8), 10);
+  const daysInPrev = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const momBase = daysInPrev ? (prev.A / daysInPrev) * dayOfMonth : 0;
+
+  $('sMtd').textContent = fmtY(cur.A);
+  $('sMtdD').textContent = cur.C + ' 单';
+  $('sPrev').textContent = fmtY(prev.A);
+  $('sPrevD').textContent = prev.C + ' 单';
+  const mom = momBase ? (cur.A - momBase) / momBase * 100 : null;
+  const momAbs = cur.A - momBase;
+  $('sMom').innerHTML = mom === null ? '<span class="d flat">—</span>'
+    : '<span class="' + (momAbs >= 0 ? 'd up' : 'd down') + '">' + (momAbs >= 0 ? '+' : '') + fmtY(momAbs) + ' · ' + (mom >= 0 ? '+' : '') + Math.round(mom) + '%</span>';
+  $('sMomD').textContent = '上月同期约 ' + fmtY(momBase);
+
+  // 近 7 天（按天）
+  let d7A = 0, d7C = 0;
+  const days = {};
+  raw.forEach(r => {
+    if(r.order_type !== 0 || YZ_ITEM_EXCLUDE.indexOf(r.item_type) >= 0) return;
+    if(!/核销|验券/.test(String(r.pay_channel_name || ''))) return;
+    const D = bjDate(new Date(r.create_time).getTime());
+    const d = days[D] || (days[D] = [0,0]);
+    d[0] += (r.real_pay||0)/100; d[1]++;
+  });
+  for(let i = 1; i <= 7; i++){
+    const D = bjDate(Date.now() - i*86400000);
+    if(days[D]){ d7A += days[D][0]; d7C += days[D][1]; }
+  }
+  $('s7').textContent = fmtY(d7A);
+  $('s7D').textContent = d7C + ' 单（不含今日）';
+
+  let tA = 0, tC = 0;
+  keys.forEach(k => { tA += g(k).A; tC += g(k).C; });
+  $('s12').textContent = fmtY(tA);
+  $('s12D').textContent = tC + ' 单';
+
+  // 柱状图
+  const maxA = Math.max.apply(null, keys.map(k => g(k).A).concat([1]));
+  $('chart').innerHTML = keys.map(k => {
+    const m = g(k);
+    const h = (v) => Math.round(v / maxA * 120);
+    const seg = (v, cls) => v > 0 ? '<div class="bar ' + cls + '" style="height:' + h(v) + 'px"></div>' : '';
+    return '<div class="bar-w">' +
+      '<div class="bar-v">' + (m.A > 0 ? fmtY(m.A).replace('¥','') : '') + '</div>' +
+      '<div style="display:flex;flex-direction:column;justify-content:flex-end;height:120px;width:100%;align-items:center">' + seg(m.mtA,'seg-mt') + seg(m.dyA,'seg-dy') + seg(m.otA,'seg-ot') + '</div>' +
+      '<div class="bar-l">' + k.slice(2) + '</div></div>';
+  }).join('');
+
+  // 明细表（倒序）
+  $('tbody').innerHTML = keys.slice().reverse().map((k, idx) => {
+    const m = g(k);
+    const pk = keys[keys.length - 1 - idx - 1];
+    const p = g(pk);
+    const isCur = (k === keys[11]);
+    let momCell = '<span class="d flat">—</span>';
+    if(p.A > 0){
+      const dd = (m.A - p.A) / p.A * 100;
+      momCell = '<span class="' + (m.A >= p.A ? 'd up' : 'd down') + '">' + (m.A >= p.A ? '+' : '') + Math.round(dd) + '%</span>';
+    }
+    return '<tr' + (isCur ? ' class="total"' : '') + '><td>' + k + (isCur ? '（本月）' : '') + '</td>' +
+      '<td class="num">' + fmtY(m.A) + '</td><td class="num">' + m.C + '</td>' +
+      '<td class="num">' + fmtY(m.mtA) + ' / ' + m.mtC + '</td>' +
+      '<td class="num">' + fmtY(m.dyA) + ' / ' + m.dyC + '</td>' +
+      '<td class="num">' + fmtY(m.otA) + ' / ' + m.otC + '</td>' +
+      '<td class="num">' + momCell + '</td></tr>';
+  }).join('');
+}
+
+/* ---------- 主流程 ---------- */
+(async function init(){
+  if(!session){
+    $('loginView').classList.remove('hide');
+    return;
+  }
+  const sid = parseInt(new URLSearchParams(location.search).get('id'), 10);
+  if(!sid){ $('noStoreView').classList.remove('hide'); return; }
+  try{
+    const st = (await sb('/rest/v1/stores?id=eq.' + sid + '&select=id,std_name,short_name,aliases,province,city,district,operator,status,store_type,launch_date'))[0];
+    if(!st){ $('noStoreView').classList.remove('hide'); return; }
+    specials = await sb('/rest/v1/store_special_periods?select=*').catch(() => []);
+
+    $('stName').textContent = st.std_name;
+    $('stBadge').innerHTML = lightBadges(st);
+    const loc = [st.province, st.city, st.district].filter(Boolean).join(' · ');
+    $('stMeta').textContent = [st.store_type, loc, st.operator ? ('运营人：' + st.operator) : '', st.launch_date ? ('上线：' + st.launch_date) : '']
+      .filter(Boolean).join(' ｜ ');
+
+    // 有赞映射
+    const mp = (await sb('/rest/v1/yz_shop_map?store_id=eq.' + sid + '&select=kdt_id'))[0];
+    $('appView').classList.remove('hide');
+    if(!mp){
+      $('sumCard').innerHTML = '<div class="empty">该门店未接入有赞系统，暂无线上核销数据</div>';
+      document.getElementById('chart').closest('.card').style.display = 'none';
+      document.getElementById('tbody').closest('.card').style.display = 'none';
+      return;
+    }
+    const raw = await loadOrders(mp.kdt_id);
+    render(st, raw);
+  }catch(e){
+    if(session === null){ $('loginView').classList.remove('hide'); return; }
+    $('appView').classList.remove('hide');
+    $('sumCard').innerHTML = '<div class="empty">数据加载失败：' + esc(e.message) + '<br/><br/>可能是网络通道问题，稍后刷新重试</div>';
+  }
+})();
+</script>
+</body>
+</html>
