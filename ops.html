@@ -286,11 +286,6 @@
         <div class="card-title" id="dashTableTitle" data-page-node-id="CyXrGZ0ZIVsIR9o9UnUazl">门店数据汇总</div>
         <div id="dashStoreTable" data-page-node-id="vqznOBUJJdfbHTg70rMvzA"></div>
       </div>
-      <div class="card" data-page-node-id="H65uFvdBGUAFdUKmijPl8Y">
-        <div class="card-title" id="storeChartTitle" data-page-node-id="Mx3zRMm4HU4vkIOqtPLbeU">各门店核销金额对比（美+抖合计 · 降序）</div>
-        <div class="chart-box" id="chStoreBox" data-page-node-id="FNWBM6PycPxEbvNvnebgSG"><canvas id="chStore" data-page-node-id="yqHc62au9NdXBnSOSPjDUz"></canvas></div>
-        <div id="storeAmtTable" style="margin-top:12px" data-page-node-id="bZyDoQgHySHPBHc5fKQlG6"></div>
-      </div>
       <div class="card hide" id="cardTrend" data-page-node-id="e2K0jTHNnhToB4z4NKknWV">
         <div class="card-title" id="trendTitle" data-page-node-id="3kH4JicV9gYPJB3hFgcn2W">每日核销金额趋势</div>
         <div class="chart-box" data-page-node-id="DejdQiVmd3DzyOf6O69Ajz"><canvas id="chTrend" data-page-node-id="iLuoJyg3YYtH39czMM2QGo"></canvas></div>
@@ -759,7 +754,6 @@ async function loadDash(){
   if(!s || !e) return msg('请选择日期范围','err');
   try{
     const rows = await fetchRows(s, e, '');
-    $('storeChartTitle').textContent = '各门店核销金额对比（美+抖合计 · 降序）· ' + s + (s===e?'':' ~ '+e);
     $('dashTableTitle').textContent = '门店数据汇总 · ' + s + (s===e?'':' ~ '+e);
     if(!rows.length){ $('dashStats').innerHTML=''; $('dashStoreTable').innerHTML=''; $('dashTableTitle').textContent='门店数据汇总'; renderCharts([], s, e); msg('该时间段没有数据','info'); return; }
 
@@ -802,16 +796,18 @@ function renderCharts(rows, s, e){
   const namesSort = names.slice().sort((a,b)=>(byStore[b].mt+byStore[b].dy)-(byStore[a].mt+byStore[a].dy));
   // 单日视图：已填报门店集合（当天有记录行 = 已交表；无行 = 漏填，即便显示 0 也不可信）
   const filled = (s===e) ? new Set(rows.map(r=>r.store_name)) : null;
-  if(filled) $('storeChartTitle').innerHTML = esc($('storeChartTitle').textContent) + '<span class="fill-note"><span class="fill-dot">●</span> 已填报 · 无点 = 未交表</span>';
+  if(filled) $('dashTableTitle').innerHTML = esc($('dashTableTitle').textContent) + '<span class="fill-note"><span class="fill-dot">●</span> 已填报 · 无点 = 未交表</span>';
 
   // 门店数据汇总表（顶部，与图同序降序）
   const dtEl = $('dashStoreTable');
   if(!namesSort.length){ if(dtEl) dtEl.innerHTML=''; }
   else{
-    let th = '<tr><th class="store">门店</th><th>核销合计</th><th>客单数</th><th>约不上</th><th>内购金额</th></tr>';
+    let th = '<tr><th class="store">门店</th><th class="mei">美团</th><th class="dou">抖音</th><th>核销合计</th><th>客单数</th><th>约不上</th><th>内购金额</th></tr>';
     let tb = namesSort.map(n=>{
       const x = byStore[n], mt = Math.round(x.mt), dy = Math.round(x.dy);
-      return '<tr><td class="store">'+esc(shortName(n))+'</td>'+
+      return '<tr><td class="store">'+(filled&&filled.has(n)?'<span class="fill-dot">●</span> ':'')+esc(shortName(n))+'</td>'+
+        '<td class="mei">'+mt+'</td>'+
+        '<td class="dou">'+dy+'</td>'+
         '<td style="font-weight:700">'+(mt+dy)+'</td>'+
         '<td>'+Math.round(x.ppl)+'</td>'+
         '<td>'+Math.round(x.unable)+'</td>'+
@@ -819,7 +815,7 @@ function renderCharts(rows, s, e){
     }).join('');
     const tM = namesSort.reduce((a,n)=>a+byStore[n].mt,0), tD = namesSort.reduce((a,n)=>a+byStore[n].dy,0);
     const tP = namesSort.reduce((a,n)=>a+byStore[n].ppl,0), tU = namesSort.reduce((a,n)=>a+byStore[n].unable,0), tI = namesSort.reduce((a,n)=>a+byStore[n].inner,0);
-    tb += '<tr class="total"><td class="store">合计</td><td>'+Math.round(tM+tD)+'</td><td>'+Math.round(tP)+'</td><td>'+Math.round(tU)+'</td><td>'+Math.round(tI)+'</td></tr>';
+    tb += '<tr class="total"><td class="store">合计</td><td class="mei">'+Math.round(tM)+'</td><td class="dou">'+Math.round(tD)+'</td><td>'+Math.round(tM+tD)+'</td><td>'+Math.round(tP)+'</td><td>'+Math.round(tU)+'</td><td>'+Math.round(tI)+'</td></tr>';
     if(dtEl) dtEl.innerHTML = '<div class="tbl-wrap"><table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table></div>';
   }
 
@@ -836,9 +832,6 @@ function renderCharts(rows, s, e){
   const isRange = (s !== e);
   const trendCard = $('cardTrend');
   if(trendCard) trendCard.classList.toggle('hide', !isRange);
-  // 多日：柱状图换成明细表标题；单日：保留对比柱状图
-  const sBox = $('chStoreBox'); if(sBox) sBox.classList.toggle('hide', isRange);
-  $('storeChartTitle').textContent = (isRange ? '各门店核销金额明细（美+抖合计 · 降序）' : '各门店核销金额对比（美+抖合计 · 降序）') + ' · ' + s + (isRange?' ~ '+e:'');
   $('trendTitle').textContent = '每日趋势：核销金额 / 到店客数 / 内购数量 · ' + s + ' ~ ' + e;
   const dayLbls = days.map(d=>String(parseInt(d.slice(8),10)));
   const dayColors = days.map(d=>{
@@ -846,26 +839,6 @@ function renderCharts(rows, s, e){
     return w===6 ? '#ff5fd7' : (w===0 ? '#7dff5a' : 'rgba(255,255,255,0.6)');
   });
 
-  if(!isRange){  // 单日：门店核销金额对比柱状图；多日：由每日折线图替代
-    mkBar('chStore', namesSort.map(n=>shortName(n)+(filled&&filled.has(n)?' ●':'')), [
-      {label:'核销合计', data:namesSort.map(n=>round2(byStore[n].mt+byStore[n].dy)), bg:'#8b5cf6',
-       _split:namesSort.map(n=>({mt:byStore[n].mt, dy:byStore[n].dy}))}
-    ], false, filled ? namesSort.map(n=>filled.has(n)?'#4ade80':'rgba(255,255,255,0.45)') : null);
-  }
-  // 核销金额明细表（与图同序，金额四舍五入取整）
-  const stEl = $('storeAmtTable');
-  if(!namesSort.length){ if(stEl) stEl.innerHTML=''; }
-  else{
-  const totM = namesSort.reduce((a,n)=>a+byStore[n].mt,0);
-  const totD = namesSort.reduce((a,n)=>a+byStore[n].dy,0);
-  let th = '<tr><th style="width:48px">排名</th><th class="store">门店</th><th>核销合计</th><th class="mei">美团</th><th class="dou">抖音</th></tr>';
-  let tb = namesSort.map((n,i)=>{
-    const mt = Math.round(byStore[n].mt), dy = Math.round(byStore[n].dy);
-    return '<tr><td>'+(i+1)+'</td><td class="store">'+(filled&&filled.has(n)?'<span class="fill-dot">●</span> ':'')+esc(shortName(n))+'</td><td style="font-weight:700">'+(mt+dy)+'</td><td class="mei">'+mt+'</td><td class="dou">'+dy+'</td></tr>';
-  }).join('');
-  tb += '<tr class="total"><td></td><td class="store">合计</td><td>'+Math.round(totM+totD)+'</td><td class="mei">'+Math.round(totM)+'</td><td class="dou">'+Math.round(totD)+'</td></tr>';
-  if(stEl) stEl.innerHTML = '<div class="tbl-wrap"><table><thead>'+th+'</thead><tbody>'+tb+'</tbody></table></div>';
-  }
   if(isRange){
     mkLine('chTrend', dayLbls, [
       {label:'核销金额（元）', data:days.map(d=>round2(byDay[d].mt+byDay[d].dy)), bc:'#8b5cf6', unit:'¥'},
