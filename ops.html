@@ -156,6 +156,7 @@
     <a href="ops.html">佛山直营</a>
     <a href="chain.html" data-sx="admin" hidden>书荀连锁</a>
     <a href="douyin_pay.html" data-sx="admin" hidden>扫码上翻</a>
+    <a href="store_admin.html">门店管理</a>
     <a href="index.html">每日填报</a>
   </div>
   <span class="sx-me" id="sxMe"></span>
@@ -235,15 +236,11 @@
       <div class="tab" data-tab="query" onclick="switchTab('query')" data-page-node-id="flHaxauEQgm1EzPjzmk1Go">查询与导出</div>
       <div class="tab" data-tab="recon" onclick="switchTab('recon')" data-page-node-id="GyfZDCXqzBJan1Xm0eb02h">数据核对</div>
       <div class="tab" data-tab="logs" id="tabBtnLogs" onclick="switchTab('logs')" data-page-node-id="JZcRcF6LSD3T9DyrMNFqv8">操作日志</div>
-      <div class="tab" data-tab="stores" onclick="switchTab('stores')" data-page-node-id="CJh0AG01eDigHR558nFNEl">门店管理</div>
       <div class="tab hide" data-tab="operators" id="tabBtnOps" onclick="switchTab('operators')">运营人员</div>
       <div class="tab" data-tab="dy" id="tabBtnDy" onclick="switchTab('dy')">抖音监控</div>
     </div>
 
-    <!-- 待认领有赞店横幅（同步器自动发现，全员可见，认领/忽略仅主账号） -->
-    <div id="pendingBar" class="hide" style="margin-bottom:14px"></div>
-
-    <div id="globalMsg" data-page-node-id="VBNixWpDfJcWvjHeBHMpKf"></div>
+    <div id="globalMsg"<div id="globalMsg" data-page-node-id="VBNixWpDfJcWvjHeBHMpKf"></div>
 
     <!-- ---------- 总览看板 ---------- -->
     <div id="tab-dash" data-page-node-id="zUGZ3vzSEnIfoEyJFgGcJS">
@@ -411,43 +408,7 @@
       </div>
     </div>
 
-    <!-- ---------- 门店管理 ---------- -->
-    <div id="tab-stores" class="hide" data-page-node-id="JIv6wWAdXhSzfM3ZgmnmHD">
-      <div class="card" data-page-node-id="pAv5TReDAz948Us5d6H16X">
-        <div class="inline" data-page-node-id="r4v0zvpN7t9GdauSmuDRjZ">
-          <div data-page-node-id="TMuIXFrk3uDJbCojRT5EOQ">
-            <label class="field-label" data-page-node-id="8UQ7sOMzXRC7FlOuzeGiIX">状态</label>
-            <select id="stStatus" onchange="renderStores()" data-page-node-id="0hjEFcP8z3UcFEJKOT5ase">
-              <option value="" data-page-node-id="ARMXytitE2BjfuiTCTJXfe">全部</option><option selected data-page-node-id="Ws1lfm3kWkQ5TP9EChWqrF">在营</option><option data-page-node-id="hgkhoHENITaLEPvyxtdwdc">闭店</option><option data-page-node-id="ksdncJulb9QiprtCSrYyQe">待上线</option>
-            </select>
-          </div>
-          <div data-page-node-id="CRjQ54fV7pHuQOl3LyAfOT">
-            <label class="field-label" data-page-node-id="98LyDjcqOgdBW6IMvoeWo9">性质（快捷筛选）</label>
-            <div id="stTypeChips" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; height:38px" data-page-node-id="hHDxovQjxMCgnt8GgQZnmG">
-              <button class="sm" onclick="setStType('')" data-page-node-id="djGnci6wswL01mt0HEF48J">全部</button>
-              <button class="sm" onclick="setStType('直营')" data-page-node-id="LDeHkmdLsMzT14GGZDQ8BJ">直营</button>
-              <button class="sm" onclick="setStType('连锁')" data-page-node-id="ww9jkkGT6ceEP5Z8H0KHeP">连锁</button>
-              <button class="sm" onclick="setStType('陪跑')" data-page-node-id="yugWoeGFqDoNZjrsRzMqaD">陪跑</button>
-              <button class="sm" onclick="setStType('共管')" data-page-node-id="KQoi3Idx4ELaaDdXV5pWKg">共管</button>
-            </div>
-          </div>
-          <div data-page-node-id="LskoK2cio9txIM3HF130jm">
-            <label class="field-label" data-page-node-id="jHkrzLaXGJ74MfMebWnoQA">搜索（名称 / 别名 / ID）</label>
-            <input type="text" id="stSearch" oninput="renderStores()" placeholder="如：顺联 / 十亩地" data-page-node-id="Z38N7Eimy8bOhQVdKPZUjG" />
-          </div>
-          <div style="flex:0 0 auto; display:flex; gap:8px; align-items:flex-end" data-page-node-id="jGG448DPrBNgIt43lvJ8zP">
-            <button onclick="loadStores()" data-page-node-id="j9mCHv4OqYwLx0UTzWGCAN">刷新</button>
-            <button class="primary" id="btnAddStore" onclick="openStoreEdit()" data-page-node-id="7FqJPh4tKatgqaDbb1J0tk">+ 新增门店</button>
-          </div>
-        </div>
-      </div>
-      <div class="card" data-page-node-id="YGyABuczLGH3dbT4X2uZff">
-        <div class="card-title" data-page-node-id="p55V1nb8JRDDXIFyHAGeBt">门店主数据（Supabase stores 主表 · 唯一权威源）</div>
-        <div id="stBody" data-page-node-id="7H7EK7ZxQXsx9CAISMtVIH"><div class="empty" data-page-node-id="TZXz6J6A99YGpisuSAqQM3">加载中…</div></div>
-      </div>
-    </div>
-
-    <div id="tab-dy" class="hide">
+    <div id="tab-dy" class="hide">    <div id="tab-dy" class="hide">
       <div class="card">
         <div class="card-title">抖音账号监控 · 概况</div>
         <div id="dySummary" style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:6px"><div class="empty">加载中…</div></div>
@@ -531,35 +492,7 @@
   </div>
 </div>
 
-<!-- 门店编辑弹窗 -->
-<div id="storeMask" class="mask hide" data-page-node-id="UKUPEH1KWaueREKjDKjFpZ">
-  <div class="modal" data-page-node-id="Tq6EwFsJ3aJ9Iv5GB67sso">
-    <h3 id="smTitle" data-page-node-id="3QbxsUavyeXB1GpQH4H98i">门店</h3>
-    <div id="smBody" data-page-node-id="Q2oETe6D5zZsp0VsQOMeZq"></div>
-    <div class="modal-btns" data-page-node-id="CmpFsltM8eAAdb8hkEfTya">
-      <button class="primary" onclick="saveStore()" data-page-node-id="2vkCFXRDUpPdKIFXVnYVdo">保存</button>
-      <button onclick="closeStoreEdit()" data-page-node-id="pxtowVnCwm4xvZjkRYbLzA">取消</button>
-    </div>
-  </div>
-</div>
-
-<!-- 删除确认弹窗（手动输入「确认删除」） -->
-<div id="delMask" class="mask hide" data-page-node-id="G81ubo1ImfrUqE71cxixnM">
-  <div class="modal" data-page-node-id="fpbHBS4cgiTNDF0EhjGrTW">
-    <h3 id="delTitle" style="color:#f87171" data-page-node-id="DccZ0HjltQ0Yi84LJAp52D">删除确认</h3>
-    <div id="delInfo" style="margin-bottom:10px;font-size:13px;color:rgba(255,255,255,0.75)" data-page-node-id="hBWKV4jc9zXB4pifWkYT0U"></div>
-    <div class="field" data-page-node-id="TQ6CFSSM3kUwUF8EmdUgQz">
-      <label class="field-label" style="color:#f87171" data-page-node-id="OSVcotTaA6LeYGza3liKbA">请输入「<b data-page-node-id="MzcO3tvseir4orICvcIAfX">确认删除</b>」四个字以继续</label>
-      <input type="text" id="delInput" placeholder="输入：确认删除" autocomplete="off" onkeydown="if(event.key==='Enter')doDelete()" data-page-node-id="uD0DweD5KlHrPVXB8hxGyW" />
-    </div>
-    <div class="modal-btns" data-page-node-id="LCcQf0GqZ1x3EWOZEtWSfK">
-      <button class="danger" id="delBtn" onclick="doDelete()" data-page-node-id="BQyGLKhw5QC8qJeujnq3Yr">确认删除</button>
-      <button onclick="closeDel()" data-page-node-id="QcAni3O4hwJh7gFGGaKztn">取消</button>
-    </div>
-  </div>
-</div>
-
-<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/xlsx.full.min.js"></script><script src="vendor/xlsx.full.min.js"></script>
 <script src="vendor/chart.umd.min.js"></script>
 <script>
 /* ============================================================================
@@ -735,7 +668,7 @@ function enterApp(){
     isXiaoai = myName === '小艾';
     if(isAdmin) renderOpsManager();
   });
-  loadPendingBar();
+  loadStores();   // 门店管理已拆分至 store_admin.html，此处仅拉数据供运营人员统计
   initDefaults();
   loadInnerIds();
   loadStoreMaster().then(()=>loadDash());   // 先加载主表（停业剔除/别名依赖），再画看板
@@ -746,7 +679,6 @@ function applyPerms(){
   const t = $('tabBtnLogs'); if(t) t.classList.toggle('hide', !isAdmin);
   const to = $('tabBtnOps'); if(to) to.classList.toggle('hide', !isAdmin);   // 运营人员仅主账号
   const td = $('tabBtnDy'); if(td) td.classList.toggle('hide', !isAdmin);   // 抖音监控：整个 tab 仅主账号
-  const b = $('btnAddStore'); if(b) b.classList.toggle('hide', !isAdmin);
   const c = $('lnkChain'); if(c) c.classList.toggle('hide', !isAdmin);   // 连锁板块：内测仅主账号
   const dr = $('dyRunBtn'); if(dr) dr.classList.toggle('hide', !isAdmin);       // 抖音监控：触发/配置仅主账号
   const drf = $('dyRunFullBtn'); if(drf) drf.classList.toggle('hide', !isAdmin);
@@ -963,7 +895,6 @@ function switchTab(t){
   ['dash','query','recon','logs','stores','dy'].forEach(x=>{
     $('tab-'+x).classList.toggle('hide', x!==t);
   });
-  if(t==='stores') loadStores();
   if(t==='dy') loadDy();
   clearMsg();
 }
@@ -1377,251 +1308,18 @@ async function loadLogs(){
   }catch(err){ msg(esc(err.message),'err'); }
 }
 
-/* ---------------- 门店管理（stores 主表 · 唯一权威源） ---------------- */
+/* ---------------- 门店管理已拆分至独立页 store_admin.html（2026-09-22） ----------------
+   此处仅保留 storeRows 缓存 + 数据版 loadStores()，供「运营人员」tab 的门店计数/改名同步/转移使用 */
 let storeRows = [];
-let editingStoreId = null;
-let stTypeFilter = '';
-const STORE_FIELDS = [
-  ['std_name','公司内部标准名称 *','text',''],
-  ['short_name','2 字缩写','text',''],
-  ['meituan_id','美团门店ID','text',''],
-  ['meituan_name','美团门店名称','text',''],
-  ['douyin_id','抖音门店ID','text',''],
-  ['douyin_name','抖音门店名称','text',''],
-  ['douyin_account_id','抖音门店号id','text',''],
-  ['province','省份','text',''],
-  ['city','城市','text',''],
-  ['district','行政区','text',''],
-  ['store_type','门店性质','select','直营|连锁|陪跑|共管'],
-  ['operator','运营人','text',''],
-  ['launch_date','上线日期','date',''],
-  ['status','状态','select','在营|闭店|待上线'],
-  ['special_status','特殊营业','select','无|装修|店庆|暂停'],
-  ['special_until','特殊营业截止','date',''],
-  ['closed_date','闭店日期','date',''],
-  ['aliases','核对别名（逗号分隔）','text',''],
-  ['note','备注','text','']
-];
 async function loadStores(){
   try{
     const r = await sb('/rest/v1/stores?select=*&order=store_type.asc,std_name.asc&limit=500');
-    if(!r.ok) throw new Error('读取失败 HTTP '+r.status+'：'+await r.text());
-    storeRows = await r.json();
-    storeMaster = storeRows;      // 门店管理编辑后，停业剔除/核对别名立即同步
-    setStType(stTypeFilter);
-    $('stBody').innerHTML = storeRows.length ? renderStores() : '<div class="empty">主表为空，请先执行 stores_master_setup.sql</div>';
-  }catch(err){
-    $('stBody').innerHTML = '<div class="empty">加载失败：'+esc(err.message)+'</div>';
-  }
-}
-function renderStores(){
-  const st = $('stStatus').value, ty = stTypeFilter;
-  const kw = ($('stSearch').value||'').trim().toLowerCase();
-  const list = storeRows.filter(x=>
-    (!st || x.status===st) && (!ty || x.store_type===ty) &&
-    (!kw || [x.std_name,x.short_name,x.aliases,x.meituan_name,x.douyin_name,x.meituan_id,x.douyin_id,x.operator]
-      .some(v=>String(v==null?'':v).toLowerCase().indexOf(kw)>=0)));
-  const stColShown = storeOpsShown();
-  let h = '<div class="tbl-wrap"><table><thead><tr>'+
-    '<th>状态</th><th class="store">标准名称</th><th>性质</th>'+
-    '<th>运营人</th><th>上线日期</th>'+(stColShown?'<th>操作</th>':'')+'</tr></thead><tbody>';
-  const stColor = {'在营':'#4ade80','闭店':'#f87171','待上线':'#fbbf24'};
-  list.forEach(x=>{
-    h += '<tr>'+
-      '<td style="color:'+(stColor[x.status]||'#fff')+';font-weight:700">'+esc(x.status)+storeBadges(x)+'</td>'+
-      '<td class="store">'+esc(x.std_name)+'</td>'+
-      '<td>'+esc(x.store_type||'')+'</td>'+
-      '<td>'+esc(x.operator||'')+'</td>'+
-      '<td>'+esc(x.launch_date||'—')+'</td>'+
-      (stColShown?'<td>'+(canEditStore(x)?'<button class="sm" onclick="openStoreEdit('+x.id+')">编辑</button> ':'')+
-      (canDeleteStore()?'<button class="sm danger" onclick="delStore('+x.id+',\''+esc(x.std_name).replace(/'/g,'')+'\')">删</button>':'')+'</td>':'')+
-      '</tr>';
-  });
-  const activeCnt = storeRows.filter(x=>x.status==='在营').length;
-  h += '</tbody></table></div><div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.55)">在营门店 <b style="color:#4ade80;font-size:15px">'+activeCnt+'</b> 家 ｜ 当前显示 '+list.length+' / '+storeRows.length+' 家（美团ID / 抖音ID / 别名 在「编辑」里查看；增删改自动写入操作日志）</div>';
-  return h;
-}
-// 状态灯判定（2026-09-21 拍板）：新店徽章=launch_date 起 30 天内自动；
-// 特殊营业琥珀灯=special_status 非空且未过 special_until（截止当天仍算）
-function isNewStore(x){
-  if(!x.launch_date) return false;
-  const d = new Date(x.launch_date);
-  return !isNaN(d.getTime()) && (Date.now() - d.getTime()) < 30*864e5;
-}
-function isSpecialOpen(x){
-  if(!x.special_status || x.special_status==='无') return false;
-  if(x.special_until){
-    const u = new Date(x.special_until);
-    if(!isNaN(u.getTime()) && u.getTime() < new Date().setHours(0,0,0,0)) return false;
-  }
-  return true;
-}
-function storeBadges(x){
-  let h = '';
-  if(isNewStore(x)) h += '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;background:rgba(59,130,246,.22);color:#93c5fd;font-size:11px;font-weight:700;vertical-align:middle">新</span>';
-  if(isSpecialOpen(x)) h += '<span title="特殊营业：'+esc(x.special_status||'')+(x.special_until?'（至 '+esc(x.special_until)+'）':'')+'" style="display:inline-block;margin-left:6px;width:10px;height:10px;border-radius:50%;background:#f59e0b;vertical-align:middle"></span>';
-  return h;
-}
-function setStType(t){
-  stTypeFilter = t;
-  const chips = $('stTypeChips').children;
-  for(const c of chips){
-    const on = (t==='' && c.textContent==='全部') || (t!=='' && c.textContent===t);
-    c.style.background = on ? '#8b5cf6' : '';
-    c.style.color = on ? '#fff' : '';
-    c.style.borderColor = on ? '#8b5cf6' : '';
-  }
-  renderStores();
-}
-let kdtMapRows = [];                       // yz_shop_map 全量（kdt_id→store_id）
-async function loadKdtMap(){
-  try{
-    const r = await sb('/rest/v1/yz_shop_map?select=kdt_id,store_id&limit=2000');
-    if(r.ok) kdtMapRows = await r.json();
-  }catch(e){ kdtMapRows = []; }
-}
-function kdtOfStore(sid){ const m = kdtMapRows.find(x=>x.store_id===sid); return m ? m.kdt_id : ''; }
-function openStoreEdit(id, prefill){
-  prefill = prefill || {};
-  editingStoreId = id || null;
-  pendingClaimKdt = (prefill && prefill.yz_kdt) || null;
-  const x = id ? storeRows.find(v=>v.id===id) : null;
-  $('smTitle').textContent = x ? '编辑门店 · '+x.std_name : (prefill.yz_kdt ? '认领有赞新店' : '新增门店');
-  // 运营人：下拉选择（杜绝错别字/别名导致权限失灵），历史遗留值不在列表时自动补上防丢
-  const curOp = x ? (x.operator||'') : (prefill.operator||'');
-  const opNames = activeOpNames().slice();
-  if(curOp && opNames.indexOf(curOp)<0 && curOp!=='admin') opNames.push(curOp);
-  const opSel = '<option value="">（未分配）</option>' + opNames.map(o=>'<option'+(o===curOp?' selected':'')+'>'+esc(o)+'</option>').join('');
-  const stSel = (x ? (x.status||'在营') : (prefill.status||'在营'));
-  const tySel = (x ? (x.store_type||'') : (prefill.store_type||'连锁'));
-  let h = '<div class="grid2">';
-  STORE_FIELDS.forEach(f=>{
-    const v = x ? (x[f[0]]==null?'':x[f[0]]) : (prefill[f[0]]!=null?prefill[f[0]]:'');
-    if(f[0]==='operator'){
-      h += '<div class="field"><label class="field-label">'+f[1]+'</label><select id="sm_operator">'+opSel+'</select></div>';
-      return;
-    }
-    if(f[0]==='status'){
-      h += '<div class="field"><label class="field-label">'+f[1]+'</label><select id="sm_status">'+
-        ['在营','闭店','待上线'].map(o=>'<option'+(o===stSel?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';
-      return;
-    }
-    if(f[0]==='store_type'){
-      h += '<div class="field"><label class="field-label">'+f[1]+'</label><select id="sm_store_type">'+
-        ['直营','连锁','陪跑','共管'].map(o=>'<option'+(o===tySel?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';
-      return;
-    }
-    if(f[2]==='select'){
-      h += '<div class="field"><label class="field-label">'+f[1]+'</label><select id="sm_'+f[0]+'">'+
-        f[3].split('|').map(o=>'<option'+(o===v?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';
-    }else{
-      h += '<div class="field"><label class="field-label">'+f[1]+'</label>'+
-        '<input type="'+f[2]+'" id="sm_'+f[0]+'" value="'+esc(v)+'" /></div>';
-    }
-  });
-  // 有赞 kdt_id：仅主账号可见（认领新店时预填，编辑时反查当前映射）
-  if(isAdmin || prefill.yz_kdt){
-    const curKdt = prefill.yz_kdt || (x ? kdtOfStore(x.id) : '');
-    h += '<div class="field"><label class="field-label">有赞 kdt_id（保存后自动写入映射，看板即刻可见）</label>'+
-      '<input type="text" id="sm_yz_kdt" value="'+esc(curKdt)+'" placeholder="如 179482533" /></div>';
-  }
-  h += '</div>';
-  $('smBody').innerHTML = h;
-  if(statusLocked()){   // 非主账号：状态/闭店日期/运营人 锁定，防误改影响报表口径
-    ['sm_status','sm_closed_date','sm_operator'].forEach(id2=>{ const el=$(id2); if(el){ el.disabled=true; el.style.opacity=.5; el.title='该字段仅主账号可修改'; } });
-    $('smBody').insertAdjacentHTML('beforeend','<div style="margin-top:8px;font-size:12px;color:#fbbf24">⚠️ 状态 / 闭店日期 / 运营人 由主账号锁定，不可修改</div>');
-  }
-  $('storeMask').classList.remove('hide');
-}
-function closeStoreEdit(){ $('storeMask').classList.add('hide'); }
-async function saveStore(){
-  const body = {};
-  for(const f of STORE_FIELDS){
-    const el = $('sm_'+f[0]);
-    if(!el) continue;
-    let v = el.value;
-    if(f[2]==='text') v = v.trim();                     // 防首尾空格造成权限/匹配失灵
-    body[f[0]] = v === '' ? null : v;
-  }
-  if(statusLocked()){   // 非主账号：即使前端被绕过，也不允许改状态/闭店日期/运营人
-    delete body.status; delete body.closed_date; delete body.operator;
-  }
-  if(!body.std_name) return msg('公司内部标准名称为必填','err');
-  if(!body.status) body.status = '在营';
-  if(!body.store_type) body.store_type = '直营';
-  if(body.special_status === '无') body.special_status = null;   // 「无」存 NULL=正常营业（琥珀灯灭）
-  const yzKdt = (($('sm_yz_kdt')||{}).value||'').trim();
-  try{
-    const id = editingStoreId;
-    const r = await sb('/rest/v1/stores'+(id?'?id=eq.'+id:''), {
-      method: id ? 'PATCH' : 'POST',
-      headers:{ 'Prefer':'return=representation' },
-      body: JSON.stringify(body)
-    });
-    if(!r.ok) throw new Error('保存失败 HTTP '+r.status+'：'+await r.text());
-    const saved = await r.json().catch(()=>[]);
-    const savedId = id || (saved[0] && saved[0].id) || null;
-    // 有赞映射：填了 kdt_id 就自动 upsert，无需再跑 SQL
-    if(yzKdt && isAdmin && /^\d+$/.test(yzKdt)){
-      const mr = await sb('/rest/v1/yz_shop_map?on_conflict=kdt_id', {
-        method:'POST',
-        headers:{ 'Prefer':'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify([{ kdt_id: parseInt(yzKdt,10), store_id: savedId }])
-      });
-      if(mr.ok) kdtMapRows = kdtMapRows.filter(m=>m.kdt_id!==parseInt(yzKdt,10)).concat([{kdt_id:parseInt(yzKdt,10), store_id:savedId}]);
-      else msg('⚠️ 门店已保存，但有赞映射写入失败（HTTP '+mr.status+'），请截图反馈','err');
-    }
-    // 认领闭环：新店来自待认领横幅 → 标记 claimed 并关联门店
-    if(pendingClaimKdt && savedId){
-      await sb('/rest/v1/yz_pending_kdts?kdt_id=eq.'+pendingClaimKdt, {
-        method:'PATCH',
-        body: JSON.stringify({ status:'claimed', claimed_store_id:savedId, handled_at:new Date().toISOString() })
-      }).catch(()=>{});
-      pendingClaimKdt = null;
-      loadPendingBar();
-    }
-    editingStoreId = null;
-    closeStoreEdit(); await loadStores();
-    msg(id?'门店已更新（已写入操作日志）':'门店已新增（已写入操作日志）'+(yzKdt?'，有赞映射已自动写入':''),'ok');
-  }catch(err){ msg(esc(err.message),'err'); }
-}
-let pendingDel = null; // {id, name}
-function delStore(id, name){
-  pendingDel = { id: id, name: name };
-  $('delTitle').textContent = '删除门店：' + name;
-  $('delInfo').textContent = '⚠️ 删除后需手工恢复，操作会写入操作日志。';
-  $('delInput').value = '';
-  $('delMask').classList.remove('hide');
-  setTimeout(()=>{ const el=$('delInput'); if(el) el.focus(); }, 50);
-}
-function closeDel(){
-  pendingDel = null;
-  $('delMask').classList.add('hide');
-}
-async function doDelete(){
-  const typed = ($('delInput').value||'').trim();
-  if(typed !== '确认删除'){
-    $('delInfo').textContent = '❌ 输入不匹配（需输入：确认删除），请重新输入。';
-    return;
-  }
-  if(!pendingDel) return closeDel();
-  const { id, name } = pendingDel;
-  $('delBtn').disabled = true;
-  try{
-    const r = await sb('/rest/v1/stores?id=eq.'+id, { method:'DELETE' });
-    if(!r.ok) throw new Error('删除失败 HTTP '+r.status+'：'+await r.text());
-    closeDel();
-    await loadStores();
-    msg('门店「'+esc(name)+'」已删除','ok');
-  }catch(err){
-    closeDel();
-    msg(esc(err.message),'err');
-  }
-  $('delBtn').disabled = false;
+    storeRows = r.ok ? await r.json() : [];
+  }catch(e){ /* 静默：运营人员 tab 计数容错 */ }
 }
 
 /* ============================================================================
-   运营人员管理（仅主账号）+ 待认领有赞店横幅
+   运营人员管理（仅主账号）
    ========================================================================== */
 async function loadOperators(){
   try{
@@ -1734,56 +1432,10 @@ async function doTransferStores(){
   }catch(err){ msg(esc(err.message),'err'); }
 }
 
-/* ---- 待认领有赞店横幅（同步器自动发现） ---- */
-let pendingKdts = [];
-async function loadPendingBar(){
-  try{
-    const r = await sb('/rest/v1/yz_pending_kdts?select=*&status=eq.pending&order=amount.desc&limit=50');
-    pendingKdts = r.ok ? await r.json() : [];
-  }catch(e){ pendingKdts = []; }   // 表未建时静默
-  renderPendingBar();
-}
-function renderPendingBar(){
-  const el = $('pendingBar'); if(!el) return;
-  if(!pendingKdts.length){ el.classList.add('hide'); el.innerHTML=''; return; }
-  let h = '<div class="card" style="border:1px solid rgba(251,191,36,0.5);background:rgba(251,191,36,0.08)">'+
-    '<div class="card-title" style="color:#fbbf24">🔎 发现 '+pendingKdts.length+' 家新有赞门店待认领（未认领前不计入任何看板）</div>';
-  pendingKdts.forEach(p=>{
-    h += '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06)">'+
-      '<div style="flex:1;min-width:240px"><b>'+esc(p.shop_name || ('有赞店 kdt '+p.kdt_id))+'</b>'+
-      '<span style="font-size:12px;color:rgba(255,255,255,0.55)">　kdt '+p.kdt_id+'　'+(p.order_cnt||0)+' 单　¥'+fmtAmt(p.amount||0)+
-      '　首次出现 '+(p.first_seen?fmtTime(p.first_seen):'—')+'</span></div>'+
-      (isAdmin
-        ? '<button class="primary sm" onclick="claimPending('+p.kdt_id+')">✓ 认领建店</button>'+
-          '<button class="sm danger" onclick="ignorePending('+p.kdt_id+')">忽略（弃用）</button>'
-        : '<span style="font-size:12px;color:rgba(255,255,255,0.45)">等待主账号认领</span>')+
-      '</div>';
-  });
-  h += '</div>';
-  el.classList.remove('hide');
-  el.innerHTML = h;
-}
-function claimPending(kdt){
-  const p = pendingKdts.find(v=>v.kdt_id===kdt);
-  if(!p) return;
-  openStoreEdit(null, {
-    std_name: p.shop_name || '',
-    yz_kdt: kdt,
-    store_type: '连锁',
-    status: '待上线'
-  });
-}
-async function ignorePending(kdt){
-  if(!confirm('确认忽略该有赞店？标记后：预警不再提示，其订单永久排除在所有看板之外（适用于开错/弃用有赞的店）。')) return;
-  try{
-    const r = await sb('/rest/v1/yz_pending_kdts?kdt_id=eq.'+kdt, { method:'PATCH',
-      body: JSON.stringify({ status:'ignored', handled_at:new Date().toISOString() }) });
-    if(!r.ok) throw new Error('HTTP '+r.status+'：'+await r.text());
-    await loadPendingBar();
-    msg('已忽略 kdt '+kdt+'，之后不会再提示','ok');
-  }catch(err){ msg(esc(err.message),'err'); }
-}
 
+
+/* ============================================================================
+   数据核对：导入平台明细
 /* ============================================================================
    数据核对：导入平台明细 → 算真值 → 比对门店填报 → 标出差异
    ---------------------------------------------------------------------------
