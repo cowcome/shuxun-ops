@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>書荀连锁板块 · 门店经营看板</title>
+<title>書荀 · 书荀连锁</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
@@ -252,7 +252,7 @@
 
   <!-- 登录框 -->
   <div id="loginView" class="login-box hide">
-    <h1>连锁板块</h1>
+    <h1>书荀连锁</h1>
     <div class="sub">書荀门店经营数据 · 内测版（仅限授权账号）</div>
     <div class="card">
       <div class="field"><label class="field-label">邮箱</label><input type="text" id="lgEmail" placeholder="工作邮箱" /></div>
@@ -266,21 +266,21 @@
   <div id="noPermView" class="noperm hide">
     <div class="big">🔒</div>
     <h2>暂无访问权限</h2>
-    <p>连锁板块当前处于内测阶段，仅主账号可访问。<br/>如需查看，请联系主账号开通。</p>
-    <a class="sm" href="ops.html" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18)">← 返回运营后台</a>
+    <p>书荀连锁当前仅主账号可访问。<br/>如需查看，请联系主账号开通。</p>
+    <a class="sm" href="ops.html" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18)">← 佛山直营</a>
   </div>
 
   <!-- 主界面 -->
   <div id="appView" class="hide">
     <div class="topbar">
       <div>
-        <h1>连锁板块 · 门店经营看板</h1>
+        <h1>书荀连锁 · 门店经营看板</h1>
         <div class="who" id="whoami"></div>
       </div>
       <div class="top-actions">
-        <a class="sm" href="cockpit.html" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18)">← 品牌大盘</a>
-        <a class="sm" href="douyin_pay.html" style="background:rgba(251,146,60,0.16);border:1px solid rgba(251,146,60,0.45);color:#fb923c">抖音扫码买单 →</a>
-        <a class="sm" href="ops.html" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18)">← 返回运营后台</a>
+        <a class="sm" href="cockpit.html" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18)">← 驾驶舱</a>
+        <a class="sm" href="douyin_pay.html" style="background:rgba(251,146,60,0.16);border:1px solid rgba(251,146,60,0.45);color:#fb923c">扫码上翻 →</a>
+        <a class="sm" href="ops.html" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18)">← 佛山直营</a>
         <button class="sm" onclick="doLogout()">退出登录</button>
       </div>
     </div>
@@ -326,7 +326,7 @@
       <div id="spActiveList"><div class="op">加载中…</div></div>
     </div>
 
-    <div class="foot">書荀连锁板块 · 数据源：有赞开放平台（实时）</div>
+    <div class="foot">書荀连锁 · 数据源：有赞开放平台（实时）</div>
   </div>
 </div>
 
@@ -495,7 +495,7 @@ async function enterApp(){
   $('loginView').classList.add('hide');
   $('noPermView').classList.add('hide');
   $('appView').classList.remove('hide');
-  $('whoami').textContent = email + ' · 连锁板块内测中（仅主账号可见）';
+  $('whoami').textContent = email + ' · 书荀连锁（仅主账号可见）';
    await loadChainStores();
    await loadSpecials();
    renderStores();
@@ -567,7 +567,12 @@ function renderStores(){
   $('cOld').textContent = '('+cnt.old+')';
   $('cPending').textContent = '('+cnt.pending+')';
 
-  const list = allStores.filter(x => storeFilter==='all' || classOf(x)===storeFilter);
+  // 「营业」= 非待上线且非特殊（classOf 不产生 'open'，须单独判断——9-22 修复点灯筛选空结果）
+  const list = allStores.filter(x => {
+    if(storeFilter==='all') return true;
+    if(storeFilter==='open') return x.status !== '待上线' && !activeSpecialOf(x);
+    return classOf(x)===storeFilter;
+  });
   $('storeCount').textContent = '共 ' + allStores.length + ' 家' + (storeFilter==='all' ? '' : ' · 当前筛选 '+list.length+' 家');
   if(!list.length){
     grid.innerHTML = '<div class="op">'+(storeFilter==='special' ? '当前没有特殊门店' : '没有符合条件的门店')+'</div>';
