@@ -115,6 +115,52 @@
 </style>
 </head>
 <body>
+<!-- ===== 统一导航壳（2026-09-22 逻辑批）：驾驶舱=家；书荀连锁/扫码上翻仅主账号可见 ===== -->
+<nav class="sx-nav" id="sxNav">
+  <a class="sx-brand" href="cockpit.html">書荀 · 驾驶舱</a>
+  <div class="sx-links">
+    <a href="ops.html">佛山直营</a>
+    <a href="chain.html" data-sx="admin" hidden>书荀连锁</a>
+    <a href="douyin_pay.html" data-sx="admin" hidden>扫码上翻</a>
+    <a href="index.html">每日填报</a>
+  </div>
+  <span class="sx-me" id="sxMe"></span>
+</nav>
+<style>
+  .sx-nav{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:12px;margin-bottom:12px;flex-wrap:wrap;background:rgba(255,255,255,.92);border:1px solid #e6e8ef}
+  .sx-nav a{font-size:13px;font-weight:600;color:#1f2330;text-decoration:none;padding:5px 11px;border-radius:8px;border:1px solid transparent;white-space:nowrap}
+  .sx-nav a:hover{border-color:#d6d9e2}
+  .sx-nav .sx-brand{font-weight:800;font-size:14px;padding-left:0}
+  .sx-nav .sx-links{display:flex;gap:4px;flex-wrap:wrap}
+  .sx-nav .sx-me{margin-left:auto;font-size:12px;color:#8a8f9e;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sx-nav a.cur{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .sx-nav.sx-dark{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
+  .sx-nav.sx-dark a{color:rgba(255,255,255,.92)}
+  .sx-nav.sx-dark a:hover{border-color:rgba(255,255,255,.2)}
+  .sx-nav.sx-dark a.cur{background:rgba(139,92,246,.25);border-color:rgba(167,139,250,.5);color:#c4b5fd}
+  .sx-nav.sx-dark .sx-me{color:rgba(255,255,255,.55)}
+</style>
+<script>
+(function(){
+  var nav=document.getElementById('sxNav'); if(!nav) return;
+  var page=(location.pathname.split('/').pop()||'cockpit.html').toLowerCase();
+  if(page!=='cockpit.html') nav.classList.add('sx-dark');
+  nav.querySelectorAll('a').forEach(function(a){
+    var href=(a.getAttribute('href')||'').split('?')[0].toLowerCase();
+    if(href===page) a.classList.add('cur');
+  });
+  try{
+    var s=JSON.parse(localStorage.getItem('ops_session')||'null');
+    var tok=s&&s.access_token,email='';
+    if(tok){ try{ email=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email||''; }catch(e){} }
+    if(email==='411249585@qq.com'){
+      nav.classList.add('sx-admin');
+      nav.querySelectorAll('[data-sx="admin"]').forEach(function(a){ a.hidden=false; });
+    }
+    var me=document.getElementById('sxMe'); if(me) me.textContent=email;
+  }catch(e){}
+})();
+</script>
 <div class="wrap">
 
   <!-- 登录 -->
@@ -141,10 +187,6 @@
       <div>
         <h1>品牌大盘 · 書荀</h1>
         <div class="who" id="whoami"></div>
-      </div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <a class="sm" href="chain.html">连锁看板 →</a>
-        <a class="sm" href="ops.html">运营后台 →</a>
       </div>
     </div>
 
