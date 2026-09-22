@@ -212,13 +212,6 @@
 
   <!-- 主视图 -->
   <div id="appView" class="hide">
-    <div class="topbar">
-      <div>
-        <h1>品牌大盘 · 書荀</h1>
-        <div class="who" id="whoami"></div>
-      </div>
-    </div>
-
     <div id="globalMsg"></div>
     <div id="loading" class="loader">加载中…</div>
 
@@ -650,7 +643,6 @@ async function enterApp(){
   }
   $('loginView').classList.add('hide'); $('noPermView').classList.add('hide');
   $('appView').classList.remove('hide');
-  $('whoami').textContent = email + ' · 一屏三问（仅主账号）';
   $('loading').classList.remove('hide');
   await loadBase();
   await loadDy();
