@@ -585,7 +585,7 @@ function renderStores(){
     const dots = (sp ? '<i class="dt dt-r"></i>' : '<i class="dt dt-g"></i>') +
                  (cls === 'new' ? '<i class="dt dt-y"></i>' : '<i class="dt dt-p"></i>');
     const met = storeMetrics[x.id];
-    return '<div class="store-card'+(sp?' is-special':'')+'">' +
+    return '<div class="store-card'+(sp?' is-special':'')+'" data-id="'+x.id+'" style="cursor:pointer" title="点击查看逐月核销履历">' +
       '<div class="hd">' +
         '<span class="nm">'+esc(x.short_name || x.std_name)+'</span>' +
         (x.operator ? '<span class="op-pill">'+esc(x.operator)+'</span>' : '') +
@@ -601,6 +601,10 @@ function renderStores(){
           : '本月暂无订单')) + '</div>' +
     '</div>';
   }).join('');
+  // 卡片点击 → 门店经营详情（批次1）
+  grid.querySelectorAll('.store-card').forEach(el => {
+    el.addEventListener('click', () => { location.href = 'store.html?id=' + el.dataset.id; });
+  });
   renderSpActive();
 }
 
