@@ -1,0 +1,508 @@
+/* ============================================================================
+   apple.css · 書荀运营驾驶舱 Apple 风格设计层（2026-09-23）
+   单一事实来源：所有页面在自身 <style> 之后引用本文件，保证跨页一致。
+   改动原则：只覆盖共用组件与 token，不碰页面独有结构。
+   动效门禁：高频交互几乎不动；按压/弹层/反馈才动；全部 ≤300ms；reduced-motion 降级。
+   深色页（ops/chain/douyin_pay/index）：body 带 .sx-legacy，走第 16 区中和层。
+   ========================================================================== */
+
+/* ---------- 1. 设计令牌 ---------- */
+:root{
+  /* 底色与材质 */
+  --sx-bg:            #f2f2f7;   /* 分组背景 */
+  --sx-surface:       #ffffff;   /* 卡片 */
+  --sx-surface-2:     #fafafc;   /* 次级面 */
+  --sx-fill:          rgba(120,120,128,.08);
+  --sx-fill-2:        rgba(120,120,128,.16);
+  --sx-separator:     rgba(60,60,67,.12);
+  --sx-separator-2:   rgba(60,60,67,.22);
+
+  /* 文本 */
+  --sx-text:          #1c1c1e;
+  --sx-text-2:        #6e6e73;
+  --sx-text-3:        #8e8e93;
+
+  /* 品牌主色（保留書荀紫，克制使用） */
+  --sx-accent:        #7c3aed;
+  --sx-accent-press:  #6d28d9;
+  --sx-accent-soft:   rgba(124,58,237,.10);
+  --sx-accent-ring:   rgba(124,58,237,.18);
+
+  /* 语义色（浅底可读） */
+  --sx-green:         #0f6e56;
+  --sx-green-bg:      #e6f5ef;
+  --sx-amber:         #8a5b00;
+  --sx-amber-bg:      #fff4e0;
+  --sx-red:           #b91c1c;
+  --sx-red-bg:        #fef2f2;
+  --sx-blue:          #1d4ed8;
+  --sx-blue-bg:       #eff6ff;
+  --sx-mei:           #b45309;   /* 美团 */
+  --sx-dou:           #6d28d9;   /* 抖音 */
+
+  /* 圆角 */
+  --sx-r-sm: 8px;
+  --sx-r-md: 10px;
+  --sx-r-lg: 14px;
+  --sx-r-xl: 18px;
+  --sx-r-pill: 999px;
+
+  /* 阴影：分层，不用重投影 */
+  --sx-shadow-1: 0 1px 2px rgba(16,24,40,.04), 0 1px 6px rgba(16,24,40,.03);
+  --sx-shadow-2: 0 4px 14px rgba(16,24,40,.07), 0 1px 3px rgba(16,24,40,.04);
+  --sx-shadow-modal: 0 24px 60px rgba(16,24,40,.18), 0 2px 8px rgba(16,24,40,.06);
+
+  /* 动效：统一曲线与时长档 */
+  --sx-ease-out:    cubic-bezier(.23,1,.32,1);
+  --sx-ease-in-out: cubic-bezier(.77,0,.175,1);
+  --sx-dur-1: 120ms;   /* 颜色 / 高频 */
+  --sx-dur-2: 180ms;   /* 悬停 / 浮起 */
+  --sx-dur-3: 240ms;   /* 弹层 */
+}
+
+/* ---------- 2. 基础排版 ---------- */
+body{
+  background: var(--sx-bg) !important;
+  color: var(--sx-text) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC",
+               "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -.01em;
+  padding: 14px 16px 56px;
+  -webkit-font-smoothing: antialiased;
+}
+/* 只定居中，不限宽：各页 .wrap 自有宽度（填报页 420 必须保留） */
+.wrap{ margin-left: auto; margin-right: auto; }
+.hide{ display: none !important; }
+
+h1{ font-size: 26px; font-weight: 600; letter-spacing: -.02em; margin: 0 0 4px; color: var(--sx-text); }
+h2{ font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+h3{ font-size: 16px; font-weight: 600; }
+.sub, .who, .hint{ color: var(--sx-text-3); font-size: 13px; }
+.card-title{ font-size: 16px; font-weight: 600; letter-spacing: -.01em; color: var(--sx-text); margin-bottom: 12px; }
+
+/* ---------- 3. 卡片 ---------- */
+.card{
+  background: var(--sx-surface);
+  border: .5px solid var(--sx-separator);
+  border-radius: var(--sx-r-xl);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--sx-shadow-1);
+  transition: box-shadow var(--sx-dur-2) var(--sx-ease-out),
+              transform var(--sx-dur-2) var(--sx-ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  .card:hover{ box-shadow: var(--sx-shadow-2); transform: translateY(-1px); }
+}
+
+/* ---------- 4. 表单控件 ---------- */
+.field-label{ font-size: 12px; font-weight: 500; color: var(--sx-text-2); margin-bottom: 6px; }
+input[type=text], input[type=password], input[type=date], input[type=number], select, textarea{
+  width: 100%; height: 40px;
+  border-radius: var(--sx-r-md);
+  border: 1px solid transparent;
+  background: var(--sx-fill);
+  color: var(--sx-text);
+  font-size: 14px; font-family: inherit;
+  padding: 0 12px; outline: none;
+  transition: background var(--sx-dur-1) var(--sx-ease-out),
+              box-shadow var(--sx-dur-1) var(--sx-ease-out),
+              border-color var(--sx-dur-1) var(--sx-ease-out);
+}
+textarea{ height: auto; padding: 10px 12px; }
+input:focus, select:focus, textarea:focus{
+  background: var(--sx-surface);
+  border-color: var(--sx-accent);
+  box-shadow: 0 0 0 3px var(--sx-accent-ring);
+}
+input::placeholder, textarea::placeholder{ color: var(--sx-text-3); }
+
+/* ---------- 5. 按钮：按压必须有回应 ---------- */
+button{
+  height: 40px;
+  border: 1px solid var(--sx-separator-2);
+  border-radius: var(--sx-r-md);
+  background: var(--sx-surface);
+  color: var(--sx-text);
+  font-size: 14px; font-weight: 500; font-family: inherit;
+  padding: 0 16px; cursor: pointer;
+  transition: transform 160ms var(--sx-ease-out),
+              background var(--sx-dur-1) var(--sx-ease-out),
+              border-color var(--sx-dur-1) var(--sx-ease-out),
+              box-shadow var(--sx-dur-1) var(--sx-ease-out);
+}
+button:active{ transform: scale(.97); }
+@media (hover:hover) and (pointer:fine){
+  button:hover{ background: var(--sx-surface-2); }
+}
+button.primary{
+  background: var(--sx-accent); border-color: var(--sx-accent); color: #fff;
+  box-shadow: 0 1px 2px rgba(124,58,237,.25);
+}
+button.primary:active{ background: var(--sx-accent-press); transform: scale(.97); }
+@media (hover:hover) and (pointer:fine){ button.primary:hover{ background: var(--sx-accent-press); } }
+button.danger{ background: var(--sx-surface); border-color: rgba(185,28,28,.35); color: var(--sx-red); }
+button.danger:active{ background: var(--sx-red-bg); transform: scale(.97); }
+button.sm{ height: 30px; padding: 0 12px; font-size: 12px; border-radius: var(--sx-r-sm); }
+button:disabled{ opacity: .45; cursor: not-allowed; }
+
+/* ---------- 6. 分段控件（tab / chips） ---------- */
+.tabs, .chips{
+  display: inline-flex; gap: 2px; flex-wrap: wrap;
+  background: var(--sx-fill);
+  border-radius: 11px; padding: 2px;
+  margin-bottom: 14px;
+}
+.tab, .chip{
+  border: none; background: transparent; color: var(--sx-text-2);
+  font-size: 13px; font-weight: 500;
+  padding: 7px 14px; border-radius: 9px; height: auto;
+  cursor: pointer;
+  transition: background var(--sx-dur-1) var(--sx-ease-out),
+              color var(--sx-dur-1) var(--sx-ease-out),
+              box-shadow var(--sx-dur-1) var(--sx-ease-out);
+}
+.tab.active, .chip.on, .tab.on{
+  background: var(--sx-surface); color: var(--sx-text); font-weight: 600;
+  box-shadow: 0 1px 2px rgba(16,24,40,.08);
+}
+.tab:active, .chip:active{ transform: scale(.97); }
+
+/* ---------- 7. 表格：发丝线 + 等宽数字 ---------- */
+table{ width: 100%; border-collapse: collapse; font-size: 13px; }
+th{
+  text-align: left; font-size: 12px; font-weight: 500; letter-spacing: .01em;
+  color: var(--sx-text-3); padding: 9px 12px;
+  border-bottom: .5px solid var(--sx-separator); white-space: nowrap;
+  background: var(--sx-surface-2);
+}
+td{
+  padding: 11px 12px; border-bottom: .5px solid var(--sx-separator);
+  white-space: nowrap; color: var(--sx-text);
+  font-variant-numeric: tabular-nums;
+}
+tbody tr{ transition: background var(--sx-dur-1) var(--sx-ease-out); }
+@media (hover:hover) and (pointer:fine){ tbody tr:hover{ background: var(--sx-fill); } }
+td.store, th.store{ background: var(--sx-surface); position: sticky; left: 0; z-index: 2; font-weight: 500; }
+tbody tr:hover td.store{ background: var(--sx-surface-2); }
+tr.total td, tr.total td.store{ background: var(--sx-surface-2); font-weight: 600; }
+.tbl-wrap{
+  overflow-x: auto; border-radius: var(--sx-r-lg);
+  border: .5px solid var(--sx-separator);
+}
+.empty{ text-align: center; padding: 40px 20px; color: var(--sx-text-3); font-size: 13px; }
+.mei{ color: var(--sx-mei); }
+.dou{ color: var(--sx-dou); }
+.fill-dot{ color: #16a34a; font-weight: 700; }
+.fill-note{ color: var(--sx-text-3); font-size: 12px; margin-left: 8px; }
+
+/* ---------- 8. 指标卡 ---------- */
+.stats, .gcards{ display: flex; gap: 12px; flex-wrap: wrap; }
+.stat, .gcard{
+  flex: 1 1 160px;
+  background: var(--sx-surface);
+  border: .5px solid var(--sx-separator);
+  border-radius: var(--sx-r-lg);
+  padding: 14px 16px;
+  box-shadow: var(--sx-shadow-1);
+}
+.stat .l, .stat .k, .gcard .l{ font-size: 12px; color: var(--sx-text-2); }
+.stat .v, .stat .num, .gcard .v{
+  font-size: 24px; font-weight: 600; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; margin-top: 4px;
+}
+
+/* ---------- 9. 弹层：从中心缩放，绝不 scale(0) ---------- */
+.mask, .modal-mask{
+  position: fixed; inset: 0;
+  background: rgba(16,24,40,.32);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 50; padding: 16px;
+  animation: sx-fade var(--sx-dur-2) var(--sx-ease-out);
+}
+.modal{
+  background: var(--sx-surface);
+  border-radius: 20px;
+  padding: 22px;
+  width: min(760px, 96vw); max-height: 88vh; overflow: auto;
+  box-shadow: var(--sx-shadow-modal);
+  animation: sx-modal var(--sx-dur-3) var(--sx-ease-out);
+}
+@keyframes sx-fade{ from{ opacity: 0 } to{ opacity: 1 } }
+@keyframes sx-modal{
+  from{ opacity: 0; transform: scale(.96) translateY(6px) }
+  to  { opacity: 1; transform: none }
+}
+.modal-btns{ display: flex; gap: 10px; margin-top: 18px; }
+.modal-btns button{ flex: 1; }
+
+/* ---------- 10. 反馈消息 ---------- */
+.msg{
+  padding: 11px 14px; border-radius: var(--sx-r-md);
+  font-size: 13px; margin-bottom: 12px;
+  border: .5px solid transparent;
+  animation: sx-rise var(--sx-dur-2) var(--sx-ease-out);
+}
+@keyframes sx-rise{ from{ opacity: 0; transform: translateY(4px) } to{ opacity: 1; transform: none } }
+.msg.err { background: var(--sx-red-bg);   border-color: rgba(185,28,28,.25);  color: var(--sx-red); }
+.msg.ok  { background: var(--sx-green-bg); border-color: rgba(15,110,86,.22);  color: var(--sx-green); }
+.msg.info{ background: var(--sx-blue-bg);  border-color: rgba(29,78,216,.22);  color: var(--sx-blue); }
+.err{ color: var(--sx-red); font-size: 12px; margin-top: 8px; }
+
+/* ---------- 11. 徽标 ---------- */
+.badge{
+  display: inline-block; font-size: 11px; font-weight: 500;
+  padding: 3px 9px; border-radius: var(--sx-r-pill); white-space: nowrap;
+}
+.bg-st-open,   .bg-open   { background: var(--sx-green-bg); color: var(--sx-green); }
+.bg-st-closed, .bg-closed { background: var(--sx-fill);     color: var(--sx-text-2); }
+.bg-st-pending,.bg-pending{ background: var(--sx-amber-bg); color: var(--sx-amber); }
+.bg-new        { background: var(--sx-accent-soft); color: var(--sx-accent); }
+.bg-special    { background: var(--sx-blue-bg);     color: var(--sx-blue); }
+
+/* ---------- 12. 顶部导航：吸顶 + 毛玻璃 ---------- */
+.sx-nav{
+  position: sticky; top: 0; z-index: 40;
+  background: rgba(255,255,255,.82);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
+  border: .5px solid var(--sx-separator);
+  box-shadow: var(--sx-shadow-1);
+  border-radius: var(--sx-r-lg);
+  padding: 8px 12px; margin: 0 0 16px;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.sx-nav a{
+  font-size: 13px; font-weight: 500; color: var(--sx-text-2);
+  text-decoration: none; padding: 6px 12px;
+  border-radius: var(--sx-r-sm); white-space: nowrap;
+  transition: background var(--sx-dur-1) var(--sx-ease-out), color var(--sx-dur-1) var(--sx-ease-out);
+}
+.sx-nav .sx-brand{ font-weight: 600; font-size: 14px; color: var(--sx-text); padding-left: 2px; }
+.sx-nav .sx-links{ display: flex; gap: 2px; flex-wrap: wrap; }
+@media (hover:hover) and (pointer:fine){ .sx-nav a:hover{ background: var(--sx-fill); color: var(--sx-text); } }
+.sx-nav a.cur{ background: var(--sx-accent-soft); color: var(--sx-accent); font-weight: 600; }
+.sx-nav a.sx-off{ opacity: .38; }
+.sx-nav .sx-me{ margin-left: auto; font-size: 12px; color: var(--sx-text-3); }
+.sx-nav .sx-name{ font-weight: 600; color: var(--sx-text-2); }
+.sx-nav a.sx-out{ color: var(--sx-red); }
+
+/* ---------- 13. 筛选行 ---------- */
+.inline{ display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.inline > div{ flex: 1; min-width: 130px; }
+.crumb{ font-size: 13px; color: var(--sx-text-3); margin-bottom: 10px; display: flex; gap: 8px; align-items: center; }
+.crumb a{ color: var(--sx-text-2); text-decoration: none; }
+.login-box{ max-width: 380px; margin: 12vh auto 0; }
+
+/* ---------- 14. 内联白字/暗底中和（任何页面都适用） ---------- */
+[style*="color: rgba(255,255,255"], [style*="color:rgba(255,255,255"],
+[style*="color: #fff"], [style*="color:#fff"], [style*="color: white"]{
+  color: var(--sx-text-2) !important;
+}
+[style*="background: rgba(255,255,255"], [style*="background:rgba(255,255,255"],
+[style*="background: #2"], [style*="background:#2"]{
+  background: var(--sx-fill) !important;
+}
+[style*="border: 1px solid rgba(255,255,255"], [style*="border:1px solid rgba(255,255,255"]{
+  border-color: var(--sx-separator) !important;
+}
+
+/* ============================================================================
+   16. 深色页中和层（body.sx-legacy：ops / chain / douyin_pay / index）
+   这四页自带一整套暗色主题（rgba(255,255,255,x) 白字/白边/暗底）。
+   这里不改它们各自的 HTML，只在本层把颜色拉回浅色。
+   统一 !important：遗留选择器优先级更高（thead th / .topbar .who / .sx-nav.sx-dark 等）。
+   ========================================================================== */
+
+/* 16.1 文本层级：白字 → 浅色主题 */
+body.sx-legacy .card-title,
+body.sx-legacy .stat .v,
+body.sx-legacy .nm,
+body.sx-legacy .log-item .h,
+body.sx-legacy .store-card .nm,
+body.sx-legacy .header-title,
+body.sx-legacy .modal-head{ color: var(--sx-text) !important; }
+
+body.sx-legacy .field-label,
+body.sx-legacy .stat .k,
+body.sx-legacy .stat .l,
+body.sx-legacy .quick,
+body.sx-legacy .op-pill,
+body.sx-legacy .plat-row,
+body.sx-legacy .health-banner,
+body.sx-legacy .file-row .nm,
+body.sx-legacy .sp-item,
+body.sx-legacy .store-btn,
+body.sx-legacy .num-btn,
+body.sx-legacy .chip,
+body.sx-legacy .rank,
+body.sx-legacy .cnt,
+body.sx-legacy .banner,
+body.sx-legacy .note,
+body.sx-legacy .status{ color: var(--sx-text-2) !important; }
+
+body.sx-legacy .sub,
+body.sx-legacy .who,
+body.sx-legacy .hint,
+body.sx-legacy .fill-note,
+body.sx-legacy .topbar .who,
+body.sx-legacy .login-box .sub,
+body.sx-legacy .noperm p,
+body.sx-legacy .foot,
+body.sx-legacy .empty,
+body.sx-legacy .loader,
+body.sx-legacy .file-row .st,
+body.sx-legacy .log-item .d,
+body.sx-legacy .stat .s,
+body.sx-legacy .stat .d,
+body.sx-legacy .stat .v.dim,
+body.sx-legacy .plat-row .pv,
+body.sx-legacy .plat-row .pc,
+body.sx-legacy .plat-row .ng,
+body.sx-legacy .store-card .amt-row,
+body.sx-legacy .sp-item .sub,
+body.sx-legacy .op-pill.dim2,
+body.sx-legacy .card-title .note,
+body.sx-legacy .header-sub,
+body.sx-legacy .date-hint,
+body.sx-legacy .rl-1,
+body.sx-legacy .rl-2,
+body.sx-legacy .nm .city,
+body.sx-legacy th,
+body.sx-legacy .store-pick .empty{ color: var(--sx-text-3) !important; }
+
+/* 16.2 品牌色与语义色 */
+body.sx-legacy .amt,
+body.sx-legacy .back-ops,
+body.sx-legacy .store-btn .check,
+body.sx-legacy .slider-val,
+body.sx-legacy .pf-name{ color: var(--sx-accent) !important; }
+body.sx-legacy .bad,
+body.sx-legacy .diff-pos{ color: var(--sx-red) !important; }
+body.sx-legacy .ok,
+body.sx-legacy .stat .v.up{ color: var(--sx-green) !important; }
+body.sx-legacy .warn{ color: var(--sx-amber) !important; }
+body.sx-legacy .diff-neg{ color: var(--sx-blue) !important; }
+body.sx-legacy .rank.top1{ color: var(--sx-amber) !important; }
+body.sx-legacy .rank.top2{ color: var(--sx-text-2) !important; }
+body.sx-legacy .rank.top3{ color: #c2410c !important; }
+body.sx-legacy .store-card .sp-date{ color: var(--sx-amber) !important; }
+body.sx-legacy .store-btn.selected .check{ color: #fff !important; }
+
+/* 16.3 背景：暗底 → 白面 */
+body.sx-legacy .card,
+body.sx-legacy .stat,
+body.sx-legacy .store-card,
+body.sx-legacy .tbl-wrap,
+body.sx-legacy .glass,
+body.sx-legacy .store-pick,
+body.sx-legacy .modal,
+body.sx-legacy .modal-head,
+body.sx-legacy .sp-item,
+body.sx-legacy .store-btn,
+body.sx-legacy .num-btn,
+body.sx-legacy .chip,
+body.sx-legacy .sm,
+body.sx-legacy td.store,
+body.sx-legacy th.store{ background: var(--sx-surface) !important; }
+
+body.sx-legacy thead th,
+body.sx-legacy thead th.store,
+body.sx-legacy tr.total td,
+body.sx-legacy tr.total td.store{ background: var(--sx-surface-2) !important; }
+
+body.sx-legacy .health-banner{ background: var(--sx-accent-soft) !important; }
+body.sx-legacy tr:hover td,
+body.sx-legacy tr:hover td.store{ background: var(--sx-fill) !important; }
+body.sx-legacy #dashStoreTable tr.sel td,
+body.sx-legacy #dashStoreTable tr.sel td.store{ background: var(--sx-accent-soft) !important; }
+body.sx-legacy .store-pick div:hover{ background: var(--sx-fill) !important; }
+
+body.sx-legacy .store-btn.selected,
+body.sx-legacy .num-btn.selected,
+body.sx-legacy .chip.on{ background: var(--sx-accent) !important; color: #fff !important; box-shadow: none !important; }
+body.sx-legacy .switch-track{ background: var(--sx-fill-2) !important; }
+body.sx-legacy .switch input:checked + .switch-track{ background: var(--sx-accent) !important; }
+
+/* 16.4 描边：白边 → 发丝线 */
+body.sx-legacy .card,
+body.sx-legacy .stat,
+body.sx-legacy .store-card,
+body.sx-legacy .tbl-wrap,
+body.sx-legacy .glass,
+body.sx-legacy .store-pick,
+body.sx-legacy .modal,
+body.sx-legacy .modal-head,
+body.sx-legacy .sp-item,
+body.sx-legacy .store-btn,
+body.sx-legacy .num-btn,
+body.sx-legacy .num-input,
+body.sx-legacy .amt-input,
+body.sx-legacy .text-input,
+body.sx-legacy .date-picker,
+body.sx-legacy .chip,
+body.sx-legacy .op-pill,
+body.sx-legacy th,
+body.sx-legacy td,
+body.sx-legacy .msg,
+body.sx-legacy .health-banner,
+body.sx-legacy .badge{ border-color: var(--sx-separator) !important; }
+body.sx-legacy .store-card.is-special{ border-color: rgba(180,83,9,.45) !important; }
+
+/* 16.5 填报页（index）专属控件 */
+body.sx-legacy .num-input,
+body.sx-legacy .amt-input,
+body.sx-legacy .text-input{
+  background: var(--sx-fill) !important;
+  color: var(--sx-text) !important;
+  border-color: transparent !important;
+  border-radius: var(--sx-r-sm) !important;
+}
+body.sx-legacy .num-input:focus,
+body.sx-legacy .amt-input:focus,
+body.sx-legacy .text-input:focus{
+  background: var(--sx-surface) !important;
+  border-color: var(--sx-accent) !important;
+  box-shadow: 0 0 0 3px var(--sx-accent-ring) !important;
+}
+body.sx-legacy .submit-btn{ height: auto !important; border-radius: var(--sx-r-md) !important; }
+body.sx-legacy .status.ok{ background: var(--sx-green-bg) !important; color: var(--sx-green) !important; }
+body.sx-legacy .status.err{ background: var(--sx-red-bg) !important; color: var(--sx-red) !important; }
+
+/* 16.6 特殊状态标签 */
+body.sx-legacy .sp-now{ background: var(--sx-amber-bg) !important; color: var(--sx-amber) !important; border-color: rgba(180,83,9,.3) !important; }
+body.sx-legacy .sp-future{ background: var(--sx-blue-bg) !important; color: var(--sx-blue) !important; border-color: rgba(29,78,216,.25) !important; }
+body.sx-legacy .sp-past{ background: var(--sx-fill) !important; color: var(--sx-text-3) !important; border-color: var(--sx-separator) !important; }
+body.sx-legacy .hb-wait{ background: var(--sx-amber-bg) !important; color: var(--sx-amber) !important; border-color: rgba(180,83,9,.3) !important; }
+
+/* 16.7 状态点：荧光色 → 可读实色，去掉发光 */
+body.sx-legacy .dt,
+body.sx-legacy .store-btn.submitted::after{ box-shadow: none !important; }
+body.sx-legacy .dt-g{ background: #16a34a !important; }
+body.sx-legacy .dt-r{ background: #dc2626 !important; }
+body.sx-legacy .dt-y{ background: #d97706 !important; }
+body.sx-legacy .dt-p{ background: #db2777 !important; }
+
+/* 16.8 导航壳：深色页的 sx-dark 拉回浅色毛玻璃 */
+body.sx-legacy .sx-nav.sx-dark{ background: rgba(255,255,255,.82) !important; border-color: var(--sx-separator) !important; }
+body.sx-legacy .sx-nav.sx-dark a{ color: var(--sx-text-2) !important; }
+body.sx-legacy .sx-nav.sx-dark a.cur{ background: var(--sx-accent-soft) !important; color: var(--sx-accent) !important; }
+body.sx-legacy .sx-nav.sx-dark .sx-me{ color: var(--sx-text-3) !important; }
+
+/* 16.9 表头跟随各页既有居中习惯 */
+body.sx-legacy th{ text-align: center !important; }
+
+/* ============================================================================
+   17. 无障碍：更轻柔，而非清零
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  button:active{ transform: none; }
+  .card:hover{ transform: none; }
+}
