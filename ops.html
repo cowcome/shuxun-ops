@@ -106,7 +106,7 @@
   thead tr:first-child th { border-bottom: 1px solid rgba(255,255,255,0.12); }
   tbody tr:hover { background: rgba(255,255,255,0.04); }
   td.store, th.store {
-    text-align: left; position: sticky; left: 0;
+    text-align: center; position: sticky; left: 0;
     background: #241f3d; font-weight: 600; z-index: 2;
   }
   thead th.store { background: #2c2650; z-index: 3; }
@@ -246,21 +246,14 @@
 
   <!-- ============ 主界面 ============ -->
   <div id="mainView" class="hide" data-page-node-id="gwpP7qkHuxDbIAFWKauWLT">
-    <div class="topbar" data-page-node-id="tvqtO9fTroK24jzb136fyK">
-      <div data-page-node-id="IaY8CZYoSu8HJuSTCRoR5f">
-        <h1 data-page-node-id="aa62ThZYpK6tLGgZfwEFNI">書荀运营后台</h1>
-        <div class="who" id="whoAmI" data-page-node-id="NBaLHkfJ54c9qfvBDflXXt"></div>
-      </div>
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
-        <button class="sm" onclick="copyFillLink()" title="复制填报页链接，可直接发给门店（网页版填报入口在顶部横幅「每日填报」）">复制链接</button>
-      </div>
-    </div>
-
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap">
     <div class="tabs" data-page-node-id="jcB8kqXHofYiQWzdIjes1v">
       <div class="tab active" data-tab="dash" onclick="switchTab('dash')" data-page-node-id="FdRV76SV4V2OYzkc7iBrwS">总览看板</div>
       <div class="tab" data-tab="query" onclick="switchTab('query')" data-page-node-id="flHaxauEQgm1EzPjzmk1Go">查询与导出</div>
       <div class="tab" data-tab="recon" onclick="switchTab('recon')" data-page-node-id="GyfZDCXqzBJan1Xm0eb02h">数据核对</div>
       <div class="tab" data-tab="logs" id="tabBtnLogs" onclick="switchTab('logs')" data-page-node-id="JZcRcF6LSD3T9DyrMNFqv8">操作日志</div>
+    </div>
+    <button class="sm" onclick="copyFillLink()" title="复制填报页链接，可直接发给门店（网页版填报入口在顶部横幅「每日填报」）">复制链接</button>
     </div>
 
     <div id="globalMsg" data-page-node-id="VBNixWpDfJcWvjHeBHMpKf"></div>
@@ -612,7 +605,6 @@ function enterApp(){
   $('mainView').classList.remove('hide');
   let email = '运营';
   try{ email = JSON.parse(atob(session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email || '运营'; }catch(e){}
-  $('whoAmI').textContent = '已登录：'+email;
   isAdmin = String(email).toLowerCase() === ADMIN_EMAIL;   // 管理类按钮仅主账号可见
   userEmail = email;
   myName = opNameByEmail(email);
