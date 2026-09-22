@@ -484,9 +484,10 @@ function setStType(t){
 function fillOpFilter(){
   const sel = $('stOp'); if(!sel) return;
   const cur = sel.value;
+  // 只列名下有门店的运营人（主表实际出现者），admin/无门店人员不出现
   const names = [];
-  (operatorsDB||[]).filter(o=>o.status==='active').forEach(o=>names.push(o.name));
   storeRows.forEach(x=>{ if(x.operator && x.operator!=='admin' && names.indexOf(x.operator)<0) names.push(x.operator); });
+  if(cur && names.indexOf(cur)<0) names.push(cur);   // 保留当前已选值防跳变
   sel.innerHTML = '<option value="">全部</option>' + names.map(n=>'<option'+(n===cur?' selected':'')+'>'+esc(n)+'</option>').join('');
 }
 let kdtMapRows = [];
