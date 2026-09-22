@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>書荀 · 抖音门店查询</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         background:#f4f5f9; color:#1f2330; min-height:100vh; padding:16px 14px 48px; font-size:14px; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  .hide { display:none !important; }
+  .card { background:#fff; border:1px solid #e6e8ef; border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(31,35,48,.05); }
+  .card-title { font-size:15px; font-weight:700; margin-bottom:12px; color:#1f2330; }
+  .crumb { font-size:13px; margin-bottom:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .crumb a { color:#4b5563; text-decoration:none; padding:4px 10px; border:1px solid #d6d9e2; border-radius:8px; background:#fff; }
+  .crumb a:hover { border-color:#7c3aed; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .sub { font-size:13px; color:#8a8f9e; margin-bottom:12px; }
+  .field { margin-bottom:12px; }
+  .field-label { font-size:13px; color:#4b5563; margin-bottom:6px; display:block; }
+  input[type=text], input[type=password], input[type=date], select { width:100%; height:42px; border-radius:10px; border:1px solid #d6d9e2;
+    background:#fff; color:#1f2330; font-size:14px; padding:0 12px; outline:none; font-family:inherit; }
+  input:focus, select:focus { border-color:#7c3aed; }
+  button { height:42px; border:1px solid #d6d9e2; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; font-family:inherit;
+    padding:0 18px; background:#fff; color:#1f2330; }
+  button:hover { border-color:#a78bfa; }
+  button.primary { background:#7c3aed; border-color:#7c3aed; color:#fff; }
+  button.primary:hover { background:#6d28d9; }
+  button.danger { background:#fff; border-color:#fca5a5; color:#dc2626; }
+  button.danger:hover { background:#fef2f2; border-color:#ef4444; }
+  button.sm { height:30px; padding:0 10px; font-size:12px; border-radius:8px; }
+  .inline { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .inline > div { flex:1; min-width:150px; }
+  .inline > div { min-width:110px; }
+  #stTypeChips { flex-wrap:nowrap; }
+  #stTypeChips .sm { padding:5px 9px; font-size:12px; }
+  /* 主账号比他人多「新增门店」按钮，整体再收一档保证一行 */
+  .inline { gap:6px; }
+  .inline > div:last-child { gap:6px; }
+  .inline > div:last-child button { padding:8px 10px; font-size:13px; }
+  .inline select, .inline input[type=text] { height:38px; font-size:13px; }
+  .inline > div:nth-child(4) { min-width:90px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:#6b7280; font-weight:600; font-size:12px; padding:8px 10px; border-bottom:1px solid #e6e8ef; white-space:nowrap; }
+  td { padding:9px 10px; border-bottom:1px solid #f0f1f4; white-space:nowrap; }
+  td.store { font-weight:600; }
+  .tbl-wrap { overflow-x:auto; border-radius:12px; border:1px solid #e6e8ef; }
+  .empty { text-align:center; padding:30px; color:#8a8f9e; font-size:13px; }
+  .msg { padding:10px 12px; border-radius:10px; font-size:13px; margin-bottom:12px; }
+  .msg.err { background:#FEF2F2; border:1px solid #fecaca; color:#b91c1c; }
+  .msg.ok { background:#F0FDF4; border:1px solid #bbf7d0; color:#15803d; }
+  .msg.info { background:#EFF6FF; border:1px solid #bfdbfe; color:#1d4ed8; }
+  .mask { position:fixed; inset:0; background:rgba(31,35,48,.45); display:flex; align-items:center; justify-content:center; z-index:50; padding:16px; }
+  .modal { background:#fff; border-radius:16px; padding:18px; width:min(760px, 96vw); max-height:88vh; overflow:auto; box-shadow:0 20px 50px rgba(31,35,48,.25); }
+  .modal h3 { margin:0 0 14px; font-size:16px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:640px){ .grid2 { grid-template-columns:1fr; } }
+  .modal-btns { display:flex; gap:10px; margin-top:16px; }
+  .modal-btns button { flex:1; }
+  .badge { display:inline-block; font-size:11px; padding:2px 9px; border-radius:20px; font-weight:600; white-space:nowrap; vertical-align:middle; }
+  .bg-st-open { background:#E5F5EF; color:#0F6E56; }
+  .bg-st-closed { background:#F0F1F4; color:#6b7280; }
+  .bg-st-pending { background:#FFF4E0; color:#8a5b00; }
+  .login-box { max-width:380px; margin:12vh auto 0; }
+  .login-box h1 { text-align:center; }
+  .err { color:#b91c1c; font-size:12px; margin-top:8px; }
+</style>
+</head>
+<body>
+<!-- ===== 统一导航壳（2026-09-22 逻辑批）：驾驶舱=家；导航全员可见，非主账号仅开放佛山直营点击 ===== -->
+<nav class="sx-nav" id="sxNav">
+  <a class="sx-brand" href="cockpit.html">書荀 · 驾驶舱</a>
+  <div class="sx-links">
+    <a href="ops.html">佛山直营</a>
+    <a href="chain.html" data-sx="admin">书荀连锁</a>
+    <a href="douyin_pay.html" data-sx="admin">扫码上翻</a>
+    <a href="dy_monitor.html" data-sx="admin">抖音查询</a>
+    <a href="store_admin.html">门店管理</a>
+    <a href="index.html">每日填报</a>
+  </div>
+  <span class="sx-me" id="sxMe"></span>
+</nav>
+<style>
+  .sx-nav{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:12px;margin-bottom:12px;flex-wrap:wrap;background:rgba(255,255,255,.92);border:1px solid #e6e8ef}
+  .sx-nav a{font-size:13px;font-weight:600;color:#1f2330;text-decoration:none;padding:5px 11px;border-radius:8px;border:1px solid transparent;white-space:nowrap}
+  .sx-nav a:hover{border-color:#d6d9e2}
+  .sx-nav .sx-brand{font-weight:800;font-size:14px;padding-left:0}
+  .sx-nav .sx-links{display:flex;gap:4px;flex-wrap:wrap}
+  .sx-nav .sx-me{margin-left:auto;font-size:12px;color:#8a8f9e;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sx-nav a.cur{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .sx-nav a.sx-off{opacity:.4}
+  .sx-nav .sx-name{font-weight:700;color:inherit}
+  .sx-nav .sx-email{opacity:.65}
+  .sx-nav a.sx-out{color:#ef4444;font-weight:700;margin-left:2px}
+</style>
+<script>
+(function(){
+  var nav=document.getElementById('sxNav'); if(!nav) return;
+  nav.querySelectorAll('a').forEach(function(a){
+    var href=(a.getAttribute('href')||'').split('?')[0].toLowerCase();
+    if(href===(location.pathname.split('/').pop()||'').toLowerCase() && (a.getAttribute('href')||'').indexOf('?')<0) a.classList.add('cur');
+  });
+  try{
+    var s=JSON.parse(localStorage.getItem('ops_session')||'null');
+    var tok=s&&s.access_token,email='';
+    if(tok){ try{ email=JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email||''; }catch(e){} }
+    if(email==='411249585@qq.com'){
+      nav.querySelectorAll('[data-sx="admin"]').forEach(function(a){ a.hidden=false; });
+    }else if(email){
+      nav.querySelectorAll('.sx-links a, .sx-brand').forEach(function(a){
+        var href=(a.getAttribute('href')||'').split('?')[0].toLowerCase();
+        if(a.hasAttribute('data-sx') || (href!=='ops.html' && href!=='store_admin.html')){
+          a.classList.add('sx-off'); a.title='暂未开放';
+          a.addEventListener('click', function(ev){ ev.preventDefault(); });
+        }
+      });
+    }
+    var me=document.getElementById('sxMe');
+    if(me && email){
+      me.innerHTML='<span class="sx-name"></span> <span class="sx-email"></span>';
+      me.querySelector('.sx-email').textContent=email;
+      setTimeout(function(){
+        var K=(typeof SB_KEY!=='undefined')?SB_KEY:((typeof ANON_KEY!=='undefined')?ANON_KEY:'');
+        if(!K) return;
+        fetch('https://fgrjdaizgjpqdimgtxrp.supabase.co/rest/v1/operators?select=name&email=eq.'+encodeURIComponent(email),
+          {headers:{apikey:K,Authorization:'Bearer '+tok}})
+          .then(function(r){ return r.ok?r.json():[]; })
+          .then(function(rows){ var n=(rows&&rows[0]&&rows[0].name)||''; if(n) me.querySelector('.sx-name').textContent=n+' \u00b7 '; })
+          .catch(function(){});
+      }, 0);
+      var out=document.createElement('a'); out.href='#'; out.className='sx-out'; out.textContent='\u9000\u51fa';
+      out.onclick=function(ev){ ev.preventDefault(); localStorage.removeItem('ops_session'); location.reload(); };
+      me.appendChild(out);
+    }
+  }catch(e){}
+})();
+</script>
+
+<div class="wrap">
+  <!-- 登录 -->
+  <div id="loginView" class="login-box hide">
+    <h1>抖音门店查询</h1>
+    <div class="sub">書荀全品牌抖音账号监控 · 更新状态 / 报告 / 采集控制</div>
+    <div class="card">
+      <div class="field"><label class="field-label">邮箱</label><input type="text" id="lgEmail" placeholder="工作邮箱" /></div>
+      <div class="field"><label class="field-label">密码</label><input type="password" id="lgPwd" placeholder="密码" /></div>
+      <button class="primary" id="lgBtn" style="width:100%">登 录</button>
+      <div id="loginErr" class="err"></div>
+    </div>
+  </div>
+
+  <!-- 主体 -->
+  <div id="appView" class="hide">
+    <h1>抖音门店查询</h1>
+    <div class="sub">全品牌抖音账号监控（数据源 = stores 表抖音账号清单），原属「佛山直营 · 抖音监控」，2026-09-22 拆分为品牌级独立页；所有人登录后可查看，触发 / 定时配置类按钮仅主账号</div>
+
+    <div id="globalMsg"></div>
+
+<div class="card">
+        <div class="card-title">抖音账号监控 · 概况</div>
+        <div id="dySummary" style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:6px"><div class="empty">加载中…</div></div>
+        <div style="color:rgba(15,23,42,0.5);font-size:12px">数据源 = stores 表抖音账号清单（唯一真值）· 采集器常驻本机自动抓取 · 报告每次独立成档</div>
+      </div>
+      <div class="card">
+        <div class="inline">
+          <div>
+            <label class="field-label">定时运行（北京时间）</label>
+            <div class="inline" style="gap:8px">
+              <select id="dyDow" style="width:auto">
+                <option value="0">周日</option><option value="1">周一</option><option value="2">周二</option>
+                <option value="3">周三</option><option value="4">周四</option><option value="5">周五</option><option value="6">周六</option>
+              </select>
+              <input type="number" id="dyHour" min="0" max="23" style="width:64px" /> 点
+              <input type="number" id="dyMin" min="0" max="59" style="width:64px" /> 分
+              <label style="display:flex;align-items:center;gap:5px;margin:0"><input type="checkbox" id="dyEnabled" /> 启用</label>
+            </div>
+          </div>
+          <div style="flex:0 0 auto; display:flex; gap:8px; align-items:flex-end">
+            <button class="primary hide" id="dySaveCfg" onclick="saveDyCfg()">保存定时设置</button>
+            <button class="primary hide" id="dyRunBtn" onclick="triggerDyRun('run')">▶ 增量更新</button>
+            <button class="hide" id="dyRunFullBtn" onclick="triggerDyRun('run_full')" style="border-color:rgba(245,158,11,0.7);color:#b45309">📦 全量更新</button>
+            <button class="hide" id="dyStopBtn" onclick="stopDyCollector()">⏹ 停止采集器</button>
+            <button onclick="loadDy()">刷新</button>
+          </div>
+        </div>
+        <div style="color:rgba(15,23,42,0.5);font-size:12px;margin-top:8px">「增量更新」= 日常用，每号查最新 5 条视频、判断近 7 天是否更新，约 20~40 分钟；「全量更新」= 补历史建档用，每号抓最多 20 条，耗时 1 小时以上，平时别点；周一 8:00 定时自动跑增量。指令 1~2 分钟内被采集器接收，跑完刷新本页看新报告。</div>
+      </div>
+      <div class="card hide" id="dyFailCard">
+        <div class="card-title" style="color:#dc2626">⚠ 失败记录</div>
+        <div id="dyFailBody"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">运行历史与报告（点击查看当期完整报告）</div>
+        <div id="dyRunsBody"><div class="empty">加载中…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">账号明细（最近一次成功运行）</div>
+        <div id="dyAcctBody"><div class="empty">加载中…</div></div>
+      </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   書荀 · 抖音门店查询（品牌级独立页，2026-09-22 自 ops.html「抖音监控」tab 拆出）
+   覆盖全品牌门店抖音账号：更新状态概况 / 运行历史与报告 / 账号明细 / 采集器控制
+   ========================================================================== */
+const SB_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
+const SB_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
+const ADMIN_EMAIL = '411249585@qq.com';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad = (n) => String(n).padStart(2,'0');
+const fmtAmt = (v) => String(Math.round((Number(v)||0)*100)/100);
+const fmtTime = (iso) => { const d = new Date(iso); return isNaN(d) ? (iso||'') : d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes()); };
+function msg(html, cls){ $('globalMsg').innerHTML = '<div class="msg '+cls+'">'+html+'</div>'; window.scrollTo({top:0, behavior:'smooth'}); }
+
+/* ---------------- 登录 / 会话（共享 ops_session） ---------------- */
+let session = null;
+try{ session = JSON.parse(localStorage.getItem('ops_session') || 'null'); }catch(e){ session = null; }
+let isAdmin = false;
+let myName = '';
+let isXiaoai = false;
+let userEmail = '';
+const OPS_MAP = {
+  '411249585@qq.com': 'admin',
+  '2574274699@qq.com': '琦琦',
+  '2313287385@qq.com': '琳琳',
+  '1654954776@qq.com': '慧慧',
+  '3197640163@qq.com': '小梅',
+  '516265753@qq.com': '小艾',
+  '3263073614@qq.com': '夏夏',
+};
+let operatorsDB = null;
+function activeOpNames(){
+  if(operatorsDB) return operatorsDB.filter(o=>o.status==='active').map(o=>o.name);
+  return Object.values(OPS_MAP);
+}
+function opNameByEmail(email){
+  if(operatorsDB){
+    const hit = operatorsDB.find(o=>String(o.email).toLowerCase()===String(email).toLowerCase() && o.status==='active');
+    if(hit) return hit.name;
+  }
+  return OPS_MAP[String(email).toLowerCase()] || '';
+}
+function tokenEmail(){
+  try{ return JSON.parse(atob(session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email || ''; }catch(e){ return ''; }
+}
+async function authPost(path, body){
+  const r = await fetch(SB_URL+path, {
+    method:'POST',
+    headers:{ 'apikey':SB_KEY, 'Content-Type':'application/json' },
+    body: JSON.stringify(body||{})
+  });
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.error_description || d.msg || d.message || ('HTTP '+r.status));
+  return d;
+}
+async function ensureSession(){
+  if(!session) throw new Error('未登录');
+  const exp = session.expires_at || 0;
+  if(exp*1000 - Date.now() < 120000){
+    const d = await authPost('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+    session = d; localStorage.setItem('ops_session', JSON.stringify(d));
+  }
+}
+async function sb(path, opts){
+  opts = opts || {};
+  await ensureSession();
+  const h = Object.assign({
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer '+session.access_token,
+    'Content-Type': 'application/json'
+  }, opts.headers||{});
+  let r = await fetch(SB_URL+path, Object.assign({}, opts, { headers:h }));
+  if(r.status === 401){
+    const d = await authPost('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh_token });
+    session = d; localStorage.setItem('ops_session', JSON.stringify(d));
+    h['Authorization'] = 'Bearer '+session.access_token;
+    r = await fetch(SB_URL+path, Object.assign({}, opts, { headers:h }));
+  }
+  return r;
+}
+async function fetchRole(token){
+  try{
+    const uid = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub;
+    const r = await fetch(SB_URL+'/rest/v1/user_roles?user_id=eq.'+uid+'&select=role', {
+      headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+token }
+    });
+    const d = await r.json();
+    return (d && d[0] && d[0].role) || null;
+  }catch(e){ return null; }
+}
+async function doLogin(){
+  const email = $('lgEmail').value.trim();
+  const pwd = $('lgPwd').value;
+  $('loginErr').innerHTML = '';
+  if(!email || !pwd){ $('loginErr').innerHTML = '请填写邮箱和密码'; return; }
+  $('lgBtn').disabled = true; $('lgBtn').textContent = '登录中…';
+  try{
+    const d = await authPost('/auth/v1/token?grant_type=password', { email, password: pwd });
+    const role = await fetchRole(d.access_token);
+    if(role !== 'ops'){ $('loginErr').innerHTML = '该账号没有运营权限（role='+(role||'无')+'）'; $('lgBtn').disabled=false; $('lgBtn').textContent='登 录'; return; }
+    session = d; localStorage.setItem('ops_session', JSON.stringify(d));
+    location.reload();
+  }catch(e){
+    $('loginErr').innerHTML = '登录失败：'+esc(e.message);
+    $('lgBtn').disabled = false; $('lgBtn').textContent = '登 录';
+  }
+}
+$('lgBtn').addEventListener('click', doLogin);
+$('lgPwd').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+
+/* ---------------- 权限 ---------------- */
+// 所有人登录后可查看；触发（增量/全量/停止）与定时配置仅主账号 —— 按钮默认 hide，登录后按身份放开
+
+/* ---------------- 抖音监控板块 ---------------- */
+let dyRuns = [];
+async function loadDy(){
+  try{
+    const [cR, rR] = await Promise.all([
+      sb('/rest/v1/dy_monitor_config?select=*&id=eq.1'),
+      sb('/rest/v1/dy_monitor_runs?select=*&order=id.desc&limit=20')
+    ]);
+    if(cR.ok){
+      const c = (await cR.json())[0]||{};
+      $('dyDow').value = String(c.schedule_dow==null?1:c.schedule_dow);
+      $('dyHour').value = c.schedule_hour==null?8:c.schedule_hour;
+      $('dyMin').value = c.schedule_min==null?0:c.schedule_min;
+      $('dyEnabled').checked = !!c.enabled;
+    }
+    dyRuns = rR.ok ? await rR.json() : [];
+    renderDyRuns();
+    const latest = dyRuns.find(x=>x.status==='success');
+    if(latest){ loadDySummary(latest); loadDyAcct(latest); }
+    else {
+      $('dySummary').innerHTML = '<div class="empty">尚无成功运行记录——点上方「增量更新」跑第一次</div>';
+      $('dyAcctBody').innerHTML = '<div class="empty">尚无账号明细</div>';
+    }
+  }catch(e){
+    $('dyRunsBody').innerHTML = '<div class="empty">加载失败：'+esc(e.message)+'</div>';
+  }
+}
+function dyDaysSince(iso){
+  if(!iso) return null;
+  const d = new Date(iso); if(isNaN(d)) return null;
+  return Math.floor((Date.now() - d.getTime()) / 864e5);
+}
+async function loadDySummary(run){
+  const s = $('dySummary');
+  s.innerHTML = '<div class="empty">统计中…</div>';
+  const r = await sb('/rest/v1/dy_monitor_results?run_id=eq.'+run.id+'&select=std_name,last_video_time,ok&limit=500');
+  const rows = r.ok ? await r.json() : [];
+  const okRows = rows.filter(x=>x.ok);
+  const days = okRows.map(x=>dyDaysSince(x.last_video_time)).filter(d=>d!=null);
+  const upd7 = days.filter(d=>d<=7).length;
+  const no7 = days.filter(d=>d>7&&d<=15).length;
+  const no15 = days.filter(d=>d>15&&d<=90).length;
+  const no90 = days.filter(d=>d>90).length;
+  const unk = okRows.length - days.length;
+  s.innerHTML =
+    card('监控账号', run.accounts_total==null?okRows.length:run.accounts_total, '本次成功 '+okRows.length) +
+    card('近7天已更新', upd7, '更新率 '+(okRows.length?Math.round(upd7/okRows.length*100):0)+'%') +
+    card('7天未更', no7, '7-15 天') +
+    card('15天未更', no15, '15-90 天') +
+    card('断更', no90, '90 天以上') +
+    (unk ? card('发布时间未知', unk, '历史库缺时间') : '');
+  function card(l,v,sub){ return '<div style="min-width:120px"><div style="font-size:11px;color:rgba(15,23,42,0.5);letter-spacing:1px">'+l+'</div><div style="font-size:30px;font-weight:800;line-height:1.2">'+v+'</div><div style="font-size:11px;color:rgba(15,23,42,0.4)">'+sub+'</div></div>'; }
+}
+async function loadDyAcct(run){
+  $('dyAcctBody').innerHTML = '<div class="empty">加载中…</div>';
+  const r = await sb('/rest/v1/dy_monitor_results?run_id=eq.'+run.id+'&select=std_name,nickname,last_video_time,last_video_desc,like_count,comment_count,total_videos,ok,error_message&order=ok.asc,std_name.asc&limit=500');
+  const rows = r.ok ? await r.json() : [];
+  if(!rows.length){ $('dyAcctBody').innerHTML = '<div class="empty">无明细数据</div>'; return; }
+  $('dyAcctBody').innerHTML =
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead><tr>'+['门店','抖音昵称','最近发布','距今天数','历史视频','平均赞/评','状态'].map(h=>'<th style="text-align:left;padding:8px 10px;border-bottom:1px solid rgba(15,23,42,0.17);color:rgba(15,23,42,0.55);font-weight:600;white-space:nowrap">'+h+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map(x=>{
+      const d = dyDaysSince(x.last_video_time);
+      const dTxt = d==null ? '—' : d+' 天';
+      const dCol = d==null ? 'rgba(15,23,42,0.45)' : d<=7 ? '#16a34a' : d<=15 ? '#ca8a04' : '#dc2626';
+      return '<tr>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(15,23,42,0.1)">'+esc(x.std_name||'—')+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(15,23,42,0.1);color:rgba(15,23,42,0.65)">'+esc(x.nickname||'—')+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(15,23,42,0.1)">'+esc(x.last_video_time?fmtTime(x.last_video_time).slice(0,10):'—')+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(15,23,42,0.1);color:'+dCol+';font-weight:600">'+dTxt+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(15,23,42,0.1)">'+(x.total_videos==null?'—':x.total_videos)+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(15,23,42,0.1);color:rgba(15,23,42,0.65)">'+(x.like_count==null?'—':x.like_count)+' / '+(x.comment_count==null?'—':x.comment_count)+'</td>'+
+        '<td style="padding:7px 10px;border-bottom:1px solid rgba(15,23,42,0.1)">'+(x.ok?'<span style="color:#16a34a">✓</span>':'<span style="color:#dc2626" title="'+esc(x.error_message||'')+'">✗ '+esc(x.error_message||'失败')+'</span>')+'</td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table></div>';
+}
+function renderDyRuns(){
+  const fails = dyRuns.filter(x=>x.status==='failed');
+  $('dyFailCard').classList.toggle('hide', fails.length===0);
+  $('dyFailBody').innerHTML = fails.map(x=>
+    '<div class="msg err" style="margin-bottom:6px">'+esc(fmtTime(x.started_at))+' · '+(x.trigger_type==='scheduled'?'定时':'手动')+' · '+esc(x.error_message||'未知原因')+'</div>').join('');
+  $('dyRunsBody').innerHTML = dyRuns.length ? dyRuns.map(x=>{
+    const st = x.status==='success' ? '<span style="color:#16a34a;font-weight:600">✓ 成功</span>'
+             : x.status==='running' ? '<span style="color:#ca8a04;font-weight:600">… 运行中</span>'
+             : '<span style="color:#dc2626;font-weight:600">✗ 失败</span>';
+    return '<div style="display:flex;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(15,23,42,0.11);flex-wrap:wrap">'+
+      '<span style="min-width:132px">'+esc(fmtTime(x.started_at))+'</span>'+
+      '<span style="min-width:40px;color:rgba(15,23,42,0.6)">'+(x.trigger_type==='scheduled'?'定时':'手动')+'</span>'+
+      st+
+      (x.status==='success'&&x.accounts_total!=null ? '<span style="color:rgba(15,23,42,0.6)">成功 '+x.accounts_ok+'/'+x.accounts_total+'</span>' : '')+
+      (x.report_url ? '<a class="sm" href="'+esc(x.report_url)+'" target="_blank" rel="noopener" style="text-decoration:none">📄 查看报告 ↗</a>' : '')+
+      (x.error_message ? '<span style="color:rgba(15,23,42,0.45);font-size:12px;flex:1;min-width:200px">'+esc(x.error_message)+'</span>' : '')+
+    '</div>';
+  }).join('') : '<div class="empty">还没有运行记录</div>';
+}
+async function triggerDyRun(mode){
+  const isFull = mode==='run_full';
+  if(!confirm(isFull
+    ? '发「全量更新」指令？\n每个账号抓最多 20 条历史视频建档，耗时 1 小时以上（109 个账号）。\n仅首次建档或校准历史数据时使用，日常请用「增量更新」。'
+    : '给采集器发「增量更新」指令？\n采集器约 1~2 分钟内开跑，全部账号跑完约 20~40 分钟。\n跑完后回到本页点「刷新」即可看到新报告。')) return;
+  try{
+    const r = await sb('/rest/v1/dy_monitor_commands',{method:'POST',body:JSON.stringify({command:isFull?'run_full':'run',note:(isFull?'全量':'增量')+'手动触发 '+(userEmail||'')})});
+    if(r.ok) msg('指令已发出：采集器 1~2 分钟内开跑（'+(isFull?'全量，耗时 1 小时+':'增量，约 20~40 分钟')+'）。跑完回本页刷新，报告出现在「运行历史与报告」。','ok');
+    else msg('发送失败（HTTP '+r.status+'）','err');
+  }catch(e){ msg('发送失败：'+e.message,'err'); }
+}
+async function stopDyCollector(){
+  if(!confirm('发「停止采集器」指令？\n采集器会在 1 分钟内收到指令并退出。\n停止后定时任务和手动指令都不会再执行，需重新启动采集器（双击启动脚本或重启电脑）。')) return;
+  try{
+    const r = await sb('/rest/v1/dy_monitor_commands',{method:'POST',body:JSON.stringify({command:'stop',note:'手动停止 '+(userEmail||'')})});
+    if(r.ok) msg('停止指令已发出，采集器约 1 分钟内退出。','ok');
+    else msg('发送失败（HTTP '+r.status+'）','err');
+  }catch(e){ msg('发送失败：'+e.message,'err'); }
+}
+async function saveDyCfg(){
+  const h = parseInt($('dyHour').value,10), m = parseInt($('dyMin').value,10);
+  if(isNaN(h)||h<0||h>23||isNaN(m)||m<0||m>59){ msg('时间不合法：小时 0-23，分钟 0-59','err'); return; }
+  const body = { schedule_dow: parseInt($('dyDow').value,10), schedule_hour: h, schedule_min: m,
+                 enabled: $('dyEnabled').checked, updated_by: userEmail||'admin',
+                 updated_at: new Date().toISOString() };
+  try{
+    const r = await sb('/rest/v1/dy_monitor_config?id=eq.1',{method:'PATCH',body:JSON.stringify(body)});
+    msg(r.ok ? '定时设置已保存，采集器 1 分钟内自动读到新配置。' : '保存失败（HTTP '+r.status+'）', r.ok?'ok':'err');
+  }catch(e){ msg('保存失败：'+e.message,'err'); }
+}
+
+/* ---------------- 主流程 ---------------- */
+async function enterApp(){
+  $('loginView').classList.add('hide');
+  $('appView').classList.remove('hide');
+  userEmail = tokenEmail();
+  isAdmin = String(userEmail).toLowerCase() === ADMIN_EMAIL;
+  ['dySaveCfg','dyRunBtn','dyRunFullBtn','dyStopBtn'].forEach(id2=>{
+    const el = $(id2); if(el) el.classList.toggle('hide', !isAdmin);
+  });
+  loadDy();
+}
+(async function init(){
+  if(!session){ $('loginView').classList.remove('hide'); return; }
+  try{ await enterApp(); }
+  catch(e){
+    if(String(e.message).indexOf('未登录')>=0){ session=null; localStorage.removeItem('ops_session'); $('loginView').classList.remove('hide'); return; }
+    $('appView').classList.remove('hide');
+    $('dySummary').innerHTML = '<div class="empty">初始化失败：'+esc(e.message)+'</div>';
+  }
+})();
+</script>
+</body>
+</html>
