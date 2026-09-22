@@ -301,13 +301,6 @@
 
   <!-- 主界面 -->
   <div id="appView" class="hide">
-    <div class="topbar">
-      <div>
-        <h1>书荀连锁 · 门店经营看板</h1>
-        <div class="who" id="whoami"></div>
-      </div>
-    </div>
-
     <div id="globalMsg"></div>
 
     <!-- 大盘健康度（第一眼） -->
@@ -518,7 +511,6 @@ async function enterApp(){
   $('loginView').classList.add('hide');
   $('noPermView').classList.add('hide');
   $('appView').classList.remove('hide');
-  $('whoami').textContent = email + ' · 书荀连锁（仅主账号可见）';
    await loadChainStores();
    await loadSpecials();
    renderStores();
