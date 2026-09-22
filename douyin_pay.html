@@ -186,13 +186,6 @@
 
   <!-- 主视图 -->
   <div id="appView" class="hide">
-    <div class="topbar">
-      <div>
-        <h1>抖音扫码买单 · 门店明细</h1>
-        <div class="who" id="whoami"></div>
-      </div>
-    </div>
-
     <div class="card">
       <div class="card-title">口径说明</div>
       <div class="banner" id="yzBanner">
@@ -468,7 +461,6 @@ async function enterApp(){
   }
   $('loginView').classList.add('hide'); $('noPermView').classList.add('hide');
   $('appView').classList.remove('hide');
-  $('whoami').textContent = email + ' · 抖音框架板块（仅主账号）';
   await loadStores();
   pickRange('month');   // 默认本月并立即查询
 }
