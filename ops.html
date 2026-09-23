@@ -152,7 +152,7 @@
   .log-item .h { color: rgba(255,255,255,0.85); margin-bottom: 3px; }
   .log-item .d { color: rgba(255,255,255,0.5); font-family: monospace; font-size: 11px; word-break: break-all; }
 </style>
-</head>
+<script src="theme.js"></script></head>
 <body data-page-node-id="goB8wIdl2lSUAkwD8ORqsB" class="sx-legacy">
 <!-- ===== 统一导航壳（2026-09-22 逻辑批）：驾驶舱=家；导航全员可见，非主账号仅开放佛山直营点击 ===== -->
 <nav class="sx-nav" id="sxNav">
@@ -923,6 +923,11 @@ function renderCharts(rows, s, e){
     ], dayColors);
   }
 }
+/* 图表墨色：跟随深浅色主题（theme.js 提供 SX.ink；脚本缺失时回落旧配色） */
+function chartInk(){
+  return (window.SX && window.SX.ink) ? window.SX.ink()
+    : { tick:'rgba(255,255,255,0.6)', grid:'rgba(255,255,255,0.06)', legend:'rgba(255,255,255,0.7)' };
+}
 function mkBar(id, labels, sets, intY, xTickColors){
   if(charts[id]) charts[id].destroy();
   const el = $(id); if(!el) return;
@@ -930,7 +935,7 @@ function mkBar(id, labels, sets, intY, xTickColors){
     type:'bar',
     data:{ labels, datasets: sets.map(x=>Object.assign({borderRadius:4, backgroundColor:x.bg}, x)) },
     options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{labels:{color:'rgba(255,255,255,0.7)',font:{size:11}}},
+      plugins:{ legend:{labels:{color:chartInk().legend,font:{size:11}}},
         tooltip:{callbacks:{label:(ctx)=>{
           if(intY) return ' '+ctx.dataset.label+': '+Math.round(ctx.parsed.y);
           const sp = ctx.chart.data.datasets[ctx.datasetIndex]._split;
@@ -938,17 +943,17 @@ function mkBar(id, labels, sets, intY, xTickColors){
           if(sp && sp[ctx.dataIndex]) return ' 合计: ¥'+v+'（美 '+fmtAmt(sp[ctx.dataIndex].mt)+' · 抖 '+fmtAmt(sp[ctx.dataIndex].dy)+'）';
           return ' '+ctx.dataset.label+': ¥'+v;
         }}} },
-      scales:{ x:{ticks:{color: xTickColors || 'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}},
-               y:(intY?{beginAtZero:true,ticks:{precision:0,color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}}:{ticks:{color:'rgba(255,255,255,0.6)',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'}}) } }
+      scales:{ x:{ticks:{color: xTickColors || chartInk().tick,font:{size:10}},grid:{color:chartInk().grid}},
+               y:(intY?{beginAtZero:true,ticks:{precision:0,color:chartInk().tick,font:{size:10}},grid:{color:chartInk().grid}}:{ticks:{color:chartInk().tick,font:{size:10}},grid:{color:chartInk().grid}}) } }
   });
 }
 function mkLine(id, labels, sets, tickColors, dual){
   if(charts[id]) charts[id].destroy();
   const el = $(id); if(!el) return;
-  const axTick = {color:'rgba(255,255,255,0.6)',font:{size:10}};
-  const axGrid = {color:'rgba(255,255,255,0.06)'};
+  const axTick = {color:chartInk().tick,font:{size:10}};
+  const axGrid = {color:chartInk().grid};
   const scales = {
-    x:{ticks:{color: tickColors || 'rgba(255,255,255,0.6)',font:{size:10}}, grid:axGrid},
+    x:{ticks:{color: tickColors || chartInk().tick,font:{size:10}}, grid:axGrid},
     y:{position:'left', ticks:axTick, grid:axGrid}
   };
   if(dual) scales.y1 = {position:'right', ticks:axTick, grid:{drawOnChartArea:false}};
@@ -958,7 +963,7 @@ function mkLine(id, labels, sets, tickColors, dual){
       tension:0.3, borderWidth:2, pointRadius:2, yAxisID:x.yAxisID||'y', _unit:x.unit||''})) },
     options:{ responsive:true, maintainAspectRatio:false,
       interaction:{mode:'index', intersect:false},
-      plugins:{ legend:{labels:{color:'rgba(255,255,255,0.7)',font:{size:11}}},
+      plugins:{ legend:{labels:{color:chartInk().legend,font:{size:11}}},
         tooltip:{callbacks:{label:(ctx)=>{
           const ds = ctx.chart.data.datasets[ctx.datasetIndex];
           return ' '+ds.label.replace(/（.*?）/,'')+': '+(ds._unit==='¥' ? '¥'+fmtAmt(ctx.parsed.y) : Math.round(ctx.parsed.y));
