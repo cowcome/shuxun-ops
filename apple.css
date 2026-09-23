@@ -3,32 +3,31 @@
    单一事实来源：所有页面在自身 <style> 之后引用本文件，保证跨页一致。
    改动原则：只覆盖共用组件与 token，不碰页面独有结构。
    动效门禁：高频交互几乎不动；按压/弹层/反馈才动；全部 ≤300ms；reduced-motion 降级。
-   深色页（ops/chain/douyin_pay/index）：body 带 .sx-legacy，走第 16 区中和层。
+   深浅双模：<html data-theme="light|dark">，由 theme.js 写入。
+     · 浅色 —— 1 区令牌 + 16 区（把深色页遗留暗色拉回浅色）
+     · 深色 —— 1b 区深色令牌 + 18 区（深色页遗留暗色本就正确，只做 Apple 化修正）
+   深色页（ops/chain/douyin_pay/index）：body 带 .sx-legacy 作用域类。
    ========================================================================== */
 
-/* ---------- 1. 设计令牌 ---------- */
+/* ---------- 1. 设计令牌（浅色） ---------- */
 :root{
-  /* 底色与材质 */
-  --sx-bg:            #f2f2f7;   /* 分组背景 */
-  --sx-surface:       #ffffff;   /* 卡片 */
-  --sx-surface-2:     #fafafc;   /* 次级面 */
+  --sx-bg:            #f2f2f7;
+  --sx-surface:       #ffffff;
+  --sx-surface-2:     #fafafc;
   --sx-fill:          rgba(120,120,128,.08);
   --sx-fill-2:        rgba(120,120,128,.16);
   --sx-separator:     rgba(60,60,67,.12);
   --sx-separator-2:   rgba(60,60,67,.22);
 
-  /* 文本 */
   --sx-text:          #1c1c1e;
   --sx-text-2:        #6e6e73;
   --sx-text-3:        #8e8e93;
 
-  /* 品牌主色（保留書荀紫，克制使用） */
   --sx-accent:        #7c3aed;
   --sx-accent-press:  #6d28d9;
   --sx-accent-soft:   rgba(124,58,237,.10);
   --sx-accent-ring:   rgba(124,58,237,.18);
 
-  /* 语义色（浅底可读） */
   --sx-green:         #0f6e56;
   --sx-green-bg:      #e6f5ef;
   --sx-amber:         #8a5b00;
@@ -39,25 +38,76 @@
   --sx-blue-bg:       #eff6ff;
   --sx-mei:           #b45309;   /* 美团 */
   --sx-dou:           #6d28d9;   /* 抖音 */
+  --sx-fill-dot:      #16a34a;   /* 已填报绿点 */
 
-  /* 圆角 */
+  /* 图表墨色：Chart.js 由 JS 读取，跟着主题走 */
+  --sx-chart-tick:    rgba(60,60,67,.62);
+  --sx-chart-grid:    rgba(60,60,67,.12);
+  --sx-chart-legend:  rgba(60,60,67,.72);
+
+  --sx-nav-bg:        rgba(255,255,255,.82);
+  --sx-shadow-1: 0 1px 2px rgba(16,24,40,.04), 0 1px 6px rgba(16,24,40,.03);
+  --sx-shadow-2: 0 4px 14px rgba(16,24,40,.07), 0 1px 3px rgba(16,24,40,.04);
+  --sx-shadow-modal: 0 24px 60px rgba(16,24,40,.18), 0 2px 8px rgba(16,24,40,.06);
+  --sx-shadow-accent: 0 1px 2px rgba(124,58,237,.25);
+
   --sx-r-sm: 8px;
   --sx-r-md: 10px;
   --sx-r-lg: 14px;
   --sx-r-xl: 18px;
   --sx-r-pill: 999px;
 
-  /* 阴影：分层，不用重投影 */
-  --sx-shadow-1: 0 1px 2px rgba(16,24,40,.04), 0 1px 6px rgba(16,24,40,.03);
-  --sx-shadow-2: 0 4px 14px rgba(16,24,40,.07), 0 1px 3px rgba(16,24,40,.04);
-  --sx-shadow-modal: 0 24px 60px rgba(16,24,40,.18), 0 2px 8px rgba(16,24,40,.06);
-
-  /* 动效：统一曲线与时长档 */
   --sx-ease-out:    cubic-bezier(.23,1,.32,1);
   --sx-ease-in-out: cubic-bezier(.77,0,.175,1);
-  --sx-dur-1: 120ms;   /* 颜色 / 高频 */
-  --sx-dur-2: 180ms;   /* 悬停 / 浮起 */
-  --sx-dur-3: 240ms;   /* 弹层 */
+  --sx-dur-1: 120ms;
+  --sx-dur-2: 180ms;
+  --sx-dur-3: 240ms;
+}
+
+/* ---------- 1b. 设计令牌（深色 · Apple 官方深灰黑） ----------
+   Apple HIG Dark：底色纯黑、卡面 #1c1c1e、分隔线 #38383a。
+   品牌紫在深底上提亮到 #a78bfa 才够可读（浅色的 #7c3aed 会发闷）。
+   深底上阴影无效，改用 0.5px 高光描边制造层次。
+   ---------------------------------------------------------------- */
+html[data-theme="dark"]{
+  --sx-bg:            #000000;
+  --sx-surface:       #1c1c1e;
+  --sx-surface-2:     #2c2c2e;
+  --sx-fill:          rgba(120,120,128,.26);
+  --sx-fill-2:        rgba(120,120,128,.40);
+  --sx-separator:     rgba(84,84,88,.65);
+  --sx-separator-2:   rgba(84,84,88,.90);
+
+  --sx-text:          #ffffff;
+  --sx-text-2:        #98989f;
+  --sx-text-3:        #636366;
+
+  --sx-accent:        #a78bfa;
+  --sx-accent-press:  #8b5cf6;
+  --sx-accent-soft:   rgba(167,139,250,.16);
+  --sx-accent-ring:   rgba(167,139,250,.28);
+
+  --sx-green:         #30d158;
+  --sx-green-bg:      rgba(48,209,88,.15);
+  --sx-amber:         #ffd60a;
+  --sx-amber-bg:      rgba(255,214,10,.15);
+  --sx-red:           #ff453a;
+  --sx-red-bg:        rgba(255,69,58,.15);
+  --sx-blue:          #0a84ff;
+  --sx-blue-bg:       rgba(10,132,255,.15);
+  --sx-mei:           #ffd60a;
+  --sx-dou:           #a78bfa;
+  --sx-fill-dot:      #30d158;
+
+  --sx-chart-tick:    rgba(235,235,245,.60);
+  --sx-chart-grid:    rgba(84,84,88,.55);
+  --sx-chart-legend:  rgba(235,235,245,.72);
+
+  --sx-nav-bg:        rgba(28,28,30,.80);
+  --sx-shadow-1: 0 .5px 0 rgba(255,255,255,.06);
+  --sx-shadow-2: 0 .5px 0 rgba(255,255,255,.10);
+  --sx-shadow-modal: 0 24px 60px rgba(0,0,0,.65), 0 0 0 .5px rgba(255,255,255,.10);
+  --sx-shadow-accent: none;
 }
 
 /* ---------- 2. 基础排版 ---------- */
@@ -72,7 +122,7 @@ body{
   padding: 14px 16px 56px;
   -webkit-font-smoothing: antialiased;
 }
-/* 只定居中，不限宽：各页 .wrap 自有宽度（填报页 420 必须保留） */
+/* 只定居中不限宽：各页 .wrap 自有宽度（填报页 420 必须保留） */
 .wrap{ margin-left: auto; margin-right: auto; }
 .hide{ display: none !important; }
 
@@ -138,12 +188,13 @@ button:active{ transform: scale(.97); }
   button:hover{ background: var(--sx-surface-2); }
 }
 button.primary{
-  background: var(--sx-accent); border-color: var(--sx-accent); color: #fff;
-  box-shadow: 0 1px 2px rgba(124,58,237,.25);
+  background: var(--sx-accent); border-color: var(--sx-accent);
+  color: #fff; box-shadow: var(--sx-shadow-accent);
 }
+html[data-theme="dark"] button.primary{ color: #12121a; }
 button.primary:active{ background: var(--sx-accent-press); transform: scale(.97); }
 @media (hover:hover) and (pointer:fine){ button.primary:hover{ background: var(--sx-accent-press); } }
-button.danger{ background: var(--sx-surface); border-color: rgba(185,28,28,.35); color: var(--sx-red); }
+button.danger{ background: var(--sx-surface); border-color: rgba(255,69,58,.35); color: var(--sx-red); }
 button.danger:active{ background: var(--sx-red-bg); transform: scale(.97); }
 button.sm{ height: 30px; padding: 0 12px; font-size: 12px; border-radius: var(--sx-r-sm); }
 button:disabled{ opacity: .45; cursor: not-allowed; }
@@ -195,7 +246,7 @@ tr.total td, tr.total td.store{ background: var(--sx-surface-2); font-weight: 60
 .empty{ text-align: center; padding: 40px 20px; color: var(--sx-text-3); font-size: 13px; }
 .mei{ color: var(--sx-mei); }
 .dou{ color: var(--sx-dou); }
-.fill-dot{ color: #16a34a; font-weight: 700; }
+.fill-dot{ color: var(--sx-fill-dot); font-weight: 700; }
 .fill-note{ color: var(--sx-text-3); font-size: 12px; margin-left: 8px; }
 
 /* ---------- 8. 指标卡 ---------- */
@@ -222,6 +273,7 @@ tr.total td, tr.total td.store{ background: var(--sx-surface-2); font-weight: 60
   z-index: 50; padding: 16px;
   animation: sx-fade var(--sx-dur-2) var(--sx-ease-out);
 }
+html[data-theme="dark"] .mask, html[data-theme="dark"] .modal-mask{ background: rgba(0,0,0,.62); }
 .modal{
   background: var(--sx-surface);
   border-radius: 20px;
@@ -246,9 +298,9 @@ tr.total td, tr.total td.store{ background: var(--sx-surface-2); font-weight: 60
   animation: sx-rise var(--sx-dur-2) var(--sx-ease-out);
 }
 @keyframes sx-rise{ from{ opacity: 0; transform: translateY(4px) } to{ opacity: 1; transform: none } }
-.msg.err { background: var(--sx-red-bg);   border-color: rgba(185,28,28,.25);  color: var(--sx-red); }
-.msg.ok  { background: var(--sx-green-bg); border-color: rgba(15,110,86,.22);  color: var(--sx-green); }
-.msg.info{ background: var(--sx-blue-bg);  border-color: rgba(29,78,216,.22);  color: var(--sx-blue); }
+.msg.err { background: var(--sx-red-bg);   border-color: rgba(255,69,58,.28);  color: var(--sx-red); }
+.msg.ok  { background: var(--sx-green-bg); border-color: rgba(48,209,88,.26);  color: var(--sx-green); }
+.msg.info{ background: var(--sx-blue-bg);  border-color: rgba(10,132,255,.28); color: var(--sx-blue); }
 .err{ color: var(--sx-red); font-size: 12px; margin-top: 8px; }
 
 /* ---------- 11. 徽标 ---------- */
@@ -265,7 +317,7 @@ tr.total td, tr.total td.store{ background: var(--sx-surface-2); font-weight: 60
 /* ---------- 12. 顶部导航：吸顶 + 毛玻璃 ---------- */
 .sx-nav{
   position: sticky; top: 0; z-index: 40;
-  background: rgba(255,255,255,.82);
+  background: var(--sx-nav-bg);
   -webkit-backdrop-filter: saturate(180%) blur(14px);
   backdrop-filter: saturate(180%) blur(14px);
   border: .5px solid var(--sx-separator);
@@ -296,213 +348,313 @@ tr.total td, tr.total td.store{ background: var(--sx-surface-2); font-weight: 60
 .crumb a{ color: var(--sx-text-2); text-decoration: none; }
 .login-box{ max-width: 380px; margin: 12vh auto 0; }
 
-/* ---------- 14. 内联白字/暗底中和（任何页面都适用） ---------- */
-[style*="color: rgba(255,255,255"], [style*="color:rgba(255,255,255"],
-[style*="color: #fff"], [style*="color:#fff"], [style*="color: white"]{
+/* ============================================================================
+   14. 内联白字/暗底中和 —— 仅浅色生效
+   深色下这些白字/半透明白面本来就是对的，改了反而变黑字看不见。
+   ========================================================================== */
+html:not([data-theme="dark"]) [style*="color: rgba(255,255,255"], html:not([data-theme="dark"]) [style*="color:rgba(255,255,255"],
+html:not([data-theme="dark"]) [style*="color: #fff"], html:not([data-theme="dark"]) [style*="color:#fff"], html:not([data-theme="dark"]) [style*="color: white"]{
   color: var(--sx-text-2) !important;
 }
-[style*="background: rgba(255,255,255"], [style*="background:rgba(255,255,255"],
-[style*="background: #2"], [style*="background:#2"]{
+html:not([data-theme="dark"]) [style*="background: rgba(255,255,255"], html:not([data-theme="dark"]) [style*="background:rgba(255,255,255"],
+html:not([data-theme="dark"]) [style*="background: #2"], html:not([data-theme="dark"]) [style*="background:#2"]{
   background: var(--sx-fill) !important;
 }
-[style*="border: 1px solid rgba(255,255,255"], [style*="border:1px solid rgba(255,255,255"]{
+html:not([data-theme="dark"]) [style*="border: 1px solid rgba(255,255,255"], html:not([data-theme="dark"]) [style*="border:1px solid rgba(255,255,255"]{
   border-color: var(--sx-separator) !important;
 }
 
 /* ============================================================================
-   16. 深色页中和层（body.sx-legacy：ops / chain / douyin_pay / index）
-   这四页自带一整套暗色主题（rgba(255,255,255,x) 白字/白边/暗底）。
-   这里不改它们各自的 HTML，只在本层把颜色拉回浅色。
-   统一 !important：遗留选择器优先级更高（thead th / .topbar .who / .sx-nav.sx-dark 等）。
+   16. 深色页浅色中和层 —— 仅浅色生效（body.sx-legacy：ops/chain/douyin_pay/index）
+   这四页自带一整套暗色主题。浅色模式下把它们拉回浅色；
+   深色模式下本区整体让位，交由 18 区做 Apple 化修正。
+   统一 !important：遗留选择器优先级更高（thead th / .topbar .who 等）。
    ========================================================================== */
 
-/* 16.1 文本层级：白字 → 浅色主题 */
-body.sx-legacy .card-title,
-body.sx-legacy .stat .v,
-body.sx-legacy .nm,
-body.sx-legacy .log-item .h,
-body.sx-legacy .store-card .nm,
-body.sx-legacy .header-title,
-body.sx-legacy .modal-head{ color: var(--sx-text) !important; }
+/* 16.1 文本层级 */
+html:not([data-theme="dark"]) body.sx-legacy .card-title,
+html:not([data-theme="dark"]) body.sx-legacy .stat .v,
+html:not([data-theme="dark"]) body.sx-legacy .nm,
+html:not([data-theme="dark"]) body.sx-legacy .log-item .h,
+html:not([data-theme="dark"]) body.sx-legacy .store-card .nm,
+html:not([data-theme="dark"]) body.sx-legacy .header-title,
+html:not([data-theme="dark"]) body.sx-legacy .modal-head{ color: var(--sx-text) !important; }
 
-body.sx-legacy .field-label,
-body.sx-legacy .stat .k,
-body.sx-legacy .stat .l,
-body.sx-legacy .quick,
-body.sx-legacy .op-pill,
-body.sx-legacy .plat-row,
-body.sx-legacy .health-banner,
-body.sx-legacy .file-row .nm,
-body.sx-legacy .sp-item,
-body.sx-legacy .store-btn,
-body.sx-legacy .num-btn,
-body.sx-legacy .chip,
-body.sx-legacy .sm,
-body.sx-legacy .rank,
-body.sx-legacy .cnt,
-body.sx-legacy .banner,
-body.sx-legacy .note,
-body.sx-legacy .status{ color: var(--sx-text-2) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .field-label,
+html:not([data-theme="dark"]) body.sx-legacy .stat .k,
+html:not([data-theme="dark"]) body.sx-legacy .stat .l,
+html:not([data-theme="dark"]) body.sx-legacy .quick,
+html:not([data-theme="dark"]) body.sx-legacy .op-pill,
+html:not([data-theme="dark"]) body.sx-legacy .plat-row,
+html:not([data-theme="dark"]) body.sx-legacy .health-banner,
+html:not([data-theme="dark"]) body.sx-legacy .file-row .nm,
+html:not([data-theme="dark"]) body.sx-legacy .sp-item,
+html:not([data-theme="dark"]) body.sx-legacy .store-btn,
+html:not([data-theme="dark"]) body.sx-legacy .num-btn,
+html:not([data-theme="dark"]) body.sx-legacy .chip,
+html:not([data-theme="dark"]) body.sx-legacy .sm,
+html:not([data-theme="dark"]) body.sx-legacy .rank,
+html:not([data-theme="dark"]) body.sx-legacy .cnt,
+html:not([data-theme="dark"]) body.sx-legacy .banner,
+html:not([data-theme="dark"]) body.sx-legacy .note,
+html:not([data-theme="dark"]) body.sx-legacy .status{ color: var(--sx-text-2) !important; }
 
-body.sx-legacy .sub,
-body.sx-legacy .who,
-body.sx-legacy .hint,
-body.sx-legacy .fill-note,
-body.sx-legacy .topbar .who,
-body.sx-legacy .login-box .sub,
-body.sx-legacy .noperm p,
-body.sx-legacy .foot,
-body.sx-legacy .empty,
-body.sx-legacy .loader,
-body.sx-legacy .file-row .st,
-body.sx-legacy .log-item .d,
-body.sx-legacy .stat .s,
-body.sx-legacy .stat .d,
-body.sx-legacy .stat .v.dim,
-body.sx-legacy .plat-row .pv,
-body.sx-legacy .plat-row .pc,
-body.sx-legacy .plat-row .ng,
-body.sx-legacy .store-card .amt-row,
-body.sx-legacy .sp-item .sub,
-body.sx-legacy .op-pill.dim2,
-body.sx-legacy .card-title .note,
-body.sx-legacy .header-sub,
-body.sx-legacy .date-hint,
-body.sx-legacy .rl-1,
-body.sx-legacy .rl-2,
-body.sx-legacy .nm .city,
-body.sx-legacy th,
-body.sx-legacy .store-pick .empty{ color: var(--sx-text-3) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .sub,
+html:not([data-theme="dark"]) body.sx-legacy .who,
+html:not([data-theme="dark"]) body.sx-legacy .hint,
+html:not([data-theme="dark"]) body.sx-legacy .fill-note,
+html:not([data-theme="dark"]) body.sx-legacy .topbar .who,
+html:not([data-theme="dark"]) body.sx-legacy .login-box .sub,
+html:not([data-theme="dark"]) body.sx-legacy .noperm p,
+html:not([data-theme="dark"]) body.sx-legacy .foot,
+html:not([data-theme="dark"]) body.sx-legacy .empty,
+html:not([data-theme="dark"]) body.sx-legacy .loader,
+html:not([data-theme="dark"]) body.sx-legacy .file-row .st,
+html:not([data-theme="dark"]) body.sx-legacy .log-item .d,
+html:not([data-theme="dark"]) body.sx-legacy .stat .s,
+html:not([data-theme="dark"]) body.sx-legacy .stat .d,
+html:not([data-theme="dark"]) body.sx-legacy .stat .v.dim,
+html:not([data-theme="dark"]) body.sx-legacy .plat-row .pv,
+html:not([data-theme="dark"]) body.sx-legacy .plat-row .pc,
+html:not([data-theme="dark"]) body.sx-legacy .plat-row .ng,
+html:not([data-theme="dark"]) body.sx-legacy .store-card .amt-row,
+html:not([data-theme="dark"]) body.sx-legacy .sp-item .sub,
+html:not([data-theme="dark"]) body.sx-legacy .op-pill.dim2,
+html:not([data-theme="dark"]) body.sx-legacy .card-title .note,
+html:not([data-theme="dark"]) body.sx-legacy .header-sub,
+html:not([data-theme="dark"]) body.sx-legacy .date-hint,
+html:not([data-theme="dark"]) body.sx-legacy .rl-1,
+html:not([data-theme="dark"]) body.sx-legacy .rl-2,
+html:not([data-theme="dark"]) body.sx-legacy .nm .city,
+html:not([data-theme="dark"]) body.sx-legacy th,
+html:not([data-theme="dark"]) body.sx-legacy .store-pick .empty{ color: var(--sx-text-3) !important; }
 
 /* 16.2 品牌色与语义色 */
-body.sx-legacy .amt,
-body.sx-legacy .back-ops,
-body.sx-legacy .store-btn .check,
-body.sx-legacy .slider-val,
-body.sx-legacy .pf-name{ color: var(--sx-accent) !important; }
-body.sx-legacy .bad,
-body.sx-legacy .diff-pos{ color: var(--sx-red) !important; }
-body.sx-legacy .ok,
-body.sx-legacy .stat .v.up{ color: var(--sx-green) !important; }
-body.sx-legacy .warn{ color: var(--sx-amber) !important; }
-body.sx-legacy .diff-neg{ color: var(--sx-blue) !important; }
-body.sx-legacy .rank.top1{ color: var(--sx-amber) !important; }
-body.sx-legacy .rank.top2{ color: var(--sx-text-2) !important; }
-body.sx-legacy .rank.top3{ color: #c2410c !important; }
-body.sx-legacy .store-card .sp-date{ color: var(--sx-amber) !important; }
-body.sx-legacy .store-btn.selected .check{ color: #fff !important; }
+html:not([data-theme="dark"]) body.sx-legacy .amt,
+html:not([data-theme="dark"]) body.sx-legacy .back-ops,
+html:not([data-theme="dark"]) body.sx-legacy .store-btn .check,
+html:not([data-theme="dark"]) body.sx-legacy .slider-val,
+html:not([data-theme="dark"]) body.sx-legacy .pf-name{ color: var(--sx-accent) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .bad,
+html:not([data-theme="dark"]) body.sx-legacy .diff-pos{ color: var(--sx-red) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .ok,
+html:not([data-theme="dark"]) body.sx-legacy .stat .v.up{ color: var(--sx-green) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .warn{ color: var(--sx-amber) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .diff-neg{ color: var(--sx-blue) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .rank.top1{ color: var(--sx-amber) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .rank.top2{ color: var(--sx-text-2) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .rank.top3{ color: #c2410c !important; }
+html:not([data-theme="dark"]) body.sx-legacy .store-card .sp-date{ color: var(--sx-amber) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .store-btn.selected .check{ color: #fff !important; }
 
-/* 16.3 背景：暗底 → 白面 */
-body.sx-legacy .card,
-body.sx-legacy .stat,
-body.sx-legacy .store-card,
-body.sx-legacy .tbl-wrap,
-body.sx-legacy .glass,
-body.sx-legacy .store-pick,
-body.sx-legacy .modal,
-body.sx-legacy .modal-head,
-body.sx-legacy .sp-item,
-body.sx-legacy .store-btn,
-body.sx-legacy .num-btn,
-body.sx-legacy .chip,
-body.sx-legacy .sm,
-body.sx-legacy td.store,
-body.sx-legacy th.store{ background: var(--sx-surface) !important; }
+/* 16.3 背景 */
+html:not([data-theme="dark"]) body.sx-legacy .card,
+html:not([data-theme="dark"]) body.sx-legacy .stat,
+html:not([data-theme="dark"]) body.sx-legacy .store-card,
+html:not([data-theme="dark"]) body.sx-legacy .tbl-wrap,
+html:not([data-theme="dark"]) body.sx-legacy .glass,
+html:not([data-theme="dark"]) body.sx-legacy .store-pick,
+html:not([data-theme="dark"]) body.sx-legacy .modal,
+html:not([data-theme="dark"]) body.sx-legacy .modal-head,
+html:not([data-theme="dark"]) body.sx-legacy .sp-item,
+html:not([data-theme="dark"]) body.sx-legacy .store-btn,
+html:not([data-theme="dark"]) body.sx-legacy .num-btn,
+html:not([data-theme="dark"]) body.sx-legacy .chip,
+html:not([data-theme="dark"]) body.sx-legacy .sm,
+html:not([data-theme="dark"]) body.sx-legacy td.store,
+html:not([data-theme="dark"]) body.sx-legacy th.store{ background: var(--sx-surface) !important; }
 
-body.sx-legacy thead th,
-body.sx-legacy thead th.store,
-body.sx-legacy tr.total td,
-body.sx-legacy tr.total td.store{ background: var(--sx-surface-2) !important; }
+html:not([data-theme="dark"]) body.sx-legacy thead th,
+html:not([data-theme="dark"]) body.sx-legacy thead th.store,
+html:not([data-theme="dark"]) body.sx-legacy tr.total td,
+html:not([data-theme="dark"]) body.sx-legacy tr.total td.store{ background: var(--sx-surface-2) !important; }
 
-body.sx-legacy .health-banner{ background: var(--sx-accent-soft) !important; }
-body.sx-legacy tr:hover td,
-body.sx-legacy tr:hover td.store{ background: var(--sx-fill) !important; }
-body.sx-legacy #dashStoreTable tr.sel td,
-body.sx-legacy #dashStoreTable tr.sel td.store{ background: var(--sx-accent-soft) !important; }
-body.sx-legacy .store-pick div:hover{ background: var(--sx-fill) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .health-banner{ background: var(--sx-accent-soft) !important; }
+html:not([data-theme="dark"]) body.sx-legacy tr:hover td,
+html:not([data-theme="dark"]) body.sx-legacy tr:hover td.store{ background: var(--sx-fill) !important; }
+html:not([data-theme="dark"]) body.sx-legacy #dashStoreTable tr.sel td,
+html:not([data-theme="dark"]) body.sx-legacy #dashStoreTable tr.sel td.store{ background: var(--sx-accent-soft) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .store-pick div:hover{ background: var(--sx-fill) !important; }
 
-body.sx-legacy .store-btn.selected,
-body.sx-legacy .num-btn.selected,
-body.sx-legacy .chip.on{ background: var(--sx-accent) !important; color: #fff !important; box-shadow: none !important; }
-body.sx-legacy .switch-track{ background: var(--sx-fill-2) !important; }
-body.sx-legacy .switch input:checked + .switch-track{ background: var(--sx-accent) !important; }
-body.sx-legacy .switch-track::after{ box-shadow: 0 1px 3px rgba(16,24,40,.22) !important; }
-/* 圆角统一到 8px（遗留 5~6px 偏尖） */
-body.sx-legacy .store-btn,
-body.sx-legacy .num-btn,
-body.sx-legacy .num-input,
-body.sx-legacy .amt-input{ border-radius: var(--sx-r-sm) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .store-btn.selected,
+html:not([data-theme="dark"]) body.sx-legacy .num-btn.selected,
+html:not([data-theme="dark"]) body.sx-legacy .chip.on{ background: var(--sx-accent) !important; color: #fff !important; box-shadow: none !important; }
+html:not([data-theme="dark"]) body.sx-legacy .switch-track{ background: var(--sx-fill-2) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .switch-track::after{ box-shadow: 0 1px 3px rgba(16,24,40,.22) !important; }
 
-/* 16.4 描边：白边 → 发丝线 */
-body.sx-legacy .card,
-body.sx-legacy .stat,
-body.sx-legacy .store-card,
-body.sx-legacy .tbl-wrap,
-body.sx-legacy .glass,
-body.sx-legacy .store-pick,
-body.sx-legacy .modal,
-body.sx-legacy .modal-head,
-body.sx-legacy .sp-item,
-body.sx-legacy .store-btn,
-body.sx-legacy .num-btn,
-body.sx-legacy .num-input,
-body.sx-legacy .amt-input,
-body.sx-legacy .text-input,
-body.sx-legacy .date-picker,
-body.sx-legacy .chip,
-body.sx-legacy .op-pill,
-body.sx-legacy th,
-body.sx-legacy td,
-body.sx-legacy .msg,
-body.sx-legacy .health-banner,
-body.sx-legacy .badge{ border-color: var(--sx-separator) !important; }
-body.sx-legacy .store-card.is-special{ border-color: rgba(180,83,9,.45) !important; background: var(--sx-amber-bg) !important; }
+/* 16.4 描边 */
+html:not([data-theme="dark"]) body.sx-legacy .card,
+html:not([data-theme="dark"]) body.sx-legacy .stat,
+html:not([data-theme="dark"]) body.sx-legacy .store-card,
+html:not([data-theme="dark"]) body.sx-legacy .tbl-wrap,
+html:not([data-theme="dark"]) body.sx-legacy .glass,
+html:not([data-theme="dark"]) body.sx-legacy .store-pick,
+html:not([data-theme="dark"]) body.sx-legacy .modal,
+html:not([data-theme="dark"]) body.sx-legacy .modal-head,
+html:not([data-theme="dark"]) body.sx-legacy .sp-item,
+html:not([data-theme="dark"]) body.sx-legacy .store-btn,
+html:not([data-theme="dark"]) body.sx-legacy .num-btn,
+html:not([data-theme="dark"]) body.sx-legacy .num-input,
+html:not([data-theme="dark"]) body.sx-legacy .amt-input,
+html:not([data-theme="dark"]) body.sx-legacy .text-input,
+html:not([data-theme="dark"]) body.sx-legacy .date-picker,
+html:not([data-theme="dark"]) body.sx-legacy .chip,
+html:not([data-theme="dark"]) body.sx-legacy .op-pill,
+html:not([data-theme="dark"]) body.sx-legacy th,
+html:not([data-theme="dark"]) body.sx-legacy td,
+html:not([data-theme="dark"]) body.sx-legacy .msg,
+html:not([data-theme="dark"]) body.sx-legacy .health-banner,
+html:not([data-theme="dark"]) body.sx-legacy .badge{ border-color: var(--sx-separator) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .store-card.is-special{ border-color: rgba(180,83,9,.45) !important; background: var(--sx-amber-bg) !important; }
 
 /* 16.5 填报页（index）专属控件 */
-body.sx-legacy .num-input,
-body.sx-legacy .amt-input,
-body.sx-legacy .text-input{
+html:not([data-theme="dark"]) body.sx-legacy .num-input,
+html:not([data-theme="dark"]) body.sx-legacy .amt-input,
+html:not([data-theme="dark"]) body.sx-legacy .text-input{
   background: var(--sx-fill) !important;
   color: var(--sx-text) !important;
   border-color: transparent !important;
-  border-radius: var(--sx-r-sm) !important;
 }
-body.sx-legacy .num-input:focus,
-body.sx-legacy .amt-input:focus,
-body.sx-legacy .text-input:focus{
+html:not([data-theme="dark"]) body.sx-legacy .num-input:focus,
+html:not([data-theme="dark"]) body.sx-legacy .amt-input:focus,
+html:not([data-theme="dark"]) body.sx-legacy .text-input:focus{
   background: var(--sx-surface) !important;
   border-color: var(--sx-accent) !important;
   box-shadow: 0 0 0 3px var(--sx-accent-ring) !important;
 }
-body.sx-legacy .submit-btn{ height: auto !important; border-radius: var(--sx-r-md) !important; }
-body.sx-legacy .status.ok{ background: var(--sx-green-bg) !important; color: var(--sx-green) !important; }
-body.sx-legacy .status.err{ background: var(--sx-red-bg) !important; color: var(--sx-red) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .submit-btn{ height: auto !important; }
+html:not([data-theme="dark"]) body.sx-legacy .status.ok{ background: var(--sx-green-bg) !important; color: var(--sx-green) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .status.err{ background: var(--sx-red-bg) !important; color: var(--sx-red) !important; }
 
 /* 16.6 特殊状态标签 */
-body.sx-legacy .sp-now{ background: var(--sx-amber-bg) !important; color: var(--sx-amber) !important; border-color: rgba(180,83,9,.3) !important; }
-body.sx-legacy .sp-future{ background: var(--sx-blue-bg) !important; color: var(--sx-blue) !important; border-color: rgba(29,78,216,.25) !important; }
-body.sx-legacy .sp-past{ background: var(--sx-fill) !important; color: var(--sx-text-3) !important; border-color: var(--sx-separator) !important; }
-body.sx-legacy .hb-wait{ background: var(--sx-amber-bg) !important; color: var(--sx-amber) !important; border-color: rgba(180,83,9,.3) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .sp-now{ background: var(--sx-amber-bg) !important; color: var(--sx-amber) !important; border-color: rgba(180,83,9,.3) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .sp-future{ background: var(--sx-blue-bg) !important; color: var(--sx-blue) !important; border-color: rgba(29,78,216,.25) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .sp-past{ background: var(--sx-fill) !important; color: var(--sx-text-3) !important; border-color: var(--sx-separator) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .hb-wait{ background: var(--sx-amber-bg) !important; color: var(--sx-amber) !important; border-color: rgba(180,83,9,.3) !important; }
 
-/* 16.7 状态点：荧光色 → 可读实色，去掉发光 */
-body.sx-legacy .dt,
-body.sx-legacy .store-btn.submitted::after{ box-shadow: none !important; }
-body.sx-legacy .dt-g{ background: #16a34a !important; }
-body.sx-legacy .dt-r{ background: #dc2626 !important; }
-body.sx-legacy .dt-y{ background: #d97706 !important; }
-body.sx-legacy .dt-p{ background: #db2777 !important; }
+/* 16.7 导航壳 sx-dark */
+html:not([data-theme="dark"]) body.sx-legacy .sx-nav.sx-dark{ background: var(--sx-nav-bg) !important; border-color: var(--sx-separator) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .sx-nav.sx-dark a{ color: var(--sx-text-2) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .sx-nav.sx-dark a.cur{ background: var(--sx-accent-soft) !important; color: var(--sx-accent) !important; }
+html:not([data-theme="dark"]) body.sx-legacy .sx-nav.sx-dark .sx-me{ color: var(--sx-text-3) !important; }
 
-/* 16.8 导航壳：深色页的 sx-dark 拉回浅色毛玻璃 */
-body.sx-legacy .sx-nav.sx-dark{ background: rgba(255,255,255,.82) !important; border-color: var(--sx-separator) !important; }
-body.sx-legacy .sx-nav.sx-dark a{ color: var(--sx-text-2) !important; }
-body.sx-legacy .sx-nav.sx-dark a.cur{ background: var(--sx-accent-soft) !important; color: var(--sx-accent) !important; }
-body.sx-legacy .sx-nav.sx-dark .sx-me{ color: var(--sx-text-3) !important; }
-
-/* 16.9 表头跟随各页既有居中习惯 */
+/* 16.8 表头跟随各页既有居中习惯 */
 body.sx-legacy th{ text-align: center !important; }
 
+/* 16.9 圆角与高度（浅深都要） */
+body.sx-legacy .store-btn,
+body.sx-legacy .num-btn,
+body.sx-legacy .num-input,
+body.sx-legacy .amt-input{ border-radius: var(--sx-r-sm) !important; }
+body.sx-legacy .submit-btn{ border-radius: var(--sx-r-md) !important; height: auto !important; }
+
 /* ============================================================================
-   17. 无障碍：更轻柔，而非清零
+   18. 深色模式遗留修正（body.sx-legacy 四页）
+   深色下这四页的原生白字/半透明白面基本是对的，这里只做三件事：
+   ① 半透明面 → Apple 深色实色面 ② 荧光色 → Apple 系统色 ③ 去发光
+   ========================================================================== */
+
+/* 18.1 半透明白面 → Apple 深色卡面 */
+html[data-theme="dark"] body.sx-legacy .card,
+html[data-theme="dark"] body.sx-legacy .stat,
+html[data-theme="dark"] body.sx-legacy .store-card,
+html[data-theme="dark"] body.sx-legacy .tbl-wrap,
+html[data-theme="dark"] body.sx-legacy .glass,
+html[data-theme="dark"] body.sx-legacy .store-pick,
+html[data-theme="dark"] body.sx-legacy .modal,
+html[data-theme="dark"] body.sx-legacy .modal-head,
+html[data-theme="dark"] body.sx-legacy .sp-item,
+html[data-theme="dark"] body.sx-legacy .store-btn,
+html[data-theme="dark"] body.sx-legacy .num-btn,
+html[data-theme="dark"] body.sx-legacy .chip,
+html[data-theme="dark"] body.sx-legacy .sm,
+html[data-theme="dark"] body.sx-legacy td.store,
+html[data-theme="dark"] body.sx-legacy th.store{
+  background: var(--sx-surface) !important;
+  border-color: var(--sx-separator) !important;
+}
+html[data-theme="dark"] body.sx-legacy thead th,
+html[data-theme="dark"] body.sx-legacy thead th.store,
+html[data-theme="dark"] body.sx-legacy tr.total td,
+html[data-theme="dark"] body.sx-legacy tr.total td.store{
+  background: var(--sx-surface-2) !important;
+}
+html[data-theme="dark"] body.sx-legacy tr:hover td,
+html[data-theme="dark"] body.sx-legacy tr:hover td.store{ background: var(--sx-fill) !important; }
+html[data-theme="dark"] body.sx-legacy #dashStoreTable tr.sel td,
+html[data-theme="dark"] body.sx-legacy #dashStoreTable tr.sel td.store{ background: var(--sx-accent-soft) !important; }
+html[data-theme="dark"] body.sx-legacy .health-banner{ background: var(--sx-accent-soft) !important; border-color: var(--sx-separator) !important; }
+html[data-theme="dark"] body.sx-legacy .store-pick div:hover{ background: var(--sx-fill) !important; }
+
+html[data-theme="dark"] body.sx-legacy .store-btn.selected,
+html[data-theme="dark"] body.sx-legacy .num-btn.selected,
+html[data-theme="dark"] body.sx-legacy .chip.on{
+  background: var(--sx-accent) !important; color: #12121a !important; box-shadow: none !important;
+}
+html[data-theme="dark"] body.sx-legacy .store-btn.selected .check{ color: #12121a !important; }
+html[data-theme="dark"] body.sx-legacy .switch input:checked + .switch-track{ background: var(--sx-accent) !important; }
+
+/* 18.2 荧光点 → Apple 系统色（去掉发光） */
+body.sx-legacy .dt,
+body.sx-legacy .store-btn.submitted::after{ box-shadow: none !important; }
+html[data-theme="dark"] body.sx-legacy .dt-g{ background: #30d158 !important; }
+html[data-theme="dark"] body.sx-legacy .dt-r{ background: #ff453a !important; }
+html[data-theme="dark"] body.sx-legacy .dt-y{ background: #ffd60a !important; }
+html[data-theme="dark"] body.sx-legacy .dt-p{ background: #ff375f !important; }
+html:not([data-theme="dark"]) body.sx-legacy .dt-g{ background: #16a34a !important; }
+html:not([data-theme="dark"]) body.sx-legacy .dt-r{ background: #dc2626 !important; }
+html:not([data-theme="dark"]) body.sx-legacy .dt-y{ background: #d97706 !important; }
+html:not([data-theme="dark"]) body.sx-legacy .dt-p{ background: #db2777 !important; }
+
+/* 18.3 语义色与品牌色（深色下提亮） */
+html[data-theme="dark"] body.sx-legacy .bad,
+html[data-theme="dark"] body.sx-legacy .diff-pos{ color: var(--sx-red) !important; }
+html[data-theme="dark"] body.sx-legacy .ok,
+html[data-theme="dark"] body.sx-legacy .stat .v.up{ color: var(--sx-green) !important; }
+html[data-theme="dark"] body.sx-legacy .warn{ color: var(--sx-amber) !important; }
+html[data-theme="dark"] body.sx-legacy .diff-neg{ color: var(--sx-blue) !important; }
+html[data-theme="dark"] body.sx-legacy .amt,
+html[data-theme="dark"] body.sx-legacy .slider-val,
+html[data-theme="dark"] body.sx-legacy .pf-name,
+html[data-theme="dark"] body.sx-legacy .back-ops{ color: var(--sx-accent) !important; }
+html[data-theme="dark"] body.sx-legacy .sp-now{ background: var(--sx-amber-bg) !important; color: var(--sx-amber) !important; border-color: rgba(255,214,10,.3) !important; }
+html[data-theme="dark"] body.sx-legacy .sp-future{ background: var(--sx-blue-bg) !important; color: var(--sx-blue) !important; border-color: rgba(10,132,255,.3) !important; }
+html[data-theme="dark"] body.sx-legacy .sp-past{ background: var(--sx-fill) !important; color: var(--sx-text-3) !important; border-color: var(--sx-separator) !important; }
+html[data-theme="dark"] body.sx-legacy .hb-wait{ background: var(--sx-amber-bg) !important; color: var(--sx-amber) !important; border-color: rgba(255,214,10,.3) !important; }
+html[data-theme="dark"] body.sx-legacy .status.ok{ background: var(--sx-green-bg) !important; color: var(--sx-green) !important; }
+html[data-theme="dark"] body.sx-legacy .status.err{ background: var(--sx-red-bg) !important; color: var(--sx-red) !important; }
+
+/* 18.4 导航壳 sx-dark → 深色毛玻璃 */
+html[data-theme="dark"] body.sx-legacy .sx-nav.sx-dark{ background: var(--sx-nav-bg) !important; border-color: var(--sx-separator) !important; }
+html[data-theme="dark"] body.sx-legacy .sx-nav.sx-dark a{ color: var(--sx-text-2) !important; }
+html[data-theme="dark"] body.sx-legacy .sx-nav.sx-dark a.cur{ background: var(--sx-accent-soft) !important; color: var(--sx-accent) !important; }
+html[data-theme="dark"] body.sx-legacy .sx-nav.sx-dark .sx-me{ color: var(--sx-text-3) !important; }
+
+/* ============================================================================
+   19. 主题切换按钮（由 theme.js 注入到 .sx-nav 末尾）
+   ========================================================================== */
+.sx-theme-btn{
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 28px; padding: 0 10px; margin-left: 8px;
+  border: 1px solid var(--sx-separator-2);
+  border-radius: var(--sx-r-pill);
+  background: var(--sx-fill);
+  color: var(--sx-text-2);
+  font-size: 12px; font-weight: 500; font-family: inherit;
+  cursor: pointer; white-space: nowrap;
+  transition: transform 160ms var(--sx-ease-out),
+              background var(--sx-dur-1) var(--sx-ease-out),
+              color var(--sx-dur-1) var(--sx-ease-out);
+}
+.sx-theme-btn:active{ transform: scale(.94); }
+@media (hover:hover) and (pointer:fine){
+  .sx-theme-btn:hover{ background: var(--sx-fill-2); color: var(--sx-text); }
+}
+.sx-theme-btn svg{ width: 13px; height: 13px; display: block; flex-shrink: 0; }
+@media (max-width: 560px){ .sx-theme-btn{ padding: 0 8px; } }
+
+/* ============================================================================
+   20. 无障碍：更轻柔，而非清零
    ========================================================================== */
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after{
@@ -510,6 +662,6 @@ body.sx-legacy th{ text-align: center !important; }
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
-  button:active{ transform: none; }
+  button:active, .sx-theme-btn:active{ transform: none; }
   .card:hover{ transform: none; }
 }
