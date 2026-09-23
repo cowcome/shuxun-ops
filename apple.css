@@ -704,7 +704,44 @@ html[data-theme="dark"] body.sx-legacy .sx-nav.sx-dark .sx-me{ color: var(--sx-t
 .tr-item .tr-type{ flex: 0 0 auto; font-size: 11px; color: var(--sx-text-3); }
 
 /* ============================================================================
-   21. 无障碍：更轻柔，而非清零
+   21. 门店待办（store_admin）：角标 / 缺口点 / 待办行
+   待办是「要办事的清单」不是「数据筛选」：角标用实色红，缺口点用琥珀——
+   红色留给必须处理的数量，琥珀只提示"这家店有缺口"，两个不打架。
+   ========================================================================== */
+.todo-badge{
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 17px; height: 17px; padding: 0 5px; margin-left: 2px;
+  border-radius: 9px; background: #e24b4a; color: #fff;
+  font-size: 11px; font-weight: 500; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.gap-dot{
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: #ef9f27; margin-right: 7px; vertical-align: 1px;
+}
+.todo-list{ display: flex; flex-direction: column; gap: 8px; }
+.todo-row{
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 14px;
+  border: .5px solid var(--sx-separator); border-radius: var(--sx-r-md);
+  background: var(--sx-surface);
+  transition: background var(--sx-dur-1) var(--sx-ease-out);
+}
+@media (hover:hover) and (pointer:fine){ .todo-row:hover{ background: var(--sx-fill); } }
+.todo-main{ flex: 1 1 260px; min-width: 220px; }
+.todo-name{ font-size: 14px; font-weight: 700; color: var(--sx-text); display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.todo-meta{ font-size: 12px; font-weight: 400; color: var(--sx-text-2); }
+.todo-gaps{ margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+.gap-tag{
+  display: inline-block; padding: 3px 9px; border-radius: 7px;
+  font-size: 12px; line-height: 1.3;
+  background: rgba(239,159,39,.14); color: #8a5b00;
+}
+html[data-theme="dark"] .gap-tag{ background: rgba(239,159,39,.18); color: #f5b95c; }
+.todo-act{ flex: 0 0 auto; display: flex; gap: 6px; align-items: center; }
+
+/* ============================================================================
+   22. 无障碍：更轻柔，而非清零
    ========================================================================== */
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after{
