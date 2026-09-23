@@ -156,9 +156,10 @@
     <h1>门店管理</h1>
     <div class="sub">品牌级门店主数据（唯一权威源 = Supabase stores 主表），覆盖直营 / 连锁 / 陪跑 / 共管全部门店</div>
 
-    <div style="display:flex;gap:8px;margin-bottom:12px">
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
       <button class="sm" id="chipStores" onclick="switchView('stores')">门店主数据</button>
       <button class="sm" id="chipStaff" onclick="switchView('staff')" style="display:none">运营人员</button>
+      <button class="sm" id="chipTodo" onclick="switchView('todo')">待办 <span class="todo-badge" id="todoBadge" style="display:none">0</span></button>
     </div>
 
     <!-- 待认领有赞店横幅（同步器自动发现，全员可见；认领建店全员可用，忽略仅主账号） -->
@@ -239,6 +240,14 @@
           <div><label class="field-label">转移给</label><select id="opTransferTo"></select></div>
           <div style="flex:0 0 auto;display:flex;align-items:flex-end"><button class="primary" id="opTransferBtn" onclick="doTransferStores()">确认转移</button><button onclick="closeTransfer()">取消</button></div>
         </div>
+      </div>
+    </div>
+
+    <!-- 待办（2026-09-23：门店档案缺口 + 有赞待认领，全员可见、按登录人过滤） -->
+    <div id="viewTodo" class="hide">
+      <div class="card">
+        <div class="card-title" id="todoTitle">待办</div>
+        <div id="todoBody"><div class="empty">加载中…</div></div>
       </div>
     </div>
   </div>
@@ -425,6 +434,7 @@ async function loadStores(){
     fillOpFilter();
     setStType(stTypeFilter);
     $('stBody').innerHTML = storeRows.length ? renderStores() : '<div class="empty">主表为空，请先执行 stores_master_setup.sql</div>';
+    refreshTodo();
   }catch(err){
     $('stBody').innerHTML = '<div class="empty">加载失败：'+esc(err.message)+'</div>';
   }
@@ -444,9 +454,10 @@ function renderStores(){
   const stColor = {'在营':'#0F6E56','闭店':'#A32D2D','待上线':'#8a5b00'};
   const stBg = {'在营':'bg-st-open','闭店':'bg-st-closed','待上线':'bg-st-pending'};
   list.forEach(x=>{
+    const gaps = storeGaps(x);
     h += '<tr>'+
       '<td><span class="badge '+(stBg[x.status]||'bg-st-closed')+'">'+esc(x.status)+'</span>'+storeBadges(x)+'</td>'+
-      '<td class="store">'+esc(x.std_name)+'</td>'+
+      '<td class="store">'+(gaps.length?'<span class="gap-dot" title="档案缺口：'+esc(gaps.join('、'))+'"></span>':'')+esc(x.std_name)+'</td>'+
       '<td>'+esc(x.store_type||'')+'</td>'+
       '<td>'+esc(x.operator||'')+'</td>'+
       '<td>'+esc(x.launch_date||'—')+'</td>'+
@@ -506,6 +517,11 @@ async function loadKdtMap(){
     const r = await sb('/rest/v1/yz_shop_map?select=kdt_id,store_id&limit=2000');
     if(r.ok) kdtMapRows = await r.json();
   }catch(e){ kdtMapRows = []; }
+  /* kdt 映射到位后重算：主数据橙点 + 待办角标（loadStores/loadKdtMap 并发，谁后到谁刷） */
+  if(storeRows.length){
+    $('stBody').innerHTML = renderStores();
+    refreshTodo();
+  }
 }
 function kdtOfStore(sid){ const m = kdtMapRows.find(x=>x.store_id===sid); return m ? m.kdt_id : ''; }
 function openStoreEdit(id, prefill){
@@ -545,7 +561,7 @@ function openStoreEdit(id, prefill){
         '<input type="'+f[2]+'" id="sm_'+f[0]+'" value="'+esc(v)+'" /></div>';
     }
   });
-  if(isAdmin || prefill.yz_kdt){
+  if(isAdmin || prefill.yz_kdt || (x && canEditStore(x))){
     const curKdt = prefill.yz_kdt || (x ? kdtOfStore(x.id) : '');
     h += '<div class="field"><label class="field-label">有赞 kdt_id（保存后自动写入映射，看板即刻可见）</label>'+
       '<input type="text" id="sm_yz_kdt" value="'+esc(curKdt)+'" placeholder="如 179482533" /></div>';
@@ -651,6 +667,8 @@ async function loadPendingBar(){
     pendingKdts = r.ok ? await r.json() : [];
   }catch(e){ pendingKdts = []; }
   renderPendingBar();
+  const tv = $('viewTodo');
+  if(tv && !tv.classList.contains('hide')) renderTodoView();
 }
 function renderPendingBar(){
   const el = $('pendingBar'); if(!el) return;
@@ -707,6 +725,7 @@ async function enterApp(){
   loadPendingBar();
   loadKdtMap();
   loadStores();
+  loadTodoDismiss();
   renderOpsManager();
 }
 async function loadOperators(){
@@ -715,18 +734,145 @@ async function loadOperators(){
     operatorsDB = r.ok ? await r.json() : null;
   }catch(e){ operatorsDB = null; }
 }
-/* ---------------- 视角切换：门店主数据 | 运营人员 ---------------- */
+/* ---------------- 视角切换：门店主数据 | 运营人员 | 待办 ---------------- */
+const VIEWS = ['stores','staff','todo'];
 function switchView(v){
-  const st = v==='stores';
-  $('viewStores').classList.toggle('hide', !st);
-  $('viewStaff').classList.toggle('hide', st);
-  $('chipStores').style.background = st ? '#7c3aed' : '';
-  $('chipStores').style.color = st ? '#fff' : '';
-  $('chipStores').style.borderColor = st ? '#7c3aed' : '';
-  $('chipStaff').style.background = st ? '' : '#7c3aed';
-  $('chipStaff').style.color = st ? '' : '#fff';
-  $('chipStaff').style.borderColor = st ? '' : '#7c3aed';
-  if(!st) renderOpsManager();
+  VIEWS.forEach(function(k){
+    const el = $('view'+k.charAt(0).toUpperCase()+k.slice(1));
+    if(el) el.classList.toggle('hide', k!==v);
+    const chip = $('chip'+k.charAt(0).toUpperCase()+k.slice(1));
+    if(chip){
+      const on = (k===v);
+      chip.style.background = on ? '#7c3aed' : '';
+      chip.style.color = on ? '#fff' : '';
+      chip.style.borderColor = on ? '#7c3aed' : '';
+      if(on && k==='todo') chip.style.color = '#fff';
+    }
+  });
+  if(v==='staff') renderOpsManager();
+  if(v==='todo') renderTodoView();
+}
+
+/* ---------------- 门店待办（2026-09-23 拍板：按门店聚合 / 必需清单 / 忽略落库） ----------------
+   必需清单：运营人 · 城市 · 开业日期 · 抖音sec_uid · 有赞KDT（陪跑豁免、闭店豁免）
+   可见范围：admin/小艾=全部；其他运营=只看自己名下（与 canEditStore 同口径） */
+const TODO_FIELDS = [
+  ['operator','运营人'],
+  ['city','城市'],
+  ['launch_date','开业日期'],
+  ['douyin_sec_uid','抖音sec_uid']
+];
+function storeGaps(x){
+  if(x.status==='闭店') return [];
+  const g = TODO_FIELDS.filter(f=>!x[f[0]]).map(f=>f[1]);
+  if(x.store_type!=='陪跑' && !kdtOfStore(x.id)) g.push('有赞KDT');
+  return g;
+}
+let dismissedSet = null;      // null = 忽略表未建（store_todo_setup.sql 未执行）→ 忽略按钮隐藏
+var todoShowDismissed = false;
+async function loadTodoDismiss(){
+  try{
+    const r = await sb('/rest/v1/store_todo_dismiss?select=store_id&limit=2000');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    dismissedSet = new Set((await r.json()).map(v=>v.store_id));
+  }catch(e){ dismissedSet = null; }
+  refreshTodo();
+}
+function todoVisibleStores(){
+  const seeAll = isAdmin || isXiaoai;
+  return storeRows.filter(x=>(seeAll || (myName && x.operator===myName)));
+}
+function computeTodoList(){
+  return todoVisibleStores()
+    .filter(x=>x.status!=='闭店')
+    .map(x=>({ x:x, gaps:storeGaps(x) }))
+    .filter(t=>t.gaps.length && (!dismissedSet || !dismissedSet.has(t.x.id)))
+    .sort((a,b)=> b.gaps.length - a.gaps.length || a.x.id - b.x.id);
+}
+function refreshTodo(){
+  const n = computeTodoList().length;
+  const b = $('todoBadge');
+  if(b){ b.textContent = n; b.style.display = n ? '' : 'none'; }
+  const v = $('viewTodo');
+  if(v && !v.classList.contains('hide')) renderTodoView();
+}
+function renderTodoView(){
+  const box = $('todoBody'); if(!box) return;
+  const seeAll = isAdmin || isXiaoai;
+  const scope = seeAll ? '全部门店' : '你名下的门店';
+  let h = '<div style="font-size:12px;color:#6b7280;margin-bottom:10px">范围：'+scope+' ｜ 必需项：运营人 · 城市 · 开业日期 · 抖音sec_uid · 有赞KDT（陪跑店不要求有赞）</div>';
+
+  if(pendingKdts.length){
+    h += '<div class="card" style="border:1px solid #fcd34d;background:#FFFBEB;margin-bottom:12px">'+
+      '<div class="card-title" style="color:#8a5b00">🔎 有赞新店待认领 '+pendingKdts.length+' 家（未认领前不计入任何看板）</div>';
+    pendingKdts.forEach(p=>{
+      h += '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid #f0f1f4">'+
+        '<div style="flex:1;min-width:220px"><b>'+esc(p.shop_name || ('有赞店 kdt '+p.kdt_id))+'</b>'+
+        '<span style="font-size:12px;color:#6b7280">　kdt '+p.kdt_id+'　'+(p.order_cnt||0)+' 单　¥'+fmtAmt(p.amount||0)+'</span></div>'+
+        '<button class="primary sm" onclick="claimPending('+p.kdt_id+')">✓ 认领建店</button>'+
+        (isAdmin ? '<button class="sm danger" onclick="ignorePending('+p.kdt_id+')">忽略（弃用）</button>' : '')+
+        '</div>';
+    });
+    h += '</div>';
+  }
+
+  const list = computeTodoList();
+  if(!list.length){
+    h += '<div class="empty">没有待办：名下门店的必需信息都齐了 ✓</div>';
+  }else{
+    h += '<div class="todo-list">';
+    list.forEach(t=>{
+      const x = t.x;
+      const canEdit = canEditStore(x);
+      h += '<div class="todo-row">'+
+        '<div class="todo-main">'+
+          '<div class="todo-name"><span class="gap-dot"></span>'+esc(x.std_name)+
+            '<span class="todo-meta">'+esc(x.store_type||'')+' · '+esc(x.status||'')+(x.operator?' · 运营 '+esc(x.operator):'')+'</span></div>'+
+          '<div class="todo-gaps">'+t.gaps.map(g=>'<span class="gap-tag">缺 '+esc(g)+'</span>').join('')+'</div>'+
+        '</div>'+
+        '<div class="todo-act">'+
+          (canEdit ? '<button class="primary sm" onclick="openStoreEdit('+x.id+')">去补齐</button>' : '<span style="font-size:12px;color:#8a8f9e">联系主账号处理</span>')+
+          (dismissedSet && isAdmin ? '<button class="sm" onclick="dismissStoreTodo('+x.id+',\''+esc(x.std_name).replace(/'/g,'')+'\')">忽略</button>' : '')+
+        '</div>'+
+      '</div>';
+    });
+    h += '</div>';
+  }
+
+  if(dismissedSet && dismissedSet.size && seeAll){
+    const names = storeRows.filter(x=>dismissedSet.has(x.id)).map(x=>esc(x.std_name)).join('、');
+    h += '<div style="margin-top:12px;font-size:12px;color:#8a8f9e">已忽略 '+dismissedSet.size+' 家：'+names+
+      '　<button class="sm" onclick="todoShowDismissed=!todoShowDismissed;renderTodoView()">管理</button></div>';
+    if(window.todoShowDismissed){
+      h += '<div style="margin-top:8px">'+storeRows.filter(x=>dismissedSet.has(x.id)).map(x=>
+        '<span class="gap-tag" style="margin:2px;display:inline-block">'+esc(x.std_name)+
+        ' <a href="javascript:void(0)" style="color:#A32D2D;text-decoration:none" onclick="restoreStoreTodo('+x.id+')">恢复</a></span>').join('')+'</div>';
+    }
+  }
+  if(dismissedSet===null){
+    h += '<div style="margin-top:12px;font-size:12px;color:#8a8f9e">「忽略」功能需在 Supabase 执行 store_todo_setup.sql 后自动开启（执行前按钮不显示，不影响其他功能）</div>';
+  }
+  box.innerHTML = h;
+}
+async function dismissStoreTodo(id, name){
+  if(!confirm('忽略「'+name+'」的档案待办？\n忽略后不再出现在待办列表和角标里（主数据里的橙点会保留），可随时在待办页底部恢复。')) return;
+  try{
+    const r = await sb('/rest/v1/store_todo_dismiss', { method:'POST', headers:{'Prefer':'resolution=ignore-duplicates'},
+      body: JSON.stringify([{ store_id:id, dismissed_by: (myName||userEmail||'') }]) });
+    if(!r.ok) throw new Error('HTTP '+r.status+'：'+await r.text());
+    dismissedSet.add(id);
+    refreshTodo();
+    msg('已忽略「'+esc(name)+'」的档案待办，可在待办页底部恢复','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
+}
+async function restoreStoreTodo(id){
+  try{
+    const r = await sb('/rest/v1/store_todo_dismiss?store_id=eq.'+id, { method:'DELETE' });
+    if(!r.ok) throw new Error('HTTP '+r.status+'：'+await r.text());
+    dismissedSet.delete(id);
+    refreshTodo();
+    msg('已恢复，该门店回到待办列表','ok');
+  }catch(err){ msg(esc(err.message),'err'); }
 }
 
 /* ---------------- 运营人员管理（仅主账号；2026-09-22 自佛山直营搬入） ---------------- */
