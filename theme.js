@@ -42,9 +42,9 @@
       var d = resolved(pref) === 'dark';
       return {
         dark: d,
-        tick: cssVar('--sx-chart-tick', d ? 'rgba(235,235,245,.60)' : 'rgba(60,60,67,.62)'),
+        tick: cssVar('--sx-chart-tick', d ? 'rgba(235,235,245,.78)' : 'rgba(60,60,67,.82)'),
         grid: cssVar('--sx-chart-grid', d ? 'rgba(84,84,88,.55)' : 'rgba(60,60,67,.12)'),
-        legend: cssVar('--sx-chart-legend', d ? 'rgba(235,235,245,.72)' : 'rgba(60,60,67,.72)')
+        legend: cssVar('--sx-chart-legend', d ? 'rgba(235,235,245,.88)' : 'rgba(60,60,67,.86)')
       };
     }
   };
@@ -81,7 +81,10 @@
       if (o.scales) {
         Object.keys(o.scales).forEach(function (k) {
           var s = o.scales[k]; if (!s) return;
-          if (s.ticks) s.ticks.color = ink.tick;
+          if (s.ticks) {
+            // 函数型 color（周末高亮）自身会在绘制时按当前主题求值，不能被覆盖成固定色
+            if (typeof s.ticks.color !== 'function') s.ticks.color = ink.tick;
+          }
           if (s.grid) s.grid.color = ink.grid;
         });
       }
