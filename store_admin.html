@@ -225,10 +225,19 @@
       </div>
       <div class="card hide" id="opTransferCard">
         <div class="card-title" id="opTransferTitle">转移门店</div>
+        <div class="tr-tools">
+          <input type="search" id="opTrSearch" class="tr-search" placeholder="搜索门店名称…" autocomplete="off" oninput="renderTransferList()" />
+          <div class="tr-btns">
+            <button class="sm" onclick="trSelectAll()">全选</button>
+            <button class="sm" onclick="trInvert()">反选</button>
+            <button class="sm" onclick="trClear()">全不选</button>
+          </div>
+          <div class="tr-count" id="opTrCount">已选 0 家</div>
+        </div>
         <div id="opTransferBody"></div>
         <div class="inline" style="margin-top:10px">
           <div><label class="field-label">转移给</label><select id="opTransferTo"></select></div>
-          <div style="flex:0 0 auto;display:flex;align-items:flex-end"><button class="primary" onclick="doTransferStores()">确认转移</button><button onclick="closeTransfer()">取消</button></div>
+          <div style="flex:0 0 auto;display:flex;align-items:flex-end"><button class="primary" id="opTransferBtn" onclick="doTransferStores()">确认转移</button><button onclick="closeTransfer()">取消</button></div>
         </div>
       </div>
     </div>
@@ -795,35 +804,86 @@ async function toggleOpStatus(id){
   }catch(err){ msg(esc(err.message),'err'); }
 }
 let transferFrom = null;
+let trPick = new Set();                       // 已勾选门店 id（跨搜索保留，不会被筛选悄悄丢掉）
+function trName(s){ return (s.std_name || s.name || ''); }
+function trMine(){
+  if(!transferFrom) return [];
+  return storeRows.filter(x=>x.operator===transferFrom.name);
+}
+function trKw(){ return (($('opTrSearch') && $('opTrSearch').value) || '').trim().toLowerCase(); }
+function trShown(){
+  const kw = trKw();
+  const mine = trMine();
+  if(!kw) return mine;
+  return mine.filter(s=>trName(s).toLowerCase().indexOf(kw)>=0);
+}
+function renderTransferList(){
+  const box = $('opTransferBody'); if(!box) return;
+  const mine = trMine(), shown = trShown(), kw = trKw();
+  if(!mine.length){ box.innerHTML = '<div class="empty">该运营名下暂无门店</div>'; }
+  else if(!shown.length){ box.innerHTML = '<div class="empty">没有名称含「'+esc(kw)+'」的门店</div>'; }
+  else{
+    box.innerHTML = '<div class="tr-list">'+shown.map(s=>
+      '<label class="tr-item"><input type="checkbox" class="opTrStore" value="'+s.id+'"'+(trPick.has(s.id)?' checked':'')+' />'+
+      '<span class="tr-name">'+esc(trName(s))+'</span>'+
+      '<span class="tr-type">'+esc(s.store_type||'')+'</span></label>').join('')+'</div>';
+    Array.prototype.forEach.call(box.querySelectorAll('.opTrStore'), function(el){
+      el.addEventListener('change', function(){
+        const id = parseInt(el.value,10);
+        if(el.checked) trPick.add(id); else trPick.delete(id);
+        trSyncCount();
+      });
+    });
+  }
+  trSyncCount();
+}
+/* 数量永远可见：勾选了但被搜索藏起来的也要报出来，避免「到底转了几家」靠猜 */
+function trSyncCount(){
+  const mine = trMine().length, shown = trShown().length, n = trPick.size;
+  const c = $('opTrCount'), b = $('opTransferBtn');
+  if(c){
+    c.textContent = '已选 '+n+' / '+mine+' 家' + (shown < mine ? '（当前筛出 '+shown+' 家）' : '');
+    c.classList.toggle('on', n>0);
+  }
+  if(b) b.textContent = n ? ('确认转移（'+n+' 家）') : '确认转移';
+}
+function trSelectAll(){ trShown().forEach(s=>trPick.add(s.id)); renderTransferList(); }
+function trInvert(){
+  trShown().forEach(s=>{ if(trPick.has(s.id)) trPick.delete(s.id); else trPick.add(s.id); });
+  renderTransferList();
+}
+function trClear(){ trPick.clear(); renderTransferList(); }
 function openTransfer(id){
   const o = (operatorsDB||[]).find(v=>v.id===id); if(!o) return;
-  transferFrom = o;
-  const mine = storeRows.filter(x=>x.operator===o.name);
-  $('opTransferTitle').textContent = '转移「'+o.name+'」名下门店（已勾选全部）';
-  $('opTransferBody').innerHTML = mine.length
-    ? '<div style="max-height:260px;overflow:auto">' + mine.map(s=>
-        '<label style="display:block;padding:4px 0"><input type="checkbox" class="opTrStore" value="'+s.id+'" checked /> '+esc(s.std_name)+'（'+esc(s.store_type||'')+'）</label>').join('') + '</div>'
-    : '<div class="empty">该运营名下暂无门店</div>';
+  transferFrom = o; trPick = new Set();
+  const mine = trMine();
+  mine.forEach(s=>trPick.add(s.id));           // 沿用旧行为：默认全选
+  $('opTransferTitle').textContent = '转移「'+o.name+'」名下门店（共 '+mine.length+' 家）';
+  if($('opTrSearch')) $('opTrSearch').value = '';
   $('opTransferTo').innerHTML = (operatorsDB||[]).filter(v=>v.id!==id && v.status==='active' && v.name!=='admin')
     .map(v=>'<option value="'+esc(v.name)+'">'+esc(v.name)+'</option>').join('');
+  renderTransferList();
   $('opTransferCard').classList.remove('hide');
   if($('opTransferCard').scrollIntoView) $('opTransferCard').scrollIntoView({behavior:'smooth'});
 }
-function closeTransfer(){ transferFrom=null; $('opTransferCard').classList.add('hide'); }
+function closeTransfer(){ transferFrom=null; trPick=new Set(); $('opTransferCard').classList.add('hide'); }
 async function doTransferStores(){
   if(!transferFrom) return;
+  const from = transferFrom.name;              // 先取出来：closeTransfer() 会把 transferFrom 置空
   const to = ($('opTransferTo').value||'').trim();
   if(!to) return msg('请选择接收人','err');
-  const ids = Array.from(document.querySelectorAll('.opTrStore:checked')).map(el=>parseInt(el.value,10));
+  const ids = Array.from(trPick);
   if(!ids.length) return msg('请至少勾选一家门店','err');
+  const btn = $('opTransferBtn'); if(btn) btn.disabled = true;
   try{
     for(const sid of ids){
       const r = await sb('/rest/v1/stores?id=eq.'+sid, { method:'PATCH', body: JSON.stringify({ operator:to }) });
       if(!r.ok) throw new Error('门店 '+sid+' 转移失败：HTTP '+r.status);
     }
     closeTransfer(); await loadStores(); renderOpsManager();
-    msg('已将 '+ids.length+' 家门店从「'+esc(transferFrom.name)+'」转移给「'+esc(to)+'」','ok');
+    msg('已将 '+ids.length+' 家门店从「'+esc(from)+'」转移给「'+esc(to)+'」','ok');
   }catch(err){ msg(esc(err.message),'err'); }
+  finally{ if(btn) btn.disabled = false; }
 }
 
 (async function init(){
