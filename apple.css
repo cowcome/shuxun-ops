@@ -41,9 +41,9 @@
   --sx-fill-dot:      #16a34a;   /* 已填报绿点 */
 
   /* 图表墨色：Chart.js 由 JS 读取，跟着主题走 */
-  --sx-chart-tick:    rgba(60,60,67,.62);
+  --sx-chart-tick:    rgba(60,60,67,.82);
   --sx-chart-grid:    rgba(60,60,67,.12);
-  --sx-chart-legend:  rgba(60,60,67,.72);
+  --sx-chart-legend:  rgba(60,60,67,.86);
 
   --sx-nav-bg:        rgba(255,255,255,.82);
   --sx-shadow-1: 0 1px 2px rgba(16,24,40,.04), 0 1px 6px rgba(16,24,40,.03);
@@ -99,9 +99,9 @@ html[data-theme="dark"]{
   --sx-dou:           #a78bfa;
   --sx-fill-dot:      #30d158;
 
-  --sx-chart-tick:    rgba(235,235,245,.60);
+  --sx-chart-tick:    rgba(235,235,245,.78);
   --sx-chart-grid:    rgba(84,84,88,.55);
-  --sx-chart-legend:  rgba(235,235,245,.72);
+  --sx-chart-legend:  rgba(235,235,245,.88);
 
   --sx-nav-bg:        rgba(28,28,30,.80);
   --sx-shadow-1: 0 .5px 0 rgba(255,255,255,.06);
@@ -149,7 +149,7 @@ h3{ font-size: 16px; font-weight: 600; }
 
 /* ---------- 4. 表单控件 ---------- */
 .field-label{ font-size: 12px; font-weight: 500; color: var(--sx-text-2); margin-bottom: 6px; }
-input[type=text], input[type=password], input[type=date], input[type=number], select, textarea{
+input[type=text], input[type=password], input[type=date], input[type=number], input[type=search], select, textarea{
   width: 100%; height: 40px;
   border-radius: var(--sx-r-md);
   border: 1px solid transparent;
@@ -224,8 +224,8 @@ button:disabled{ opacity: .45; cursor: not-allowed; }
 /* ---------- 7. 表格：发丝线 + 等宽数字 ---------- */
 table{ width: 100%; border-collapse: collapse; font-size: 13px; }
 th{
-  text-align: left; font-size: 12px; font-weight: 500; letter-spacing: .01em;
-  color: var(--sx-text-3); padding: 9px 12px;
+  text-align: left; font-size: 12px; font-weight: 700; letter-spacing: .01em;
+  color: var(--sx-text); padding: 9px 12px;
   border-bottom: .5px solid var(--sx-separator); white-space: nowrap;
   background: var(--sx-surface-2);
 }
@@ -236,9 +236,9 @@ td{
 }
 tbody tr{ transition: background var(--sx-dur-1) var(--sx-ease-out); }
 @media (hover:hover) and (pointer:fine){ tbody tr:hover{ background: var(--sx-fill); } }
-td.store, th.store{ background: var(--sx-surface); position: sticky; left: 0; z-index: 2; font-weight: 500; }
+td.store, th.store{ background: var(--sx-surface); position: sticky; left: 0; z-index: 2; font-weight: 700; color: var(--sx-text); }
 tbody tr:hover td.store{ background: var(--sx-surface-2); }
-tr.total td, tr.total td.store{ background: var(--sx-surface-2); font-weight: 600; }
+tr.total td, tr.total td.store{ background: var(--sx-surface-2); font-weight: 800; color: var(--sx-text); }
 .tbl-wrap{
   overflow-x: auto; border-radius: var(--sx-r-lg);
   border: .5px solid var(--sx-separator);
@@ -522,6 +522,20 @@ html:not([data-theme="dark"]) body.sx-legacy .text-input:focus{
   border-color: var(--sx-accent) !important;
   box-shadow: 0 0 0 3px var(--sx-accent-ring) !important;
 }
+
+/* 16.6 表格可读性：表头 / 门店列 / 合计行
+   遗留页原生选择器优先级更高（thead th=0,0,2 / td.store=0,1,1 / tr.total td=0,2,2），
+   上一版只中和了背景没中和字色，浅色主题下白字浮在浅底上 → 必须作用域 + !important 一起补。
+   本区不区分明暗：两种主题下这三处都取主文字色，字重按用户要求加重。 */
+body.sx-legacy thead th,
+body.sx-legacy thead th.store{ font-weight: 700 !important; color: var(--sx-text) !important; }
+body.sx-legacy td.store,
+body.sx-legacy th.store{ font-weight: 700 !important; color: var(--sx-text) !important; }
+body.sx-legacy tr.total td,
+body.sx-legacy tr.total td.store{ font-weight: 800 !important; color: var(--sx-text) !important; }
+/* 选中行：遗留页写死浅紫字（#c4b5fd），浅色主题下会浮在浅底上看不见 */
+html:not([data-theme="dark"]) body.sx-legacy #dashStoreTable tr.sel td,
+html:not([data-theme="dark"]) body.sx-legacy #dashStoreTable tr.sel td.store{ color: var(--sx-accent) !important; }
 html:not([data-theme="dark"]) body.sx-legacy .submit-btn{ height: auto !important; }
 html:not([data-theme="dark"]) body.sx-legacy .status.ok{ background: var(--sx-green-bg) !important; color: var(--sx-green) !important; }
 html:not([data-theme="dark"]) body.sx-legacy .status.err{ background: var(--sx-red-bg) !important; color: var(--sx-red) !important; }
@@ -654,7 +668,43 @@ html[data-theme="dark"] body.sx-legacy .sx-nav.sx-dark .sx-me{ color: var(--sx-t
 @media (max-width: 560px){ .sx-theme-btn{ padding: 0 8px; } }
 
 /* ============================================================================
-   20. 无障碍：更轻柔，而非清零
+   20. 转移门店选择器（store_admin）
+   搜索/全选/计数是「偶尔用、但用错代价大」的操作：不加花活，
+   只给状态颜色过渡（120ms），数字本身不动——数字跳动只会让人怀疑自己点错了。
+   ========================================================================== */
+.tr-tools{
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 0 0 10px;
+}
+.tr-tools .tr-search{ flex: 1 1 200px; width: auto; min-width: 150px; height: 34px; font-size: 13px; }
+.tr-tools .tr-btns{ display: flex; gap: 6px; flex: 0 0 auto; }
+.tr-count{
+  flex: 0 0 auto; font-size: 12px; font-weight: 500;
+  color: var(--sx-text-2);
+  font-variant-numeric: tabular-nums;
+  transition: color var(--sx-dur-1) var(--sx-ease-out);
+}
+.tr-count.on{ color: var(--sx-accent); font-weight: 700; }
+.tr-list{
+  max-height: 260px; overflow: auto;
+  border: .5px solid var(--sx-separator); border-radius: var(--sx-r-md);
+  background: var(--sx-surface);
+}
+.tr-item{
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; cursor: pointer;
+  border-bottom: .5px solid var(--sx-separator);
+  font-size: 13px; color: var(--sx-text);
+  transition: background var(--sx-dur-1) var(--sx-ease-out);
+}
+.tr-item:last-child{ border-bottom: none; }
+@media (hover:hover) and (pointer:fine){ .tr-item:hover{ background: var(--sx-fill); } }
+.tr-item input{ width: 15px; height: 15px; accent-color: var(--sx-accent); flex: 0 0 auto; }
+.tr-item .tr-name{ flex: 1 1 auto; font-weight: 600; }
+.tr-item .tr-type{ flex: 0 0 auto; font-size: 11px; color: var(--sx-text-3); }
+
+/* ============================================================================
+   21. 无障碍：更轻柔，而非清零
    ========================================================================== */
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after{
