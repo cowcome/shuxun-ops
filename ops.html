@@ -900,9 +900,10 @@ function renderCharts(rows, s, e){
   if(trendCard) trendCard.classList.toggle('hide', !isRange);
   $('trendTitle').textContent = '每日趋势：核销金额 / 到店客数 / 内购数量 · ' + s + ' ~ ' + e;
   const dayLbls = days.map(d=>String(parseInt(d.slice(8),10)));
+  // 只标记周末（'6'/'0'），颜色留到绘制时按深浅主题解析——写死白色的话，浅色模式下刻度会隐形
   const dayColors = days.map(d=>{
     const w = new Date(d+'T00:00:00').getDay();
-    return w===6 ? '#ff5fd7' : (w===0 ? '#7dff5a' : 'rgba(255,255,255,0.6)');
+    return w===6 ? '6' : (w===0 ? '0' : '');
   });
   // 缓存给单店趋势图使用；单日视图清空选中
   DASH_DAYS = days; DASH_LBLS = dayLbls; DASH_COLORS = dayColors; DASH_S = s; DASH_E = e; STORE_DAILY = byDayStore;
@@ -928,6 +929,29 @@ function chartInk(){
   return (window.SX && window.SX.ink) ? window.SX.ink()
     : { tick:'rgba(255,255,255,0.6)', grid:'rgba(255,255,255,0.06)', legend:'rgba(255,255,255,0.7)' };
 }
+/* 周末高亮色：随主题换档，保证浅底/深底上都读得出来（荧光色只在深色下成立） */
+function weekendInk(){
+  var d = !!(window.SX && window.SX.isDark && window.SX.isDark());
+  return { sa: d ? '#ff7ae0' : '#c026d3', su: d ? '#7dff5a' : '#15803d' };
+}
+/* X 轴刻度：周末走语义色，其余走当前主题的刻度墨色（函数形式 = 切主题自动跟随） */
+function xTickColorFactory(flags){
+  return function(c){
+    var f = flags && flags[c.index];
+    if(f === '6') return weekendInk().sa;
+    if(f === '0') return weekendInk().su;
+    return chartInk().tick;
+  };
+}
+/* 兼容：传入的既可能是「周末标记数组」，也可能是旧式的颜色数组 */
+function toTickColors(arr){
+  if(!arr || !arr.length) return null;
+  for(var i=0;i<arr.length;i++){
+    var v = arr[i];
+    if(!(v === '' || v === '6' || v === '0')) return arr;   // 有非标记值 → 当作颜色数组原样用
+  }
+  return xTickColorFactory(arr);
+}
 function mkBar(id, labels, sets, intY, xTickColors){
   if(charts[id]) charts[id].destroy();
   const el = $(id); if(!el) return;
@@ -943,7 +967,7 @@ function mkBar(id, labels, sets, intY, xTickColors){
           if(sp && sp[ctx.dataIndex]) return ' 合计: ¥'+v+'（美 '+fmtAmt(sp[ctx.dataIndex].mt)+' · 抖 '+fmtAmt(sp[ctx.dataIndex].dy)+'）';
           return ' '+ctx.dataset.label+': ¥'+v;
         }}} },
-      scales:{ x:{ticks:{color: xTickColors || chartInk().tick,font:{size:10}},grid:{color:chartInk().grid}},
+      scales:{ x:{ticks:{color: toTickColors(xTickColors) || chartInk().tick,font:{size:10}},grid:{color:chartInk().grid}},
                y:(intY?{beginAtZero:true,ticks:{precision:0,color:chartInk().tick,font:{size:10}},grid:{color:chartInk().grid}}:{ticks:{color:chartInk().tick,font:{size:10}},grid:{color:chartInk().grid}}) } }
   });
 }
@@ -953,7 +977,7 @@ function mkLine(id, labels, sets, tickColors, dual){
   const axTick = {color:chartInk().tick,font:{size:10}};
   const axGrid = {color:chartInk().grid};
   const scales = {
-    x:{ticks:{color: tickColors || chartInk().tick,font:{size:10}}, grid:axGrid},
+    x:{ticks:{color: toTickColors(tickColors) || chartInk().tick,font:{size:10}}, grid:axGrid},
     y:{position:'left', ticks:axTick, grid:axGrid}
   };
   if(dual) scales.y1 = {position:'right', ticks:axTick, grid:{drawOnChartArea:false}};
