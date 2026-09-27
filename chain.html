@@ -625,9 +625,9 @@ function renderStores(){
   renderSpActive();
 }
 
-/* 平台数据行：美团 / 抖音 各一行（¥金额 + 单数）。数据源：Supabase yz_orders（有赞实时） */
+/* 平台数据行：美团 / 抖音 各一行（¥金额 + 单数）。数据源：Supabase chain_verify_orders（平台导入） */
 let storeMetrics = {};
-let zeroStores = [];    // 今日 0 核销门店（营业中且有有赞映射）
+let zeroStores = [];    // 最新数据日 0 核销门店（营业中且本期导入数据出现过）
 const fmtY = (x) => '¥' + (Math.round((x||0)*100)/100);
 function platRows(x){
   const m = storeMetrics[x.id] || null;
@@ -637,15 +637,13 @@ function platRows(x){
          '<div class="plat-row"><span class="pv">抖音</span><span class="pa">'+fa('dyA')+'</span><span class="pc">'+fc('dyC')+' 单</span></div>';
 }
 
-/* ================= 有赞实时数据（yz_orders 直读） =================
-   口径：order_type=0（真实核销），排除 item_type 6/7/9（二维码收款/直接收款/充值）。
-   内购订单不走有赞（2026-09-15 崔姐确认），故有赞金额=真实客户业绩。
-   按天归属暂用 create_time（下单时间），finish_time 口径验证后切换。 */
-const YZ_ITEM_EXCLUDE = [6,7,9];
-const yzCacheKey = 'chain_yz_cache_v3';
+/* ================= 平台导入核销数据（chain_verify_orders 直读） =================
+   2026-09-27 崔姐拍板：连锁数据源 = 抖音来客/美团开店宝平台导出（每周网页导入），
+   有赞 API 通道已关停，yz_orders 不再更新。
+   口径：业绩 = 核销 + 验券 + 记账核销；不含抖音线上买单（内购上翻，另板块）。 */
+const yzCacheKey = 'chain_cvo_cache_v1';
 let yz = { ready:false, asOf:null, unmatched:[], blocked:[] };
-let kdtToStore = {};   // yz_shop_map：kdt_id → store_id（2026-09-16 崔姐飞书确认，99 条）
-let storeToKdt = {};   // 反向映射：store_id → kdt_id（判断门店是否接入有赞）
+let cvoSeen = {};      // 本期数据中出现过的门店（= 已接入平台渠道），供 0 核销判定
 // 🛡 防线（2026-09-16 崔姐拍板）：未上线门店（status=待上线）的数据是门店学有赞系统的测试脏数据，
 // 一律不显示、不计入看板任何统计；非连锁门店（陪跑/直营）也不计入连锁大盘。
 
@@ -724,69 +722,62 @@ async function loadYz(force){
       }catch(e){}
     }
     if(!agg){
-      // 先拉 kdt_id→store_id 映射（99 行小表，随刷新一起拉）
-      const ymap = await sb('/rest/v1/yz_shop_map?select=kdt_id,store_id');
-      kdtToStore = {}; storeToKdt = {};
-      ymap.forEach(r => { kdtToStore[r.kdt_id] = r.store_id; storeToKdt[r.store_id] = r.kdt_id; });
-      // 分页拉取（Supabase 单次上限 1000 行）
-      const gte = new Date(Date.parse(start + 'T00:00:00+08:00')).toISOString();
-      const sel = 'kdt_id,shop_name,real_pay,order_type,item_type,pay_channel_name,create_time';
+      // 分页拉取平台导入核销订单（Supabase 单次上限 1000 行）
+      const sel = 'store_id,store_name,platform,biz,amount,form_date';
       const raw = [];
       let from = 0;
       while(true){
-        const part = await sb('/rest/v1/yz_orders?source=eq.chain&order=create_time.asc&select=' + sel
-          + '&create_time=gte.' + encodeURIComponent(gte),
+        const part = await sb('/rest/v1/chain_verify_orders?order=form_date.asc&select=' + sel
+          + '&form_date=gte.' + start,
           { headers: { Range: from + '-' + (from+999) } });
         raw.push(...part);
         if(part.length < 1000 || from > 150000) break;
         from += 1000;
       }
-      asOf = raw.length ? raw[raw.length-1].create_time : null;
-      // 聚合：按 kdt_id（有赞门店唯一身份，改名不影响）× 日期
+      asOf = raw.length ? raw[raw.length-1].form_date : null;
+      // 聚合：按 store_id（导入回填），未挂接的按店名归组待裁决
       agg = {};
       raw.forEach(r => {
-        if(r.order_type !== 0 || YZ_ITEM_EXCLUDE.indexOf(r.item_type) >= 0) return;
-        const ch = String(r.pay_channel_name || '');
-        // 2026-09-15 崔姐拍板：只认「核销 / 验券」渠道为真实核销业绩，
-        // 扫码买单（二维码收款）/ 会员余额 / 欠款 / 现金 / 抖音线上买单 等一律不算
-        if(!/核销|验券/.test(ch)) return;
-        const amt = (r.real_pay || 0) / 100;
-        const D = yzDateStr(new Date(r.create_time).getTime());
-        let g = agg[r.kdt_id];
-        if(!g) g = agg[r.kdt_id] = { name:r.shop_name, mtA:0, mtC:0, dyA:0, dyC:0, otA:0, otC:0, days:{} };
-        if(ch.indexOf('美团') >= 0){ g.mtA += amt; g.mtC++; }
-        else if(ch.indexOf('抖音') >= 0){ g.dyA += amt; g.dyC++; }
+        const key = r.store_id ? String(r.store_id) : ('N_' + r.store_name);
+        const amt = Number(r.amount) || 0;
+        if(!amt) return;
+        let g = agg[key];
+        if(!g) g = agg[key] = { name:r.store_name, mtA:0, mtC:0, dyA:0, dyC:0, otA:0, otC:0, days:{} };
+        if(r.platform === '美团'){ g.mtA += amt; g.mtC++; }
+        else if(r.platform === '抖音'){ g.dyA += amt; g.dyC++; }
         else { g.otA += amt; g.otC++; }
+        const D = r.form_date;
         const d = g.days[D] || (g.days[D] = [0,0]);
         d[0] += amt; d[1]++;
       });
       try{ localStorage.setItem(ck, JSON.stringify({ t: Date.now(), asOf, agg })); }catch(e){}
     }
 
-    // 映射到门店主表（按 kdt_id 精确映射，弃店名模糊匹配）
-    // 🛡 防线：待上线门店 = 测试脏数据，拦截不计入；非连锁门店（陪跑/直营映射）也不计入连锁大盘
+    // 映射到门店主表（store_id 由导入回填；未挂接的按店名进未匹配名单）
+    // 🛡 防线：待上线门店数据一律拦截不计入；非连锁门店（陪跑/直营映射）也不计入连锁大盘
     const metrics = {};
-    yz.unmatched = []; yz.blocked = [];
+    yz.unmatched = []; yz.blocked = []; cvoSeen = {};
     const storeById = {}; allStores.forEach(s => storeById[s.id] = s);
-    Object.keys(agg).forEach(kdt => {
-      const sid = kdtToStore[kdt];
-      const g = agg[kdt];
-      const st = sid ? storeById[sid] : null;
+    Object.keys(agg).forEach(key => {
+      const g = agg[key];
       const amtAll = g.mtA + g.dyA + g.otA;
+      const sid = key.charAt(0) === 'N' ? null : Number(key);
+      const st = sid ? storeById[sid] : null;
       if(st && st.status === '待上线'){
-        yz.blocked.push({ name: g.name || ('kdt '+kdt), amt: amtAll, why:'未上线' });
+        yz.blocked.push({ name: g.name || ('门店#'+key), amt: amtAll, why:'未上线' });
         return;
       }
       if(st){
+        cvoSeen[sid] = 1;
         const t = g.days[T]  || [0,0];
         const y = g.days[yd] || [0,0];
         let mtd = 0; Object.keys(g.days).forEach(d => { if(d >= ms) mtd += g.days[d][0]; });
         metrics[sid] = { mtA:g.mtA, mtC:g.mtC, dyA:g.dyA, dyC:g.dyC,
           today:t[0], todayC:t[1], yday:y[0], ydayC:y[1], mtd:mtd };
       }else if(sid){
-        yz.blocked.push({ name: g.name || ('kdt '+kdt), amt: amtAll, why:'非连锁' });
+        yz.blocked.push({ name: g.name || ('门店#'+key), amt: amtAll, why:'非连锁' });
       }else{
-        yz.unmatched.push({ name: g.name || ('kdt '+kdt), amt: amtAll });
+        yz.unmatched.push({ name: g.name || ('门店#'+key), amt: amtAll });
       }
     });
     storeMetrics = metrics;
@@ -802,30 +793,30 @@ async function loadYz(force){
     const diffPct = yA ? Math.round(diff / yA * 100) : null;
     $('stDiff').innerHTML = (diff >= 0 ? '<span style="color:#4ade80">+' : '<span style="color:#f87171">') + fmtY(diff) + '</span>'
       + '<span style="font-size:11px;opacity:.6"> vs 昨日 ' + fmtY(yA) + (diffPct === null ? '' : ' · ' + (diffPct >= 0 ? '+' : '') + diffPct + '%') + '</span>';
-    // 今日 0 核销门店（口径：营业中 + 已接入有赞映射；无有赞系统门店不计入，避免永远挂零）
+    // 今日 0 核销门店（口径：营业中 + 本期导入数据里出现过的门店；数据外的门店不计入，避免永远挂零）
     zeroStores = allStores
-      .filter(x => classOf(x) === 'open' && storeToKdt[x.id])
+      .filter(x => classOf(x) === 'open' && cvoSeen[x.id])
       .filter(x => !metrics[x.id] || !(metrics[x.id].today > 0))
       .sort((a,b) => (metrics[b.id] ? metrics[b.id].mtd : 0) - (metrics[a.id] ? metrics[a.id].mtd : 0));
-    const yzOpenN = allStores.filter(x => classOf(x) === 'open' && storeToKdt[x.id]).length;
+    const yzOpenN = allStores.filter(x => classOf(x) === 'open' && cvoSeen[x.id]).length;
     $('stZero').textContent = zeroStores.length + ' 家';
     $('stZero').style.color = zeroStores.length ? '#f87171' : '#4ade80';
-    $('stZeroD').textContent = '有赞营业店 ' + yzOpenN + ' 家中 · 点击看明细';
+    $('stZeroD').textContent = '平台接入店 ' + yzOpenN + ' 家中 · 点击看明细';
     renderZeroList();
     const badge = $('healthBadge');
-    badge.textContent = '有赞 · 实时';
+    badge.textContent = '平台账单 · 周度导入';
     badge.className = 'badge bg-open';
-    $('asOf').textContent = asOf ? ('数据截至 ' + bjStr(asOf)) : '';
+    $('asOf').textContent = asOf ? ('数据截至 ' + asOf + '（平台导出）') : '';
 
     // 未匹配 / 拦截提示
     const un = yz.unmatched, bl = yz.blocked;
     const blPend = bl.filter(x => x.why === '未上线'), blOther = bl.filter(x => x.why !== '未上线');
-    $('yzBanner').innerHTML = '数据源：有赞开放平台 · Supabase 实时同步。口径：真实核销业绩 = 美团验券 + 抖音核销 + 记账核销 + 商城核销；不含扫码买单（二维码收款）/ 会员余额 / 欠款 / 现金 / 抖音线上买单 等非核销支付。内购不走有赞，本数据即真实客户业绩（未对账）。门店归属按 kdt_id 精确映射（yz_shop_map，2026-09-16 确认），有赞店改名不影响对账。'
+    $('yzBanner').innerHTML = '数据源：抖音来客 / 美团开店宝平台导出 · 每周「数据导入」（2026-09-27 拍板，有赞通道已关停）。口径：业绩 = 核销 + 验券 + 记账核销；不含抖音线上买单（内购上翻）。门店归属按导入回填的 store_id 精确挂接。'
       + (blPend.length ? '<br/>🛡 已拦截 ' + blPend.length + ' 家未上线门店的测试数据（合计 ' + fmtY(blPend.reduce((s,x)=>s+x.amt,0)) + '），不计入看板：'
         + esc(blPend.slice(0,8).map(x => x.name).join('、')) : '')
       + (blOther.length ? '<br/>ℹ️ ' + blOther.length + ' 家非连锁门店（陪跑/直营）数据不并入连锁大盘（合计 ' + fmtY(blOther.reduce((s,x)=>s+x.amt,0)) + '）' : '')
-      + (un.length ? '<br/>⚠️ 有 ' + un.length + ' 家有赞门店未在映射表中（合计 ' + fmtY(un.reduce((s,x)=>s+x.amt,0)) + '）：'
-        + esc(un.slice(0,8).map(x => x.name).join('、')) : (blPend.length || blOther.length ? '' : '✅ 有赞门店已全部按 kdt_id 映射到门店主表'));
+      + (un.length ? '<br/>⚠️ 有 ' + un.length + ' 家门店未挂接门店主表（合计 ' + fmtY(un.reduce((s,x)=>s+x.amt,0)) + '）：'
+        + esc(un.slice(0,8).map(x => x.name).join('、')) : (blPend.length || blOther.length ? '' : '✅ 全部门店已挂接门店主表'));
 
     renderStores();
   }catch(e){
