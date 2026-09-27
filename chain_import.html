@@ -145,20 +145,22 @@
   <!-- 主界面 -->
   <div id="appView" class="hide">
     <h1>数据导入 <span style="font-size:13px;font-weight:500;color:#8a8f9e">· 连锁核销订单</span></h1>
-    <div class="sub">抖音来客 / 美团开店宝导出的订单明细，每周导一次，自动去重</div>
+    <div class="sub">推荐：有赞后台导一份「连锁总部-交易账单明细」即可，全渠道自动分拣 · 自动去重</div>
 
     <div id="globalMsg"></div>
 
     <div class="card">
       <div class="card-title">① 选择导出文件</div>
       <div class="drop" id="dropZone">
-        点击选择或拖入平台导出文件（.xls / .xlsx，可多选）
+        点击选择或拖入导出文件（.xls / .xlsx，可多选）
         <input type="file" id="fileInput" accept=".xls,.xlsx" multiple />
       </div>
       <div class="hint" style="margin-top:10px">
-        <b>文件名要求</b>：开头必须是 <b>1抖音核销</b> / <b>2抖音记账核销</b> / <b>4美团点评验券</b> / <b>5美团记账核销</b>；
-        <b>3抖音线上买单</b> 是平台内购上翻，<b>不用导入</b>。<br>
-        <b>业绩口径</b>：抖音业绩 = 核销 + 记账核销；美团业绩 = 验券 + 记账核销。<br>
+        <b>推荐（一步到位）</b>：有赞后台导出 <b>连锁总部-交易账单明细</b>，上传后自动按支付方式分拣——
+        只取 抖音核销 / 抖音记账核销 / 美团点评验券 / 美团记账核销 四类业绩，
+        收银、充值、售卡、储值消费等非业绩行自动排除并显示排除数。<br>
+        <b>兼容旧方式</b>：抖音来客 / 美团开店宝分渠道导出也可以（文件名开头：1抖音核销 / 2抖音记账核销 /
+        4美团点评验券 / 5美团记账核销；3抖音线上买单是内购上翻，不用导入）。<br>
         <b>重复导入安全</b>：按订单号自动去重，只补新单，不会重复计数。
       </div>
     </div>
@@ -268,6 +270,7 @@ $('lgPwd').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); }
 
 /* ---------------- 文件分类 ---------------- */
 const BIZ_LIST = [
+  { key:'yz_all',  label:'有赞连锁总部账单（全渠道自动分拣）', platform:'yz_all', biz:'' },
   { key:'dy_hx',   label:'抖音核销',      platform:'抖音', biz:'核销' },
   { key:'dy_jz',   label:'抖音记账核销',  platform:'抖音', biz:'记账核销' },
   { key:'dy_md',   label:'抖音线上买单（不导入）', platform:'', biz:'' },
@@ -275,8 +278,16 @@ const BIZ_LIST = [
   { key:'mt_jz',   label:'美团记账核销',  platform:'美团', biz:'记账核销' },
   { key:'none',    label:'— 请选择 / 不导入 —', platform:'', biz:'' },
 ];
+/* 有赞单文件：支付方式 → (平台, 业务) 映射，不在表内 = 非业绩行（收银/充值/售卡/兑付） */
+const YZ_PAY_MAP = {
+  '抖音核销':     ['抖音', '核销'],
+  '抖音记账核销': ['抖音', '记账核销'],
+  '美团点评验券': ['美团', '验券'],
+  '美团记账核销': ['美团', '记账核销'],
+};
 function detectBiz(fileName){
   const n = fileName.replace(/\.(xlsx?|XLSX?)$/,'');
+  if(n.indexOf('连锁总部-交易账单明细') === 0) return 'yz_all';
   if(n.indexOf('1抖音核销') === 0)     return 'dy_hx';
   if(n.indexOf('2抖音记账核销') === 0) return 'dy_jz';
   if(n.indexOf('3抖音线上买单') === 0) return 'dy_md';
@@ -305,6 +316,7 @@ const IS_NAN_STR = (v) => v==='' || String(v).trim()==='NaN';
 
 /* ---------------- SheetJS 解析单文件 ---------------- */
 function parseWorkbook(buf, fileName){
+  const yzAll = fileName.replace(/\.(xlsx?|XLSX?)$/,'').indexOf('连锁总部-交易账单明细') === 0;
   const wb = XLSX.read(new Uint8Array(buf), { type:'array', cellDates:true });
   const ws = wb.Sheets[wb.SheetNames[0]];
   const aoa = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
@@ -325,7 +337,7 @@ function parseWorkbook(buf, fileName){
   const NEED = ['订单号','所属门店','账单金额'];
   for(const k of NEED){ if(ci[k] < 0) throw new Error('表头缺少「'+k+'」列'); }
 
-  const rows = []; let totalAmt = null; let badRows = 0; let skipStatus = 0;
+  const rows = []; let totalAmt = null; let badRows = 0; let skipStatus = 0; let skipPay = 0;
   for(let i=hi+1;i<aoa.length;i++){
     const cs = aoa[i];
     if(!cs || !cs.length) continue;
@@ -341,18 +353,31 @@ function parseWorkbook(buf, fileName){
       orderNo = '';
       for(const c of cs){ const s=String(c==null?'':c).trim(); if(RE_ORDER.test(s)){ orderNo=s; break; } }
     }
-    // 店名
-    let store = ci['所属门店']>=0 ? String(cs[ci['所属门店']]==null?'':cs[ci['所属门店']]).trim() : '';
-    if(store.indexOf('書荀') < 0 && store.indexOf('书荀') < 0){
-      store = '';
-      for(const c of cs){ const s=String(c==null?'':c).trim(); if(s.indexOf('書荀')>=0 || s.indexOf('书荀')>=0){ store=s; break; } }
-    }
     // 金额（账单金额列 → 行内最右数字兜底）
     let amt = ci['账单金额']>=0 ? toNum(cs[ci['账单金额']]) : NaN;
     if(isNaN(amt)){
       for(let j=cs.length-1;j>=0;j--){
         if(typeof cs[j] === 'number' && !isNaN(cs[j]) && cs[j] > 0 && cs[j] < 10000000){ amt = cs[j]; break; }
       }
+    }
+    // 支付方式（先取，合计行判断要用）
+    const payType = ci['支付方式']>=0 ? String(cs[ci['支付方式']]==null?'':cs[ci['支付方式']]).trim() : '';
+    // 有赞单文件：无订单号+无支付方式+有金额 = 表尾合计行
+    if(yzAll && !orderNo && !payType && !isNaN(amt)){
+      totalAmt = amt; continue;
+    }
+    // 有赞单文件：按支付方式分拣，非业绩行（收银/充值/售卡/会员余额/兑付）排除
+    let pf = '', bz = '';
+    if(yzAll){
+      const m = YZ_PAY_MAP[payType];
+      if(!m){ skipPay++; continue; }
+      pf = m[0]; bz = m[1];
+    }
+    // 店名
+    let store = ci['所属门店']>=0 ? String(cs[ci['所属门店']]==null?'':cs[ci['所属门店']]).trim() : '';
+    if(store.indexOf('書荀') < 0 && store.indexOf('书荀') < 0){
+      store = '';
+      for(const c of cs){ const s=String(c==null?'':c).trim(); if(s.indexOf('書荀')>=0 || s.indexOf('书荀')>=0){ store=s; break; } }
     }
     if(!orderNo || !store || isNaN(amt) || amt <= 0){ badRows++; continue; }
     // 状态
@@ -364,7 +389,6 @@ function parseWorkbook(buf, fileName){
     const fd = (dt || ot).slice(0,10);
     if(!/^\d{4}-\d{2}-\d{2}$/.test(fd)){ badRows++; continue; }
     const member = ci['会员编号']>=0 ? String(cs[ci['会员编号']]==null?'':cs[ci['会员编号']]).trim() : '';
-    const payType = ci['支付方式']>=0 ? String(cs[ci['支付方式']]==null?'':cs[ci['支付方式']]).trim() : '';
     const product = ci['商品名称']>=0 ? String(cs[ci['商品名称']]==null?'':cs[ci['商品名称']]).trim() : '';
     rows.push({
       order_no: orderNo, store_name: store, form_date: fd,
@@ -372,6 +396,7 @@ function parseWorkbook(buf, fileName){
       product_name: IS_NAN_STR(product)?'':product,
       member_no: RE_MEMBER.test(member)?member:'',
       pay_type: IS_NAN_STR(payType)?'':pay_type_sanitize(payType),
+      _pf: pf, _biz: bz,
       amount: Math.round(amt*100)/100,
       src_file: fileName
     });
@@ -380,8 +405,9 @@ function parseWorkbook(buf, fileName){
   const uniq = {}; rows.forEach(r=>{ uniq[r.order_no] = r; });
   const list = Object.values(uniq);
   const sum = list.reduce((a,r)=>a+r.amount,0);
-  const mismatch = (totalAmt != null && list.length) ? (sum - totalAmt) : null;
-  return { rows:list, totalAmt, badRows, skipStatus, sum, mismatch };
+  // 有赞单文件的合计行是全渠道总额，与业绩行不可比 → 不做对账
+  const mismatch = (yzAll || totalAmt == null || !list.length) ? null : (sum - totalAmt);
+  return { rows:list, totalAmt, badRows, skipStatus, skipPay: skipPay||0, sum, mismatch, yzAll };
 }
 function pay_type_sanitize(s){ return s; }
 
@@ -413,7 +439,9 @@ function renderFiles(){
       const canImport = biz.platform && (p.mismatch === null || Math.abs(p.mismatch) <= 1 || j.force);
       if(canImport) importable++;
       stCell = !biz.platform ? '<span class="badge b-skip">不导入</span>'
-             : (p.badRows || p.skipStatus ? '<span class="badge b-warn">跳过 '+(p.badRows+p.skipStatus)+' 行</span>' : '<span class="badge b-ok">就绪</span>');
+             : (p.badRows || p.skipStatus ? '<span class="badge b-warn">跳过 '+(p.badRows+p.skipStatus)+' 行</span>'
+                                          : '<span class="badge b-ok">就绪</span>');
+      if(p.skipPay) stCell += ' <span class="badge b-skip">排除非业绩 '+p.skipPay+' 行</span>';
       if(p.mismatch !== null && Math.abs(p.mismatch) > 1){
         stCell += ' <label style="font-size:12px;white-space:nowrap"><input type="checkbox" class="forceChk" data-idx="'+idx+'"'+(j.force?' checked':'')+'/> 强制导入</label>';
       }
@@ -473,7 +501,9 @@ dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over
 let importing = false;
 async function postBatch(batch, biz){
   const payload = batch.map(r => ({
-    order_no: r.order_no, platform: biz.platform, biz: biz.biz,
+    order_no: r.order_no,
+    platform: biz.key==='yz_all' ? r._pf : biz.platform,
+    biz:      biz.key==='yz_all' ? r._biz : biz.biz,
     store_name: r.store_name, form_date: r.form_date,
     order_time: r.order_time, done_time: r.done_time,
     product_name: r.product_name, member_no: r.member_no, pay_type: r.pay_type,
