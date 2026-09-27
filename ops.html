@@ -31,14 +31,14 @@
     padding: 16px;
     margin-bottom: 14px;
   }
-  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #c4b5fd; }
+  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--sx-bright); }
   .fill-dot { color: #4ade80; font-weight: 700; }
   .fill-note { color: rgba(255,255,255,0.55); font-size: 12px; font-weight: 400; margin-left: 8px; }
   /* 门店数据汇总：可点击行（多日区间下点选查看单店趋势） */
   #dashStoreTable tr[data-st] { cursor: pointer; }
-  #dashStoreTable tr[data-st]:hover { background: rgba(139,92,246,0.14); }
-  #dashStoreTable tr.sel { background: rgba(139,92,246,0.24); }
-  #dashStoreTable tr.sel td.store { background: #2f2757; color: #c4b5fd; }
+  #dashStoreTable tr[data-st]:hover { background: var(--sx-accent-soft); }
+  #dashStoreTable tr.sel { background: var(--sx-accent-soft); }
+  #dashStoreTable tr.sel td.store { background: var(--sx-accent-soft); color: var(--sx-bright); }
 
   /* ---------- 表单 ---------- */
   .field { margin-bottom: 12px; }
@@ -63,7 +63,7 @@
     font-family: inherit;
   }
   button:hover { background: rgba(255,255,255,0.12); }
-  button.primary { background: #8b5cf6; border-color: #8b5cf6; font-weight: 600; }
+  button.primary { background: var(--sx-accent); border-color: var(--sx-accent); font-weight: 600; }
   button.primary:hover { background: #7c4ded; }
   button.danger { background: rgba(239,68,68,0.85); border-color: rgba(239,68,68,0.9); }
   button.danger:hover { background: #dc2626; }
@@ -83,14 +83,14 @@
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10);
     color: rgba(255,255,255,0.7);
   }
-  .tab.active { background: #8b5cf6; border-color: #8b5cf6; color: #fff; font-weight: 600; }
+  .tab.active { background: var(--sx-accent); border-color: var(--sx-accent); color: #fff; font-weight: 600; }
   .quick {
     font-size: 12px; padding: 4px 10px; border-radius: 14px; cursor: pointer;
     border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.55);
     user-select: none; white-space: nowrap;
   }
   .quick:hover { color: rgba(255,255,255,0.85); }
-  .quick.on { background: rgba(139,92,246,0.35); border-color: rgba(139,92,246,0.65); color: #fff; font-weight: 600; }
+  .quick.on { background: var(--sx-accent); border-color: var(--sx-accent); color: #fff; font-weight: 600; }
 
   /* ---------- 统计卡 ---------- */
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
@@ -114,9 +114,9 @@
     background: #241f3d; font-weight: 600; z-index: 2;
   }
   thead th.store { background: #2c2650; z-index: 3; }
-  tr.total td { font-weight: 800; font-size: 1.1em; background: rgba(139,92,246,0.16); }
+  tr.total td { font-weight: 800; font-size: 1.1em; background: var(--sx-accent-soft); }
   .mei { color: #fbbf24; }
-  .dou { color: #a78bfa; }
+  .dou { color: var(--sx-dou); }
   .bad { color: #f87171; font-weight: 700; }
   .ok { color: #4ade80; }
   .warn { color: #fbbf24; }
@@ -183,7 +183,7 @@
   .sx-nav.sx-dark{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
   .sx-nav.sx-dark a{color:rgba(255,255,255,.92)}
   .sx-nav.sx-dark a:hover{border-color:rgba(255,255,255,.2)}
-  .sx-nav.sx-dark a.cur{background:rgba(139,92,246,.25);border-color:rgba(167,139,250,.5);color:#c4b5fd}
+  .sx-nav.sx-dark a.cur{background:var(--sx-accent-soft);border-color:var(--sx-accent-ring);color:var(--sx-bright)}
   .sx-nav.sx-dark .sx-me{color:rgba(255,255,255,.55)}
 </style>
 <link rel="stylesheet" href="apple.css">
@@ -826,9 +826,9 @@ function renderStoreTrend(){
   if(ttl) ttl.innerHTML = esc(shortName(selTrendStore)) + ' · 每日趋势 · ' + DASH_S + ' ~ ' + DASH_E +
     '<span class="fill-note">再点一次该门店可关闭</span>';
   mkLine('chStoreTrend', DASH_LBLS, [
-    {label:'核销金额（元）', data:amt, bc:'#8b5cf6', unit:'¥'},
-    {label:'到店客数（人）', data:ppl, bc:'#7dff5a', yAxisID:'y1', unit:''},
-    {label:'内购数量（单）', data:inner, bc:'#fbbf24', yAxisID:'y1', unit:''}
+    {label:'核销金额（元）', data:amt, bc:()=>sxv('--sx-accent','#8b5cf6'), unit:'¥'},
+    {label:'到店客数（人）', data:ppl, bc:()=>sxv('--sx-green','#7dff5a'), yAxisID:'y1', unit:''},
+    {label:'内购数量（单）', data:inner, bc:()=>sxv('--sx-mei','#fbbf24'), yAxisID:'y1', unit:''}
   ], DASH_COLORS, true);
 }
 
@@ -909,16 +909,22 @@ function renderCharts(rows, s, e){
 
   if(isRange){
     mkLine('chTrend', dayLbls, [
-      {label:'核销金额（元）', data:days.map(d=>round2(byDay[d].mt+byDay[d].dy)), bc:'#8b5cf6', unit:'¥'},
-      {label:'到店客数（人）', data:days.map(d=>Math.round(byDay[d].ppl)), bc:'#7dff5a', yAxisID:'y1', unit:''},
-      {label:'内购数量（单）', data:days.map(d=>Math.round(byDay[d].inner)), bc:'#fbbf24', yAxisID:'y1', unit:''}
+      {label:'核销金额（元）', data:days.map(d=>round2(byDay[d].mt+byDay[d].dy)), bc:()=>sxv('--sx-accent','#8b5cf6'), unit:'¥'},
+      {label:'到店客数（人）', data:days.map(d=>Math.round(byDay[d].ppl)), bc:()=>sxv('--sx-green','#7dff5a'), yAxisID:'y1', unit:''},
+      {label:'内购数量（单）', data:days.map(d=>Math.round(byDay[d].inner)), bc:()=>sxv('--sx-mei','#fbbf24'), yAxisID:'y1', unit:''}
     ], dayColors, true);
   }else{
     mkLine('chTrend', dayLbls, [
-      {label:'美团', data:days.map(d=>round2(byDay[d].mt)), bc:'#fbbf24'},
-      {label:'抖音', data:days.map(d=>round2(byDay[d].dy)), bc:'#a78bfa'}
+      {label:'美团', data:days.map(d=>round2(byDay[d].mt)), bc:()=>sxv('--sx-mei','#fbbf24')},
+      {label:'抖音', data:days.map(d=>round2(byDay[d].dy)), bc:()=>sxv('--sx-dou','#a78bfa')}
     ], dayColors);
   }
+}
+/* 序列色：读当前主题的 CSS 变量。传函数给 Chart.js（scriptable），
+   主题切换触发 update 时会重新求值，柱子/折线颜色跟着换，不必重建图表 */
+function sxv(name, fb){
+  try{ var v = getComputedStyle(document.documentElement).getPropertyValue(name); return (v && v.trim()) || fb; }
+  catch(e){ return fb; }
 }
 /* 图表墨色：跟随深浅色主题（theme.js 提供 SX.ink；脚本缺失时回落旧配色） */
 function chartInk(){
