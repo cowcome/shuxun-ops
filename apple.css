@@ -9,52 +9,60 @@
    深色页（ops/chain/douyin_pay/index）：body 带 .sx-legacy 作用域类。
    ========================================================================== */
 
-/* ---------- 1. 设计令牌（浅色） ---------- */
+/* ---------- 1. 设计令牌（浅色 · 夏日撞色） ----------
+   蓝做动作（按钮/链接/选中），亮蓝做关键数字，鲜嫩黄只做点缀（圆点/竖条/徽章底）。
+   辅助灰一律带蓝味，不掺黑，避免发脏。
+   ---------------------------------------------------------------- */
 :root{
-  --sx-bg:            #f2f2f7;
+  --sx-bg:            #F5FAFF;
   --sx-surface:       #ffffff;
-  --sx-surface-2:     #fafafc;
-  --sx-fill:          rgba(120,120,128,.08);
-  --sx-fill-2:        rgba(120,120,128,.16);
-  --sx-separator:     rgba(60,60,67,.12);
-  --sx-separator-2:   rgba(60,60,67,.22);
+  --sx-surface-2:     #E6F4FF;
+  --sx-fill:          rgba(0,122,255,.07);
+  --sx-fill-2:        rgba(0,122,255,.14);
+  --sx-separator:     #DBEAFB;
+  --sx-separator-2:   #C7DFFB;
 
-  --sx-text:          #1c1c1e;
-  --sx-text-2:        #6e6e73;
-  --sx-text-3:        #8e8e93;
+  --sx-text:          #14213D;
+  --sx-text-2:        #5A6B80;
+  --sx-text-3:        #8FA1B8;
 
-  --sx-accent:        #7c3aed;
-  --sx-accent-press:  #6d28d9;
-  --sx-accent-soft:   rgba(124,58,237,.10);
-  --sx-accent-ring:   rgba(124,58,237,.18);
+  --sx-accent:        #007AFF;
+  --sx-accent-press:  #0060DF;
+  --sx-accent-soft:   rgba(0,122,255,.10);
+  --sx-accent-ring:   rgba(0,122,255,.18);
+  --sx-bright:        #00A4FF;   /* 关键数字：比按钮再亮一档 */
 
-  --sx-green:         #0f6e56;
-  --sx-green-bg:      #e6f5ef;
-  --sx-amber:         #8a5b00;
-  --sx-amber-bg:      #fff4e0;
-  --sx-red:           #b91c1c;
-  --sx-red-bg:        #fef2f2;
-  --sx-blue:          #1d4ed8;
-  --sx-blue-bg:       #eff6ff;
-  --sx-mei:           #b45309;   /* 美团 */
-  --sx-dou:           #6d28d9;   /* 抖音 */
-  --sx-fill-dot:      #16a34a;   /* 已填报绿点 */
+  --sx-pop:           #FFE873;   /* 点缀黄（装饰层，不承担文字） */
+  --sx-pop-soft:      #FFF8DC;
+  --sx-pop-ink:       #8A6D00;   /* 黄底上的文字用深琥珀，保证可读 */
+
+  --sx-green:         #10B981;
+  --sx-green-bg:      #D9F7E9;
+  --sx-amber:         #B45309;   /* 预警橙（缺口 / 待上线） */
+  --sx-amber-bg:      #FDF3D8;
+  --sx-red:           #F04438;
+  --sx-red-bg:        #FFF0EF;
+  --sx-blue:          #007AFF;
+  --sx-blue-bg:       #E6F4FF;
+  --sx-mei:           #F97316;   /* 美团 */
+  --sx-dou:           #7C5CFF;   /* 抖音 */
+  --sx-fill-dot:      #10B981;   /* 已填报绿点 */
 
   /* 图表墨色：Chart.js 由 JS 读取，跟着主题走 */
-  --sx-chart-tick:    rgba(60,60,67,.82);
-  --sx-chart-grid:    rgba(60,60,67,.12);
-  --sx-chart-legend:  rgba(60,60,67,.86);
+  --sx-chart-tick:    rgba(20,33,61,.82);
+  --sx-chart-grid:    rgba(20,33,61,.12);
+  --sx-chart-legend:  rgba(20,33,61,.86);
 
-  --sx-nav-bg:        rgba(255,255,255,.82);
-  --sx-shadow-1: 0 1px 2px rgba(16,24,40,.04), 0 1px 6px rgba(16,24,40,.03);
-  --sx-shadow-2: 0 4px 14px rgba(16,24,40,.07), 0 1px 3px rgba(16,24,40,.04);
-  --sx-shadow-modal: 0 24px 60px rgba(16,24,40,.18), 0 2px 8px rgba(16,24,40,.06);
-  --sx-shadow-accent: 0 1px 2px rgba(124,58,237,.25);
+  --sx-nav-bg:        rgba(255,255,255,.86);
+  --sx-shadow-1: 0 1px 2px rgba(20,33,61,.04), 0 1px 6px rgba(20,33,61,.03);
+  --sx-shadow-2: 0 4px 14px rgba(20,33,61,.07), 0 1px 3px rgba(20,33,61,.04);
+  --sx-shadow-modal: 0 24px 60px rgba(20,33,61,.18), 0 2px 8px rgba(20,33,61,.06);
+  --sx-shadow-accent: 0 1px 2px rgba(0,122,255,.25);
 
   --sx-r-sm: 8px;
   --sx-r-md: 10px;
-  --sx-r-lg: 14px;
-  --sx-r-xl: 18px;
+  --sx-r-lg: 12px;
+  --sx-r-xl: 16px;
   --sx-r-pill: 999px;
 
   --sx-ease-out:    cubic-bezier(.23,1,.32,1);
@@ -64,48 +72,53 @@
   --sx-dur-3: 240ms;
 }
 
-/* ---------- 1b. 设计令牌（深色 · Apple 官方深灰黑） ----------
-   Apple HIG Dark：底色纯黑、卡面 #1c1c1e、分隔线 #38383a。
-   品牌紫在深底上提亮到 #a78bfa 才够可读（浅色的 #7c3aed 会发闷）。
-   深底上阴影无效，改用 0.5px 高光描边制造层次。
+/* ---------- 1b. 设计令牌（深色 · 原有紫色风格） ----------
+   深色回归书荀原有的紫：渐变底 + 深紫卡面 + 主紫 #8b5cf6。
+   点缀用浅紫 #a78bfa，预警用橙 #fb923c（原风格里特殊门店本就是橙）。
+   深色不引入黄和绿做点缀。
    ---------------------------------------------------------------- */
 html[data-theme="dark"]{
-  --sx-bg:            #000000;
-  --sx-surface:       #1c1c1e;
-  --sx-surface-2:     #2c2c2e;
-  --sx-fill:          rgba(120,120,128,.26);
-  --sx-fill-2:        rgba(120,120,128,.40);
-  --sx-separator:     rgba(84,84,88,.65);
-  --sx-separator-2:   rgba(84,84,88,.90);
+  --sx-bg:            linear-gradient(160deg,#1a1730 0%,#241b3f 50%,#1b2440 100%);
+  --sx-surface:       #2A2247;
+  --sx-surface-2:     #342B55;
+  --sx-fill:          rgba(255,255,255,.07);
+  --sx-fill-2:        rgba(255,255,255,.13);
+  --sx-separator:     rgba(255,255,255,.12);
+  --sx-separator-2:   rgba(255,255,255,.18);
 
   --sx-text:          #ffffff;
-  --sx-text-2:        #98989f;
-  --sx-text-3:        #636366;
+  --sx-text-2:        rgba(255,255,255,.72);
+  --sx-text-3:        rgba(255,255,255,.48);
 
-  --sx-accent:        #a78bfa;
-  --sx-accent-press:  #8b5cf6;
-  --sx-accent-soft:   rgba(167,139,250,.16);
-  --sx-accent-ring:   rgba(167,139,250,.28);
+  --sx-accent:        #8b5cf6;
+  --sx-accent-press:  #7c4ded;
+  --sx-accent-soft:   rgba(139,92,246,.16);
+  --sx-accent-ring:   rgba(139,92,246,.28);
+  --sx-bright:        #a78bfa;   /* 关键数字：浅紫 */
 
-  --sx-green:         #30d158;
-  --sx-green-bg:      rgba(48,209,88,.15);
-  --sx-amber:         #ffd60a;
-  --sx-amber-bg:      rgba(255,214,10,.15);
-  --sx-red:           #ff453a;
-  --sx-red-bg:        rgba(255,69,58,.15);
-  --sx-blue:          #0a84ff;
-  --sx-blue-bg:       rgba(10,132,255,.15);
-  --sx-mei:           #ffd60a;
+  --sx-pop:           #A78BFA;   /* 点缀浅紫 */
+  --sx-pop-soft:      rgba(167,139,250,.16);
+  --sx-pop-ink:       #c4b5fd;
+
+  --sx-green:         #4ade80;
+  --sx-green-bg:      rgba(74,222,128,.14);
+  --sx-amber:         #FB923C;
+  --sx-amber-bg:      rgba(251,146,60,.16);
+  --sx-red:           #f87171;
+  --sx-red-bg:        rgba(248,113,113,.15);
+  --sx-blue:          #a78bfa;
+  --sx-blue-bg:       rgba(167,139,250,.16);
+  --sx-mei:           #fbbf24;
   --sx-dou:           #a78bfa;
-  --sx-fill-dot:      #30d158;
+  --sx-fill-dot:      #4ade80;
 
   --sx-chart-tick:    rgba(235,235,245,.78);
-  --sx-chart-grid:    rgba(84,84,88,.55);
+  --sx-chart-grid:    rgba(255,255,255,.14);
   --sx-chart-legend:  rgba(235,235,245,.88);
 
-  --sx-nav-bg:        rgba(28,28,30,.80);
-  --sx-shadow-1: 0 .5px 0 rgba(255,255,255,.06);
-  --sx-shadow-2: 0 .5px 0 rgba(255,255,255,.10);
+  --sx-nav-bg:        rgba(42,34,71,.85);
+  --sx-shadow-1: 0 1px 2px rgba(0,0,0,.20);
+  --sx-shadow-2: 0 4px 14px rgba(0,0,0,.28);
   --sx-shadow-modal: 0 24px 60px rgba(0,0,0,.65), 0 0 0 .5px rgba(255,255,255,.10);
   --sx-shadow-accent: none;
 }
@@ -140,11 +153,11 @@ h3{ font-size: 16px; font-weight: 600; }
   padding: 18px 20px;
   margin-bottom: 16px;
   box-shadow: var(--sx-shadow-1);
-  transition: box-shadow var(--sx-dur-2) var(--sx-ease-out),
-              transform var(--sx-dur-2) var(--sx-ease-out);
+  /* 高频列表里的卡片不上浮：位移是纯装饰，扫过几百次只会拖慢和分心 */
+  transition: box-shadow var(--sx-dur-2) var(--sx-ease-out);
 }
 @media (hover:hover) and (pointer:fine){
-  .card:hover{ box-shadow: var(--sx-shadow-2); transform: translateY(-1px); }
+  .card:hover{ box-shadow: var(--sx-shadow-2); }
 }
 
 /* ---------- 4. 表单控件 ---------- */
@@ -191,7 +204,10 @@ button.primary{
   background: var(--sx-accent); border-color: var(--sx-accent);
   color: #fff; box-shadow: var(--sx-shadow-accent);
 }
-html[data-theme="dark"] button.primary{ color: #12121a; }
+html[data-theme="dark"] button.primary{ color: #fff; }
+html[data-theme="dark"] .chip.on,
+html[data-theme="dark"] .tab.active,
+html[data-theme="dark"] .tab.on{ color: #fff; }
 button.primary:active{ background: var(--sx-accent-press); transform: scale(.97); }
 @media (hover:hover) and (pointer:fine){ button.primary:hover{ background: var(--sx-accent-press); } }
 button.danger{ background: var(--sx-surface); border-color: rgba(255,69,58,.35); color: var(--sx-red); }
@@ -318,8 +334,8 @@ html[data-theme="dark"] .mask, html[data-theme="dark"] .modal-mask{ background: 
 .sx-nav{
   position: sticky; top: 0; z-index: 40;
   background: var(--sx-nav-bg);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(10px);
+  backdrop-filter: saturate(180%) blur(10px);
   border: .5px solid var(--sx-separator);
   box-shadow: var(--sx-shadow-1);
   border-radius: var(--sx-r-lg);
@@ -563,86 +579,22 @@ body.sx-legacy .amt-input{ border-radius: var(--sx-r-sm) !important; }
 body.sx-legacy .submit-btn{ border-radius: var(--sx-r-md) !important; height: auto !important; }
 
 /* ============================================================================
-   18. 深色模式遗留修正（body.sx-legacy 四页）
-   深色下这四页的原生白字/半透明白面基本是对的，这里只做三件事：
-   ① 半透明面 → Apple 深色实色面 ② 荧光色 → Apple 系统色 ③ 去发光
+   17. 深色遗留四页：回归书荀原有紫色风格
+   ----------------------------------------------------------------------------
+   深色下 ops / chain / douyin_pay / index 自带的紫渐变底 + 半透明白面 + 荧光状态色
+   本就是书荀原有的深色风格，这里不再强行 Apple 化，只做两件事：
+   ① 去掉每张卡的毛玻璃（大表格滚动时最贵的一笔开销）
+   ② 状态点去发光，并保证浅色下可读
    ========================================================================== */
+body.sx-legacy .card,
+body.sx-legacy .glass{ backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 
-/* 18.1 半透明白面 → Apple 深色卡面 */
-html[data-theme="dark"] body.sx-legacy .card,
-html[data-theme="dark"] body.sx-legacy .stat,
-html[data-theme="dark"] body.sx-legacy .store-card,
-html[data-theme="dark"] body.sx-legacy .tbl-wrap,
-html[data-theme="dark"] body.sx-legacy .glass,
-html[data-theme="dark"] body.sx-legacy .store-pick,
-html[data-theme="dark"] body.sx-legacy .modal,
-html[data-theme="dark"] body.sx-legacy .modal-head,
-html[data-theme="dark"] body.sx-legacy .sp-item,
-html[data-theme="dark"] body.sx-legacy .store-btn,
-html[data-theme="dark"] body.sx-legacy .num-btn,
-html[data-theme="dark"] body.sx-legacy .chip,
-html[data-theme="dark"] body.sx-legacy .sm,
-html[data-theme="dark"] body.sx-legacy td.store,
-html[data-theme="dark"] body.sx-legacy th.store{
-  background: var(--sx-surface) !important;
-  border-color: var(--sx-separator) !important;
-}
-html[data-theme="dark"] body.sx-legacy thead th,
-html[data-theme="dark"] body.sx-legacy thead th.store,
-html[data-theme="dark"] body.sx-legacy tr.total td,
-html[data-theme="dark"] body.sx-legacy tr.total td.store{
-  background: var(--sx-surface-2) !important;
-}
-html[data-theme="dark"] body.sx-legacy tr:hover td,
-html[data-theme="dark"] body.sx-legacy tr:hover td.store{ background: var(--sx-fill) !important; }
-html[data-theme="dark"] body.sx-legacy #dashStoreTable tr.sel td,
-html[data-theme="dark"] body.sx-legacy #dashStoreTable tr.sel td.store{ background: var(--sx-accent-soft) !important; }
-html[data-theme="dark"] body.sx-legacy .health-banner{ background: var(--sx-accent-soft) !important; border-color: var(--sx-separator) !important; }
-html[data-theme="dark"] body.sx-legacy .store-pick div:hover{ background: var(--sx-fill) !important; }
-
-html[data-theme="dark"] body.sx-legacy .store-btn.selected,
-html[data-theme="dark"] body.sx-legacy .num-btn.selected,
-html[data-theme="dark"] body.sx-legacy .chip.on{
-  background: var(--sx-accent) !important; color: #12121a !important; box-shadow: none !important;
-}
-html[data-theme="dark"] body.sx-legacy .store-btn.selected .check{ color: #12121a !important; }
-html[data-theme="dark"] body.sx-legacy .switch input:checked + .switch-track{ background: var(--sx-accent) !important; }
-
-/* 18.2 荧光点 → Apple 系统色（去掉发光） */
 body.sx-legacy .dt,
 body.sx-legacy .store-btn.submitted::after{ box-shadow: none !important; }
-html[data-theme="dark"] body.sx-legacy .dt-g{ background: #30d158 !important; }
-html[data-theme="dark"] body.sx-legacy .dt-r{ background: #ff453a !important; }
-html[data-theme="dark"] body.sx-legacy .dt-y{ background: #ffd60a !important; }
-html[data-theme="dark"] body.sx-legacy .dt-p{ background: #ff375f !important; }
-html:not([data-theme="dark"]) body.sx-legacy .dt-g{ background: #16a34a !important; }
-html:not([data-theme="dark"]) body.sx-legacy .dt-r{ background: #dc2626 !important; }
-html:not([data-theme="dark"]) body.sx-legacy .dt-y{ background: #d97706 !important; }
+html:not([data-theme="dark"]) body.sx-legacy .dt-g{ background: #10B981 !important; }
+html:not([data-theme="dark"]) body.sx-legacy .dt-r{ background: #F04438 !important; }
+html:not([data-theme="dark"]) body.sx-legacy .dt-y{ background: #B45309 !important; }
 html:not([data-theme="dark"]) body.sx-legacy .dt-p{ background: #db2777 !important; }
-
-/* 18.3 语义色与品牌色（深色下提亮） */
-html[data-theme="dark"] body.sx-legacy .bad,
-html[data-theme="dark"] body.sx-legacy .diff-pos{ color: var(--sx-red) !important; }
-html[data-theme="dark"] body.sx-legacy .ok,
-html[data-theme="dark"] body.sx-legacy .stat .v.up{ color: var(--sx-green) !important; }
-html[data-theme="dark"] body.sx-legacy .warn{ color: var(--sx-amber) !important; }
-html[data-theme="dark"] body.sx-legacy .diff-neg{ color: var(--sx-blue) !important; }
-html[data-theme="dark"] body.sx-legacy .amt,
-html[data-theme="dark"] body.sx-legacy .slider-val,
-html[data-theme="dark"] body.sx-legacy .pf-name,
-html[data-theme="dark"] body.sx-legacy .back-ops{ color: var(--sx-accent) !important; }
-html[data-theme="dark"] body.sx-legacy .sp-now{ background: var(--sx-amber-bg) !important; color: var(--sx-amber) !important; border-color: rgba(255,214,10,.3) !important; }
-html[data-theme="dark"] body.sx-legacy .sp-future{ background: var(--sx-blue-bg) !important; color: var(--sx-blue) !important; border-color: rgba(10,132,255,.3) !important; }
-html[data-theme="dark"] body.sx-legacy .sp-past{ background: var(--sx-fill) !important; color: var(--sx-text-3) !important; border-color: var(--sx-separator) !important; }
-html[data-theme="dark"] body.sx-legacy .hb-wait{ background: var(--sx-amber-bg) !important; color: var(--sx-amber) !important; border-color: rgba(255,214,10,.3) !important; }
-html[data-theme="dark"] body.sx-legacy .status.ok{ background: var(--sx-green-bg) !important; color: var(--sx-green) !important; }
-html[data-theme="dark"] body.sx-legacy .status.err{ background: var(--sx-red-bg) !important; color: var(--sx-red) !important; }
-
-/* 18.4 导航壳 sx-dark → 深色毛玻璃 */
-html[data-theme="dark"] body.sx-legacy .sx-nav.sx-dark{ background: var(--sx-nav-bg) !important; border-color: var(--sx-separator) !important; }
-html[data-theme="dark"] body.sx-legacy .sx-nav.sx-dark a{ color: var(--sx-text-2) !important; }
-html[data-theme="dark"] body.sx-legacy .sx-nav.sx-dark a.cur{ background: var(--sx-accent-soft) !important; color: var(--sx-accent) !important; }
-html[data-theme="dark"] body.sx-legacy .sx-nav.sx-dark .sx-me{ color: var(--sx-text-3) !important; }
 
 /* ============================================================================
    19. 主题切换按钮（由 theme.js 注入到 .sx-nav 末尾）
@@ -743,12 +695,14 @@ html[data-theme="dark"] .gap-tag{ background: rgba(239,159,39,.18); color: #f5b9
 /* ============================================================================
    22. 无障碍：更轻柔，而非清零
    ========================================================================== */
+/*   更轻柔，而非清零：位移缩放关掉，颜色和阴影的过渡保留（只是更短），
+     全清零会让弹层"啪"地糊在脸上，比有动画更糟                            */
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after{
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
+    transition-duration: 120ms !important;
   }
-  button:active, .sx-theme-btn:active{ transform: none; }
-  .card:hover{ transform: none; }
+  .mask, .modal-mask, .modal, .msg{ animation: none !important; }
+  button:active, .sx-theme-btn:active, .tab:active, .chip:active{ transform: none; }
 }
