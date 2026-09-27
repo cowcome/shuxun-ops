@@ -66,6 +66,18 @@
   .ev-f select:focus, .ev-f input:focus { border-color:var(--sx-accent,#7c3aed); }
   #evErr { color:var(--sx-red,#b91c1c); font-size:12px; }
   #evBtn { height:42px; border:none; }
+  /* 门店搜索选择器 */
+  .ev-search { position:relative; }
+  .ev-search input { width:100%; box-sizing:border-box; height:40px; border-radius:10px;
+    border:1px solid var(--sx-separator-2,rgba(60,60,67,.22)); background:var(--sx-surface,#fff);
+    color:var(--sx-text,#1c1c1e); padding:0 10px; font-size:14px; font-family:inherit; outline:none; }
+  .ev-search input:focus { border-color:var(--sx-accent,#7c3aed); }
+  .ev-list { position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:30; display:none;
+    background:var(--sx-surface,#fff); border:1px solid var(--sx-separator-2,rgba(60,60,67,.22));
+    border-radius:10px; box-shadow:0 8px 24px rgba(16,24,40,.14); max-height:240px; overflow-y:auto; }
+  .ev-list .ev-it { padding:9px 12px; font-size:13px; color:var(--sx-text,#1c1c1e); cursor:pointer; }
+  .ev-list .ev-it:hover { background:var(--sx-accent-soft,rgba(124,58,237,.08)); }
+  .ev-list .ev-empty { padding:9px 12px; font-size:12px; color:var(--sx-text-3,#8e8e93); }
   /* 浏览器自动填充的黄框修正 */
   .ev-f input:-webkit-autofill, input#evNote:-webkit-autofill {
     -webkit-box-shadow: 0 0 0 1000px #fff inset; -webkit-text-fill-color:#1c1c1e; }
@@ -174,7 +186,10 @@
       <div id="evForm" class="evf">
         <div class="ev-row">
           <div class="ev-f"><label>门店</label>
-            <select id="evStore"><option value="">— 选择门店 —</option></select>
+            <div class="ev-search">
+              <input id="evStoreQ" autocomplete="off" placeholder="输入店名关键字，如：龙江 / 潮安">
+              <div id="evStoreList" class="ev-list"></div>
+            </div>
           </div>
           <div class="ev-f"><label>事件类型</label>
             <select id="evType">
@@ -624,12 +639,32 @@ $('importBtn').addEventListener('click', async () => {
 (async function(){
   if(!session) return;
   const isAdmin = String(userEmail).toLowerCase() === ADMIN_EMAIL;
-  const sel = document.getElementById('evStore'); if(!sel) return;
+  const q = document.getElementById('evStoreQ'); if(!q) return;
+  const qlist = document.getElementById('evStoreList');
   const list = document.getElementById('evList'), btn = document.getElementById('evBtn');
+  let STORES = [], pickedId = 0, pickedName = '';
   try{
     const rs = await sb('/rest/v1/stores?select=id,std_name&order=std_name.asc');
-    if(rs.ok){ (await rs.json()).forEach(s=>{ const o=document.createElement('option'); o.value=s.id; o.textContent=s.std_name; sel.appendChild(o); }); }
+    if(rs.ok) STORES = await rs.json();
   }catch(e){}
+  function renderQ(){
+    const kw = q.value.trim().toLowerCase();
+    if(!kw){ qlist.style.display='none'; qlist.innerHTML=''; return; }
+    const cand = STORES.filter(function(s){ return s.std_name.toLowerCase().indexOf(kw)>=0; });
+    if(!cand.length){ qlist.innerHTML='<div class="ev-empty">没有匹配「'+esc(q.value)+'」的门店</div>'; qlist.style.display='block'; return; }
+    qlist.innerHTML = cand.slice(0,30).map(function(s){
+      return '<div class="ev-it" data-id="'+s.id+'" data-n="'+esc(s.std_name)+'">'+esc(s.std_name)+'</div>';
+    }).join('') + (cand.length>30 ? '<div class="ev-empty">共 '+cand.length+' 家匹配，请继续输入缩小范围</div>' : '');
+    qlist.style.display='block';
+  }
+  q.addEventListener('input', renderQ);
+  q.addEventListener('focus', renderQ);
+  q.addEventListener('blur', function(){ setTimeout(function(){ qlist.style.display='none'; }, 180); });
+  qlist.addEventListener('mousedown', function(e){
+    const it = e.target.closest ? e.target.closest('.ev-it') : null; if(!it) return;
+    pickedId = +it.dataset.id; pickedName = it.dataset.n; q.value = pickedName;
+    qlist.style.display='none';
+  });
   async function loadList(){
     try{
       const re = await sb('/rest/v1/store_events?select=*&order=created_at.desc&limit=15');
@@ -644,17 +679,18 @@ $('importBtn').addEventListener('click', async () => {
     document.getElementById('evForm').innerHTML = '<div class="hint">事件登记仅限主账号操作；列表全员可见。</div>';
   } else if(btn){
     btn.addEventListener('click', async ()=>{
-      const store_id = +sel.value, event_type = document.getElementById('evType').value,
+      const store_id = pickedId, event_type = document.getElementById('evType').value,
             start_date = document.getElementById('evStart').value,
             end_date = document.getElementById('evEnd').value || start_date,
             note = document.getElementById('evNote').value.trim();
       const err = document.getElementById('evErr');
-      if(!store_id||!event_type||!start_date){ err.innerHTML='请选择门店、类型并填开始日期'; return; }
+      if(!store_id||!event_type||!start_date){ err.innerHTML='请先在「门店」框搜索并点选门店，再填类型和开始日期'; return; }
       btn.disabled = true; btn.textContent = '提交中…';
       try{
-        const r = await sb('/rest/v1/store_events', {method:'POST', body: JSON.stringify({store_id, event_type, start_date, end_date, note, store_name: sel.options[sel.selectedIndex].textContent, created_by: userEmail})});
+        const r = await sb('/rest/v1/store_events', {method:'POST', body: JSON.stringify({store_id, event_type, start_date, end_date, note, store_name: pickedName, created_by: userEmail})});
         if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.message||('HTTP '+r.status)); }
         err.innerHTML=''; document.getElementById('evNote').value='';
+        pickedId = 0; pickedName = ''; q.value = '';
         await loadList();
       }catch(e){ err.innerHTML='提交失败：'+esc(e.message); }
       btn.disabled=false; btn.textContent='登记事件';
