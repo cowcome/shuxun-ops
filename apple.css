@@ -539,6 +539,10 @@ html:not([data-theme="dark"]) body.sx-legacy .text-input:focus{
   box-shadow: 0 0 0 3px var(--sx-accent-ring) !important;
 }
 
+/* placeholder：遗留页写死半透明白，浅色下直接隐形 */
+html:not([data-theme="dark"]) body.sx-legacy input::placeholder,
+html:not([data-theme="dark"]) body.sx-legacy textarea::placeholder{ color: var(--sx-text-3) !important; }
+
 /* 16.6 表格可读性：表头 / 门店列 / 合计行
    遗留页原生选择器优先级更高（thead th=0,0,2 / td.store=0,1,1 / tr.total td=0,2,2），
    上一版只中和了背景没中和字色，浅色主题下白字浮在浅底上 → 必须作用域 + !important 一起补。
