@@ -165,7 +165,7 @@
           <tbody id="tbody"></tbody>
         </table>
       </div>
-      <div class="foot">口径与连锁大盘一致：真实核销 = 美团验券 + 抖音核销 + 记账/商城等核销渠道；不含扫码买单 / 会员余额 / 欠款 / 现金 / 抖音线上买单；排除充值、直接收款类目（item_type 6/7/9）；按下单时间（create_time）归属月份；内购不走有赞，故本金额即真实客户业绩（未经账单对账）。金额单位：元。</div>
+      <div class="foot">口径与连锁大盘一致：业绩 = 平台账单导入（美团验券/记账核销 + 抖音核销/记账核销）；不含抖音线上买单（内购上翻）、二维码收款 / 充值 / 售卡 / 兑付；按核销日期（form_date）归属月份。数据源：每周「数据导入」平台账单（2026-09-27 拍板）。金额单位：元。</div>
     </div>
   </div>
 </div>
@@ -175,7 +175,6 @@ const SB_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
 const ANON_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
 const ADMIN_EMAIL = '411249585@qq.com';
 const NEW_STORE_DAYS = 30;
-const YZ_ITEM_EXCLUDE = [6,7,9];
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -255,19 +254,19 @@ function lightBadges(x){
   return h;
 }
 
-/* ---------- 有赞订单 → 逐月聚合 ---------- */
-function bjMonth(iso){ return new Date(new Date(iso).getTime() + 8*3600000).toISOString().slice(0,7); }
+/* ---------- 平台账单订单（chain_verify_orders） → 逐月聚合 ---------- */
+function bjMonth(iso){ return String(iso||'').slice(0,7); }
 function bjDate(ms){ return new Date(ms + 8*3600000).toISOString().slice(0,10); }
 
-async function loadOrders(kdtId){
+async function loadOrders(sid){
   const start = bjDate(Date.now() - 395*86400000);   // 近 13 个月，算环比与 12 个完整月
-  const gte = new Date(Date.parse(start + 'T00:00:00+08:00')).toISOString();
-  const sel = 'real_pay,order_type,item_type,pay_channel_name,create_time';
+  const gte = start;
+  const sel = 'amount,platform,form_date';
   const raw = [];
   let from = 0;
   while(true){
-    const part = await sb('/rest/v1/yz_orders?source=eq.chain&kdt_id=eq.' + kdtId
-      + '&order=create_time.asc&select=' + sel + '&create_time=gte.' + encodeURIComponent(gte),
+    const part = await sb('/rest/v1/chain_verify_orders?store_id=eq.' + sid
+      + '&order=form_date.asc&select=' + sel + '&form_date=gte.' + gte,
       { headers: { Range: from + '-' + (from+999) } });
     raw.push(...part);
     if(part.length < 1000 || from > 100000) break;
@@ -279,15 +278,12 @@ async function loadOrders(kdtId){
 function aggregate(raw, T){
   const months = {};
   raw.forEach(r => {
-    if(r.order_type !== 0 || YZ_ITEM_EXCLUDE.indexOf(r.item_type) >= 0) return;
-    const ch = String(r.pay_channel_name || '');
-    if(!/核销|验券/.test(ch)) return;
-    const amt = (r.real_pay || 0) / 100;
-    const M = bjMonth(r.create_time);
+    const amt = Number(r.amount) || 0;
+    const M = bjMonth(r.form_date);
     let g = months[M];
     if(!g) g = months[M] = { mtA:0, mtC:0, dyA:0, dyC:0, otA:0, otC:0 };
-    if(ch.indexOf('美团') >= 0){ g.mtA += amt; g.mtC++; }
-    else if(ch.indexOf('抖音') >= 0){ g.dyA += amt; g.dyC++; }
+    if(r.platform === '美团'){ g.mtA += amt; g.mtC++; }
+    else if(r.platform === '抖音'){ g.dyA += amt; g.dyC++; }
     else { g.otA += amt; g.otC++; }
   });
   Object.values(months).forEach(g => { g.A = g.mtA + g.dyA + g.otA; g.C = g.mtC + g.dyC + g.otC; });
@@ -327,11 +323,9 @@ function render(store, raw){
   let d7A = 0, d7C = 0;
   const days = {};
   raw.forEach(r => {
-    if(r.order_type !== 0 || YZ_ITEM_EXCLUDE.indexOf(r.item_type) >= 0) return;
-    if(!/核销|验券/.test(String(r.pay_channel_name || ''))) return;
-    const D = bjDate(new Date(r.create_time).getTime());
+    const D = String(r.form_date || '').slice(0,10);
     const d = days[D] || (days[D] = [0,0]);
-    d[0] += (r.real_pay||0)/100; d[1]++;
+    d[0] += (Number(r.amount)||0); d[1]++;
   });
   for(let i = 1; i <= 7; i++){
     const D = bjDate(Date.now() - i*86400000);
@@ -396,16 +390,15 @@ function render(store, raw){
     $('stMeta').textContent = [st.store_type, loc, st.operator ? ('运营人：' + st.operator) : '', st.launch_date ? ('上线：' + st.launch_date) : '']
       .filter(Boolean).join(' ｜ ');
 
-    // 有赞映射
-    const mp = (await sb('/rest/v1/yz_shop_map?store_id=eq.' + sid + '&select=kdt_id'))[0];
+    // 平台账单数据（chain_verify_orders，按 store_id 挂接）
     $('appView').classList.remove('hide');
-    if(!mp){
-      $('sumCard').innerHTML = '<div class="empty">该门店未接入有赞系统，暂无线上核销数据</div>';
+    const raw = await loadOrders(sid);
+    if(!raw.length){
+      $('sumCard').innerHTML = '<div class="empty">该门店暂无平台账单核销数据（数据自每周「数据导入」起累积）</div>';
       document.getElementById('chart').closest('.card').style.display = 'none';
       document.getElementById('tbody').closest('.card').style.display = 'none';
       return;
     }
-    const raw = await loadOrders(mp.kdt_id);
     render(st, raw);
   }catch(e){
     if(session === null){ $('loginView').classList.remove('hide'); return; }
