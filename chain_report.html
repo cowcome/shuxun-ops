@@ -144,7 +144,7 @@ async function fetchAll(){
   const stores = await rs.json();
   let events = [];
   try{
-    const re = await sb('/rest/v1/store_events?select=*&order=start_date.desc');
+    const re = await sb('/rest/v1/store_special_periods?select=*&order=start_date.desc');
     if(re.ok) events = await re.json();
   }catch(e){}
   return {orders:out, stores, events};
@@ -224,7 +224,7 @@ function render(orders, stores, events){
     const base4=P4.reduce((a,m)=>a+((stW[s][m]||[0,0])[0]),0);
     const cnt4=P4.reduce((a,m)=>a+((stW[s][m]||[0,0])[1]),0);
     const wk4=base4/4;
-    const evs=evInWeek(s), evHard=evs.filter(e=>['闭店培训','停业','装修','团建'].includes(e.event_type));
+    const evs=evInWeek(s), evHard=evs.filter(e=>['培训闭店','团建闭店','台风闭店','假日闭店','装修调整'].includes(e.special_type));
     if(c[0]>0&&p[0]>0&&c[0]>=500) gainers.push([s,p[0],c[0],pct(c[0],p[0]),c[0]-p[0]]);
     if(p[0]>=800&&c[0]<p[0]) droppers.push([s,p[0],c[0],pct(c[0],p[0]),c[0]-p[0]]);
     if(wk4>=300&&c[0]===0){ (evHard.length?blankEv:blank).push([s,wk4,evHard]); }
@@ -253,9 +253,9 @@ function render(orders, stores, events){
   if(gainers.length){ const g=gainers[0]; C+='<li>最亮门店：'+esc(g[0])+'，周环比 '+sign(g[3]).replace('%','')+'%（'+money(g[1])+' → '+money(g[2])+'）。</li>'; }
   if(droppers.length){ const d0=droppers[0]; C+='<li>最大下滑：'+esc(d0[0])+'，周环比 '+sign(d0[3]).replace('%','')+'%（'+money(d0[1])+' → '+money(d0[2])+'）。</li>'; }
   if(blank.length) C+='<li>裸奔预警 '+blank.length+' 家（近4周周均≥¥300 但上周零核销）。</li>';
-  if(blankEv.length) C+='<li>有因停业 '+blankEv.length+' 家（上周零核销但命中特殊事件，未计入预警）。</li>';
+  if(blankEv.length) C+='<li>有因停业 '+blankEv.length+' 家（上周零核销但命中特殊门店填报，未计入预警）。</li>';
   if(cont_down.length) C+='<li>连续两周下滑 '+cont_down.length+' 家，建议优先安排回访。</li>';
-  if(Object.keys(evHits).some(s=>evInWeek(s).length)) C+='<li>本周有 '+allStd.filter(s=>evInWeek(s).length).length+' 家门店命中特殊事件登记，相关环比已可结合事件解读。</li>';
+  if(Object.keys(evHits).some(s=>evInWeek(s).length)) C+='<li>上周有 '+allStd.filter(s=>evInWeek(s).length).length+' 家门店命中特殊门店填报，相关环比已可结合事件解读。</li>';
 
   /* 大盘 */
   let H='<div class="hero"><h1>连锁门店运营周诊断</h1><div class="sub">复盘上周 '+iso(CUR)+'（周一）~ '+iso(CURR)+'（周日） · 数据截至 '+TODAY+' 实时拉取 · 平台账单口径</div></div>';
@@ -311,7 +311,7 @@ function render(orders, stores, events){
     wn+='<div class="warn"><span class="wt">🚨 裸奔预警 · '+blank.length+' 家</span><br>上周零核销：'+blank.map(([s,w])=>'<b>'+esc(s)+'</b>（近4周周均'+money(w)+'）').join('、')+'。</div>';
   }
   if(blankEv.length){
-    wn+='<div class="warn"><span class="wt">🏷️ 有因停业 · '+blankEv.length+' 家（不报警）</span><br>'+blankEv.map(([s,w,evs])=>esc(s)+'：'+evs.map(e=>esc(e.event_type)+'（'+e.start_date+'起）').join('、')).join('<br>')+'</div>';
+    wn+='<div class="warn"><span class="wt">🏷️ 有因停业 · '+blankEv.length+' 家（不报警）</span><br>'+blankEv.map(([s,w,evs])=>esc(s)+'：'+evs.map(e=>esc(e.special_type)+'（'+e.start_date+'起）').join('、')).join('<br>')+'</div>';
   }
   if(cont_down.length){
     wn+='<div class="warn"><span class="wt">📉 连续两周下滑 · '+cont_down.length+' 家</span><br>'+cont_down.map(([s,a,b,c,x])=>esc(s)+'：'+money(a)+' → '+money(b)+' → '+money(c)+'（两周累计 <span style="color:'+DN+'">'+sign(x).replace('%','')+'%</span>）').join('<br>')+'</div>';
@@ -325,16 +325,16 @@ function render(orders, stores, events){
   if(!wn) wn='<div class="warn">本周四项预警全部清洁 🎉</div>';
   H+='<section><h2>预警区<span class="badge">裸奔/连降/客单/平台</span></h2><div class="warnbox">'+wn+'</div></section>';
 
-  /* 特殊事件 */
+  /* 特殊门店 */
   let ev='';
-  ev+='<li><b>登记入口</b>：数据导入页 →「特殊事件登记」。填门店 + 起止日期 + 类型，报告自动归因。</li>';
+  ev+='<li><b>登记入口</b>：书荀连锁页「特殊门店填报」或 数据导入页「特殊门店填报」——两处同一份数据（store_special_periods），实时同步。填门店 + 起止日期 + 类型，报告自动归因。</li>';
   const wkEvents=allStd.filter(s=>evInWeek(s).length);
   if(wkEvents.length){
-    ev+='<li><b>本期命中 '+wkEvents.length+' 家</b>：'+wkEvents.map(s=>esc(s)+'（'+evInWeek(s).map(e=>esc(e.event_type)).join('、')+'）').join('、')+'。下滑/裸奔已结合事件归因。</li>';
+    ev+='<li><b>本期命中 '+wkEvents.length+' 家</b>：'+wkEvents.map(s=>esc(s)+'（'+evInWeek(s).map(e=>esc(e.special_type)).join('、')+'）').join('、')+'。下滑/裸奔已结合事件归因。</li>';
   }else{
-    ev+='<li><b>本期无命中事件</b>。复盘周内若有门店闭店培训/装修，记得补登记，下滑榜单会自动挂标签。</li>';
+    ev+='<li><b>本期无命中</b>。复盘周内若有门店培训闭店/装修，记得补填报，下滑榜单会自动挂标签。</li>';
   }
-  H+='<section><h2>特殊事件联动<span class="badge">已接入</span></h2><ul class="concl" style="font-size:13.5px">'+ev+'</ul></section>';
+  H+='<section><h2>特殊门店联动<span class="badge">已接入</span></h2><ul class="concl" style="font-size:13.5px">'+ev+'</ul></section>';
 
   /* 门店数据对比总表 */
   let opsSel='<option value="">全部运营人</option>';
@@ -360,7 +360,7 @@ function render(orders, stores, events){
     STO[s]={c,p,mc:mo[0],mp:mo[1],
       dy:(stPf[s][iso(CUR)]||{}).抖音||0, mt:(stPf[s][iso(CUR)]||{}).美团||0,
       op:(stores.find(x=>x.std_name===s)||{}).operator||'',
-      tag:evInWeek(s).map(e=>e.event_type).join('、')};
+      tag:evInWeek(s).map(e=>e.special_type).join('、')};
   });
   const DIAG=stDaily;
   const fmt=v=>String(Math.round(v));
