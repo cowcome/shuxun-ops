@@ -334,6 +334,7 @@
       <div class="card" data-page-node-id="MEGnXwP0J8qyOkSmHYBXCa">
         <div class="card-title" id="qTitle" data-page-node-id="SkpdhafXkYsI7GRAkxOxS0">数据明细</div>
         <div id="qBody" data-page-node-id="X2e7zP5GXE8ToraQNbrs5g"><div class="empty" data-page-node-id="TCHQrDaHAWrHG2xabHWaoP">请选择日期范围后查询</div></div>
+        <div id="qMissing"></div>
       </div>
     </div>
 
@@ -1007,8 +1008,53 @@ async function loadQuery(){
     queryData = rows;
     $('qTitle').textContent = '数据明细（'+s+(s===e?'':' ~ '+e)+'）· '+rows.length+' 条';
     $('qBody').innerHTML = rows.length ? buildTable(rows) : '<div class="empty">该条件下没有数据</div>';
+    renderMissing(s, e, rows, st);
     bindEditButtons();
   }catch(err){ msg(esc(err.message),'err'); }
+}
+
+/* ---------------- 缺数补录（2026-09-27：填报故障期间运营代门店补建不存在的记录） ---------------- */
+function activeDirectRows(){
+  return (typeof storeMaster!=='undefined' ? storeMaster : [])
+    .filter(x=>x.store_type==='直营' && x.status==='在营');
+}
+function withinBackfill(date){
+  if(isAdmin) return true;                    // 主账号不受窗口限制
+  if(!date) return false;
+  const d = new Date(date+'T00:00:00');
+  if(isNaN(d)) return false;
+  const t = new Date(); t.setHours(0,0,0,0);
+  const lim = new Date(t); lim.setDate(lim.getDate()-6);   // 含今天共 7 天
+  return d >= lim && d <= t;                              // 未来日期同样不许
+}
+function renderMissing(s, e, rows, stFilter){
+  const box = $('qMissing');
+  if(!box) return;
+  if(s !== e){ box.innerHTML=''; return; }    // 补录按天操作，只在单日视图提供
+  const day = s;
+  const t = new Date(); t.setHours(0,0,0,0);
+  const d = new Date(day+'T00:00:00');
+  if(!day || isNaN(d) || d > t){ box.innerHTML=''; return; }
+  const have = new Set(rows.map(r=>r.store_name));
+  const missingAll = activeDirectRows().filter(x=>!have.has(x.std_name));
+  const missing = missingAll.filter(x=>canEditStore(x) && (!stFilter || stFilter===x.std_name));
+  if(!missingAll.length){
+    box.innerHTML = '<div class="empty" style="margin-top:10px">✓ '+esc(day)+' 直营门店数据齐全</div>';
+    return;
+  }
+  if(!missing.length){
+    box.innerHTML = '<div class="empty" style="margin-top:10px">'+esc(day)+' 有 '+missingAll.length+' 家缺数，但都不在你名下，无法代补</div>';
+    return;
+  }
+  const ok = withinBackfill(day);
+  const tip = ok ? '' : ' · ⚠️ 已超出 7 天补录窗口，仅主账号可补';
+  let h = '<div style="margin-top:14px;padding:10px 12px;border:1px dashed rgba(128,128,128,.4);border-radius:10px">'+
+          '<div style="font-size:13px;font-weight:700;margin-bottom:8px">缺数补录 · '+esc(day)+' · '+missing.length+' 家'+tip+'</div>';
+  missing.forEach(x=>{
+    h += '<button class="sm" style="margin:0 8px 8px 0"'+(ok?'':' disabled')+
+         ' onclick="openCreate(\''+esc(x.std_name)+'\',\''+day+'\')">'+esc(shortName(x.std_name))+' · 补录</button>';
+  });
+  box.innerHTML = h + '</div>';
 }
 function buildTable(rows){
   // 单日 → 直接展示；跨日 → 按门店合计
@@ -1062,12 +1108,8 @@ function bindEditButtons(){}
 
 /* ---------------- 编辑 / 删除 ---------------- */
 let editingId = null;
-function openEdit(id){
-  const r = queryData.find(x=>x.id===id);
-  if(!r) return;
-  editingId = id;
-  $('edTitle').textContent = '编辑 · '+r.store_name+' · '+r.form_date+
-    (r.revision ? '（已修改 '+r.revision+' 次）' : '');
+let creating = null;   // 补录模式：{store, date}；null = 编辑已有记录
+function buildEditFields(r){
   let h = '<div class="grid2">';
   const labels = {
     meituan_visitors:'真实客数 美', douyin_visitors:'真实客数 抖',
@@ -1082,16 +1124,35 @@ function openEdit(id){
   });
   h += '</div>';
   h += '<div class="field"><label class="field-label">是否有活动</label><select id="ed_has_activity">'+
-       '<option value="否"'+(r.has_activity==='否'?' selected':'')+'>否</option>'+
+       '<option value="否"'+(r.has_activity!=='是'?' selected':'')+'>否</option>'+
        '<option value="是"'+(r.has_activity==='是'?' selected':'')+'>是</option></select></div>';
   h += '<div class="field"><label class="field-label">活动内容</label>'+
        '<input type="text" id="ed_activity_content" value="'+esc(r.activity_content||'')+'" placeholder="如：光电 / 眉眼唇" /></div>';
-  $('edBody').innerHTML = h;
+  return h;
+}
+function openEdit(id){
+  const r = queryData.find(x=>x.id===id);
+  if(!r) return;
+  creating = null;
+  editingId = id;
+  $('edTitle').textContent = '编辑 · '+r.store_name+' · '+r.form_date+
+    (r.revision ? '（已修改 '+r.revision+' 次）' : '');
+  $('edBody').innerHTML = buildEditFields(r);
   $('editMask').classList.remove('hide');
 }
-function closeEdit(){ $('editMask').classList.add('hide'); editingId = null; }
+function openCreate(name, date){
+  if(!withinBackfill(date)) return msg('已超出 7 天补录窗口（仅主账号可补更早日期）','err');
+  const x = (typeof storeMaster!=='undefined' ? storeMaster : []).find(v=>v.std_name===name);
+  if(x && !canEditStore(x)) return msg('你没有这家门店的编辑权限','err');
+  editingId = null;
+  creating = {store:name, date:date};
+  $('edTitle').textContent = '补录 · '+name+' · '+date;
+  $('edBody').innerHTML = buildEditFields({});
+  $('editMask').classList.remove('hide');
+}
+function closeEdit(){ $('editMask').classList.add('hide'); editingId = null; creating = null; }
 async function saveEdit(){
-  if(!editingId) return;
+  if(!editingId && !creating) return;
   const body = {};
   EDITABLE.forEach(k=>{
     const el = $('ed_'+k);
@@ -1099,14 +1160,27 @@ async function saveEdit(){
     body[k] = (el.type === 'number') ? (el.value === '' ? null : parseFloat(el.value)) : el.value;
   });
   try{
-    const r = await sb('/rest/v1/daily_reports?id=eq.'+editingId, {
-      method:'PATCH',
-      headers:{ 'Prefer':'return=representation' },
-      body: JSON.stringify(body)
-    });
+    let r;
+    if(creating){
+      if(!withinBackfill(creating.date)) throw new Error('已超出 7 天补录窗口（仅主账号可补更早日期）');
+      body.store_name = creating.store;
+      body.form_date  = creating.date;
+      r = await sb('/rest/v1/daily_reports?on_conflict=form_date,store_name', {
+        method:'POST',
+        headers:{ 'Prefer':'return=representation,resolution=merge-duplicates' },
+        body: JSON.stringify(body)
+      });
+    }else{
+      r = await sb('/rest/v1/daily_reports?id=eq.'+editingId, {
+        method:'PATCH',
+        headers:{ 'Prefer':'return=representation' },
+        body: JSON.stringify(body)
+      });
+    }
     if(!r.ok) throw new Error('保存失败 HTTP '+r.status+'：'+await r.text());
+    const wasCreating = !!creating;
     closeEdit();
-    msg('已保存，改动已记入操作日志','ok');
+    msg(wasCreating ? '已补录，明细已刷新' : '已保存，改动已记入操作日志','ok');
     loadQuery();
   }catch(e){ msg(esc(e.message),'err'); }
 }
