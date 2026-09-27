@@ -23,7 +23,6 @@
     border-radius: 8px;
     padding: 14px;
     margin-bottom: 10px;
-    backdrop-filter: blur(8px);
   }
 
   /* 从运营后台点进来时才显示 */
@@ -60,7 +59,7 @@
     font-size: 12px;
     color: rgba(255,255,255,0.8);
     text-align: center;
-    transition: all .2s;
+    transition: background-color 200ms ease-out, border-color 200ms ease-out;
     cursor: pointer; user-select: none;
   }
   .store-btn.selected {
@@ -109,7 +108,7 @@
     color: rgba(255,255,255,0.8);
     font-size: 13px;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all .15s; user-select: none;
+    cursor: pointer; transition: background-color 150ms ease-out, color 150ms ease-out; user-select: none;
   }
   .row-line .num-btn.selected {
     background: rgba(139,92,246,0.6);
