@@ -1036,14 +1036,9 @@ function renderMissing(s, e, rows, stFilter){
   const d = new Date(day+'T00:00:00');
   if(!day || isNaN(d) || d > t){ box.innerHTML=''; return; }
   const have = new Set(rows.map(r=>r.store_name));
-  const missingAll = activeDirectRows().filter(x=>!have.has(x.std_name));
-  const missing = missingAll.filter(x=>canEditStore(x) && (!stFilter || stFilter===x.std_name));
-  if(!missingAll.length){
-    box.innerHTML = '<div class="empty" style="margin-top:10px">✓ '+esc(day)+' 直营门店数据齐全</div>';
-    return;
-  }
+  const missing = activeDirectRows().filter(x=>!have.has(x.std_name) && (!stFilter || stFilter===x.std_name));
   if(!missing.length){
-    box.innerHTML = '<div class="empty" style="margin-top:10px">'+esc(day)+' 有 '+missingAll.length+' 家缺数，但都不在你名下，无法代补</div>';
+    box.innerHTML = '<div class="empty" style="margin-top:10px">✓ '+esc(day)+' 直营门店数据齐全</div>';
     return;
   }
   const ok = withinBackfill(day);
@@ -1142,8 +1137,6 @@ function openEdit(id){
 }
 function openCreate(name, date){
   if(!withinBackfill(date)) return msg('已超出 7 天补录窗口（仅主账号可补更早日期）','err');
-  const x = (typeof storeMaster!=='undefined' ? storeMaster : []).find(v=>v.std_name===name);
-  if(x && !canEditStore(x)) return msg('你没有这家门店的编辑权限','err');
   editingId = null;
   creating = {store:name, date:date};
   $('edTitle').textContent = '补录 · '+name+' · '+date;
