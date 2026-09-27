@@ -14,19 +14,19 @@
   .card-title { font-size:15px; font-weight:700; margin-bottom:12px; color:#1f2330; }
   .crumb { font-size:13px; margin-bottom:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .crumb a { color:#4b5563; text-decoration:none; padding:4px 10px; border:1px solid #d6d9e2; border-radius:8px; background:#fff; }
-  .crumb a:hover { border-color:#7c3aed; }
+  .crumb a:hover { border-color:var(--sx-accent); }
   h1 { font-size:22px; margin:0 0 4px; }
   .sub { font-size:13px; color:#8a8f9e; margin-bottom:12px; }
   .field { margin-bottom:12px; }
   .field-label { font-size:13px; color:#4b5563; margin-bottom:6px; display:block; }
   input[type=text], input[type=password], input[type=date], select { width:100%; height:42px; border-radius:10px; border:1px solid #d6d9e2;
     background:#fff; color:#1f2330; font-size:14px; padding:0 12px; outline:none; font-family:inherit; }
-  input:focus, select:focus { border-color:#7c3aed; }
+  input:focus, select:focus { border-color:var(--sx-accent); }
   button { height:42px; border:1px solid #d6d9e2; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; font-family:inherit;
     padding:0 18px; background:#fff; color:#1f2330; }
-  button:hover { border-color:#a78bfa; }
-  button.primary { background:#7c3aed; border-color:#7c3aed; color:#fff; }
-  button.primary:hover { background:#6d28d9; }
+  button:hover { border-color:var(--sx-bright); }
+  button.primary { background:var(--sx-accent); border-color:var(--sx-accent); color:#fff; }
+  button.primary:hover { background:var(--sx-accent-press); }
   button.danger { background:#fff; border-color:#fca5a5; color:#dc2626; }
   button.danger:hover { background:#fef2f2; border-color:#ef4444; }
   button.sm { height:30px; padding:0 10px; font-size:12px; border-radius:8px; }
@@ -491,9 +491,9 @@ function setStType(t){
   const chips = $('stTypeChips').children;
   for(const c of chips){
     const on = (t==='' && c.textContent==='全部') || (t!=='' && c.textContent===t);
-    c.style.background = on ? '#7c3aed' : '';
+    c.style.background = on ? 'var(--sx-accent)' : '';
     c.style.color = on ? '#fff' : '';
-    c.style.borderColor = on ? '#7c3aed' : '';
+    c.style.borderColor = on ? 'var(--sx-accent)' : '';
   }
   renderStores();
 }
@@ -739,9 +739,9 @@ function switchView(v){
     const chip = $('chip'+k.charAt(0).toUpperCase()+k.slice(1));
     if(chip){
       const on = (k===v);
-      chip.style.background = on ? '#7c3aed' : '';
+      chip.style.background = on ? 'var(--sx-accent)' : '';
       chip.style.color = on ? '#fff' : '';
-      chip.style.borderColor = on ? '#7c3aed' : '';
+      chip.style.borderColor = on ? 'var(--sx-accent)' : '';
       if(on && k==='todo') chip.style.color = '#fff';
     }
   });
