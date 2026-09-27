@@ -294,6 +294,8 @@ function render(store, raw){
   const T = todayStr();
   const ms = T.slice(0,8) + '01';
   const months = aggregate(raw, T);
+  // 取某月聚合（无数据月份返回零值骨架，避免 g is not defined）
+  const g = (k) => months[k] || { A:0, C:0, mtA:0, mtC:0, dyA:0, dyC:0, otA:0, otC:0 };
 
   // 完整的近 12 个月份键（含本月）——按年月精确推算，无天数近似漂移
   const keys = [];
