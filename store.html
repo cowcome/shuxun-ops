@@ -13,7 +13,7 @@
   .card { background:#fff; border:1px solid #e6e8ef; border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 1px 3px rgba(31,35,48,.05); }
   .crumb { font-size:13px; margin-bottom:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .crumb a { color:#4b5563; text-decoration:none; padding:4px 10px; border:1px solid #d6d9e2; border-radius:8px; background:#fff; }
-  .crumb a:hover { border-color:#7c3aed; }
+  .crumb a:hover { border-color:var(--sx-accent); }
   h1 { font-size:22px; margin:0; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .sub { font-size:13px; color:#8a8f9e; margin-top:4px; }
   .badge { font-size:11px; padding:2px 9px; border-radius:20px; font-weight:600; white-space:nowrap; }
@@ -28,9 +28,9 @@
   .field-label { font-size:13px; color:#4b5563; margin-bottom:6px; display:block; }
   input[type=text], input[type=password] { width:100%; height:42px; border-radius:10px; border:1px solid #d6d9e2;
     background:#fff; color:#1f2330; font-size:14px; padding:0 12px; outline:none; font-family:inherit; }
-  input:focus { border-color:#7c3aed; }
+  input:focus { border-color:var(--sx-accent); }
   button { height:42px; border:none; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; font-family:inherit; padding:0 18px; }
-  .primary { background:#7c3aed; color:#fff; }
+  .primary { background:var(--sx-accent); color:#fff; }
   .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
   .stat { background:#f6f7fa; border-radius:12px; padding:12px; }
   .stat .l { font-size:12px; color:#6b7280; margin-bottom:4px; white-space:nowrap; }
@@ -39,8 +39,8 @@
   .d.up { color:#0F6E56; } .d.down { color:#A32D2D; } .d.flat { color:#8a8f9e; }
   .chart { display:flex; align-items:flex-end; gap:6px; height:160px; padding:8px 2px 0; }
   .bar-w { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:4px; min-width:0; }
-  .bar { width:100%; max-width:44px; border-radius:6px 6px 2px 2px; background:#7c3aed; min-height:2px; position:relative; }
-  .bar .seg-mt { background:#7c3aed; } .bar .seg-dy { background:#f59e0b; } .bar .seg-ot { background:#94a3b8; }
+  .bar { width:100%; max-width:44px; border-radius:6px 6px 2px 2px; background:var(--sx-accent-soft); min-height:2px; position:relative; }
+  .bar .seg-mt { background:var(--sx-mei); } .bar .seg-dy { background:var(--sx-dou); } .bar .seg-ot { background:#94a3b8; }
   .bar-l { font-size:10px; color:#8a8f9e; white-space:nowrap; }
   .bar-v { font-size:10px; color:#4b5563; white-space:nowrap; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -132,7 +132,7 @@
   </div>
 
   <!-- 无该门店 -->
-  <div id="noStoreView" class="card hide"><div class="empty">未找到该门店（链接参数缺失或门店已删除）<br/><br/><a href="chain.html" style="color:#7c3aed">← 返回书荀连锁</a></div></div>
+  <div id="noStoreView" class="card hide"><div class="empty">未找到该门店（链接参数缺失或门店已删除）<br/><br/><a href="chain.html" style="color:var(--sx-accent)">← 返回书荀连锁</a></div></div>
 
   <!-- 主体 -->
   <div id="appView" class="hide">
