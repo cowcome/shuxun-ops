@@ -35,7 +35,7 @@
     padding: 16px;
     margin-bottom: 14px;
   }
-  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #c4b5fd; }
+  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--sx-bright); }
   .card-title .note { font-size: 12px; font-weight: 400; color: rgba(255,255,255,0.5); margin-left: 8px; }
 
   /* ---------- 表单 ---------- */
@@ -62,7 +62,7 @@
   }
   .store-pick div { padding: 9px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06); }
   .store-pick div:last-child { border-bottom: none; }
-  .store-pick div:hover { background: rgba(139,92,246,0.25); }
+  .store-pick div:hover { background: var(--sx-accent-soft); }
   .store-pick .empty { color: rgba(255,255,255,0.4); cursor: default; }
   .store-pick .empty:hover { background: transparent; }
 
@@ -75,7 +75,7 @@
     font-family: inherit;
   }
   button:hover { background: rgba(255,255,255,0.12); }
-  button.primary { background: #8b5cf6; border-color: #8b5cf6; font-weight: 600; }
+  button.primary { background: var(--sx-accent); border-color: var(--sx-accent); font-weight: 600; }
   button.primary:hover { background: #7c4ded; }
   button.sm, a.sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 8px; }
   a.sm { display: inline-flex; align-items: center; box-sizing: border-box; text-decoration: none; color: #fff; }
@@ -92,7 +92,7 @@
   .msg { padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 8px; word-break: break-all; }
   .msg.err { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.35); }
   .msg.ok  { background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.3); }
-  .msg.info{ background: rgba(139,92,246,0.14); border: 1px solid rgba(139,92,246,0.35); }
+  .msg.info{ background: var(--sx-accent-soft); border: 1px solid var(--sx-accent-ring); }
 
   /* ---------- 大盘健康度 ---------- */
   .hero-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
@@ -107,7 +107,7 @@
   .stat .v.dim { color: rgba(255,255,255,0.28); }
   .health-banner {
     margin-top: 12px; padding: 10px 14px; border-radius: 10px; font-size: 13px;
-    background: rgba(139,92,246,0.14); border: 1px solid rgba(139,92,246,0.35);
+    background: var(--sx-accent-soft); border: 1px solid var(--sx-accent-ring);
     color: rgba(255,255,255,0.85); line-height: 1.7;
   }
   .health-badge {
@@ -124,7 +124,7 @@
     color: rgba(255,255,255,0.75); transition: background-color 150ms ease-out, color 150ms ease-out; user-select: none;
     display: inline-flex; align-items: center; gap: 5px;
   }
-  .chip.on { background: #8b5cf6; border-color: #8b5cf6; color: #fff; font-weight: 600; }
+  .chip.on { background: var(--sx-accent); border-color: var(--sx-accent); color: #fff; font-weight: 600; }
   .chip .cnt { font-size: 11px; opacity: .65; margin-left: 4px; }
   .chip .dt { width: 8px; height: 8px; }
 
@@ -231,7 +231,7 @@
   .sx-nav.sx-dark{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
   .sx-nav.sx-dark a{color:rgba(255,255,255,.92)}
   .sx-nav.sx-dark a:hover{border-color:rgba(255,255,255,.2)}
-  .sx-nav.sx-dark a.cur{background:rgba(139,92,246,.25);border-color:rgba(167,139,250,.5);color:#c4b5fd}
+  .sx-nav.sx-dark a.cur{background:var(--sx-accent-soft);border-color:var(--sx-accent-ring);color:var(--sx-bright)}
   .sx-nav.sx-dark .sx-me{color:rgba(255,255,255,.55)}
 </style>
 <link rel="stylesheet" href="apple.css">
