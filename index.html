@@ -27,7 +27,7 @@
 
   /* 从运营后台点进来时才显示 */
   .back-ops {
-    display: none; font-size: 12px; color: #a78bfa; text-decoration: none;
+    display: none; font-size: 12px; color: var(--sx-bright); text-decoration: none;
     margin-bottom: 8px;
   }
 
@@ -45,7 +45,7 @@
     color: #fff; padding: 8px 10px; outline: none;
     -webkit-appearance: none; appearance: none;
   }
-  .date-picker:focus { border-color: rgba(167,139,250,0.6); }
+  .date-picker:focus { border-color: var(--sx-accent); }
   .date-hint { font-size: 10px; color: rgba(255,255,255,0.45); margin-top: 4px; }
 
   /* 门店网格：5 列，选中紫底+✓，已提交右上角绿点 */
@@ -63,12 +63,12 @@
     cursor: pointer; user-select: none;
   }
   .store-btn.selected {
-    background: rgba(139,92,246,0.5);
-    border-color: rgba(167,139,250,0.8);
-    box-shadow: 0 0 8px rgba(139,92,246,0.5);
+    background: var(--sx-accent-ring);
+    border-color: var(--sx-accent);
+    box-shadow: 0 0 8px var(--sx-accent-ring);
     color: #fff;
   }
-  .store-btn .check { font-size: 11px; color: #a78bfa; margin-right: 2px; }
+  .store-btn .check { font-size: 11px; color: var(--sx-bright); margin-right: 2px; }
   .store-btn.submitted::after {
     content: ''; position: absolute; top: 3px; right: 3px;
     width: 6px; height: 6px; border-radius: 50%;
@@ -80,7 +80,7 @@
      保证金额输入框在小屏（375 / 390）下不被 flex 挤塌 */
   .pf-group { margin-bottom: 15px; }
   .pf-name {
-    font-size: 13px; font-weight: 600; color: rgba(167,139,250,0.95);
+    font-size: 13px; font-weight: 600; color: var(--sx-accent);
     margin-bottom: 7px; padding-left: 2px;
   }
   .row-line {
@@ -111,9 +111,9 @@
     cursor: pointer; transition: background-color 150ms ease-out, color 150ms ease-out; user-select: none;
   }
   .row-line .num-btn.selected {
-    background: rgba(139,92,246,0.6);
-    border-color: rgba(167,139,250,0.9);
-    box-shadow: 0 0 8px rgba(139,92,246,0.6);
+    background: var(--sx-accent-ring);
+    border-color: var(--sx-accent);
+    box-shadow: 0 0 8px var(--sx-accent-ring);
     color: #fff; font-weight: 700;
   }
   .row-line .num-input {
@@ -123,7 +123,7 @@
     color: #fff; font-size: 13px; text-align: center;
     outline: none; padding: 0 2px;
   }
-  .row-line .num-input:focus { border-color: rgba(167,139,250,0.6); }
+  .row-line .num-input:focus { border-color: var(--sx-accent); }
   .row-line .num-input::placeholder { color: rgba(255,255,255,0.4); }
 
   .amt-input {
@@ -132,7 +132,7 @@
     background: rgba(255,255,255,0.05);
     color: #fff; font-size: 13px; padding: 0 6px; outline: none;
   }
-  .amt-input:focus { border-color: rgba(167,139,250,0.6); }
+  .amt-input:focus { border-color: var(--sx-accent); }
   .amt-input::placeholder { color: rgba(255,255,255,0.35); }
   /* 无配对金额的行（约不上）只占 2 列：label + 滑块+数值 */
   .row-line--slider { grid-template-columns: 33px 1fr 26px; }
@@ -140,10 +140,10 @@
   .row-line--slider .slider-val { grid-column: 3; }
 
   /* 「约不上」滑块 */
-  .row-slider { flex: 1; min-width: 0; margin: 0 6px; accent-color: #a78bfa; }
+  .row-slider { flex: 1; min-width: 0; margin: 0 6px; accent-color: var(--sx-bright); }
   .slider-val {
     width: 26px; flex-shrink: 0; text-align: center;
-    font-size: 13px; font-weight: 600; color: #a78bfa;
+    font-size: 13px; font-weight: 600; color: var(--sx-bright);
   }
 
   /* 品项活动开关（对应小程序 switch 组件） */
@@ -159,7 +159,7 @@
     width: 22px; height: 22px; border-radius: 50%;
     background: #fff; transition: transform .2s;
   }
-  .switch input:checked + .switch-track { background: #8b5cf6; }
+  .switch input:checked + .switch-track { background: var(--sx-accent); }
   .switch input:checked + .switch-track::after { transform: translateX(20px); }
 
   .text-input {
@@ -168,12 +168,12 @@
     background: rgba(255,255,255,0.05);
     color: #fff; padding: 8px 10px; margin-top: 8px; outline: none;
   }
-  .text-input:focus { border-color: rgba(167,139,250,0.6); }
+  .text-input:focus { border-color: var(--sx-accent); }
   .text-input::placeholder { color: rgba(255,255,255,0.4); }
 
   .submit-btn {
     width: 100%; padding: 13px; border-radius: 8px; border: none;
-    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    background: linear-gradient(135deg, var(--sx-accent), var(--sx-accent-press));
     color: #fff; font-size: 16px; font-weight: 700; letter-spacing: 1px;
     margin-top: 6px; cursor: pointer;
   }
@@ -219,7 +219,7 @@
   .sx-nav.sx-dark{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
   .sx-nav.sx-dark a{color:rgba(255,255,255,.92)}
   .sx-nav.sx-dark a:hover{border-color:rgba(255,255,255,.2)}
-  .sx-nav.sx-dark a.cur{background:rgba(139,92,246,.25);border-color:rgba(167,139,250,.5);color:#c4b5fd}
+  .sx-nav.sx-dark a.cur{background:var(--sx-accent-soft);border-color:var(--sx-accent-ring);color:var(--sx-bright)}
   .sx-nav.sx-dark .sx-me{color:rgba(255,255,255,.55)}
 </style>
 <link rel="stylesheet" href="apple.css">
