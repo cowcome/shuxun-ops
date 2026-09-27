@@ -360,12 +360,11 @@ async function doLogin(){
 /* ================= 数据装载 ================= */
 let stores = [];        // 全部门店
 let storeById = {};
-let kdtToStore = {};    // yz_shop_map: kdt_id → store_id
 let dyAccs = [];        // 最新一轮抖音监控结果（有 store_id 的）
 let dyReportUrl = '';
 let dyRunAt = null;
 let billDaily = null;   // bill_daily 视图：平台账单日汇总
-let pendingKdts = [];   // 待认领有赞店（同步器自动发现）
+let pendingKdts = [];   // 待认领有赞店（历史记录；同步器已关停，仅存档）
 
 async function loadBills(){
   try{
@@ -379,8 +378,6 @@ async function loadBills(){
 async function loadBase(){
   stores = await sb('/rest/v1/stores?select=id,std_name,short_name,city,district,status,store_type&order=id');
   storeById = {}; stores.forEach(s => { storeById[s.id] = s; });
-  const ymap = await sb('/rest/v1/yz_shop_map?select=kdt_id,store_id');
-  kdtToStore = {}; ymap.forEach(r => { kdtToStore[r.kdt_id] = r.store_id; });
 }
 
 async function loadDy(){
@@ -393,37 +390,34 @@ async function loadDy(){
   }catch(e){ dyAccs = []; }
 }
 
-/* 有赞核销拉取（本月 1 日至今，按 kdt 聚合；防线：待上线/非本体系门店拦截） */
+/* 连锁核销拉取（2026-09-27 拍板：数据源 = 平台账单导入 chain_verify_orders，
+   有赞通道已关停。按 store_id 聚合；防线：待上线/非本体系门店拦截） */
 async function loadYz(T){
   const ms = T.slice(0,8)+'01';
-  const gte = new Date(ms+'T00:00:00+08:00').toISOString();
-  const sel = 'kdt_id,real_pay,create_time,pay_channel_name,order_type,item_type';
+  const sel = 'store_id,store_name,platform,amount,form_date';
   const raw = [];
   let from = 0;
   while(true){
-    const part = await sb('/rest/v1/yz_orders?order=create_time.asc&select='+encodeURIComponent(sel)
-      + '&create_time=gte.'+encodeURIComponent(gte),
+    const part = await sb('/rest/v1/chain_verify_orders?order=form_date.asc&select='+encodeURIComponent(sel)
+      + '&form_date=gte.'+ms,
       { headers: { Range: from + '-' + (from+999) } });
     raw.push(...part);
     if(part.length < 1000 || from > 200000) break;
     from += 1000;
-    $('loading').textContent = '加载有赞订单… 已拉 ' + raw.length + ' 行';
+    $('loading').textContent = '加载平台核销订单… 已拉 ' + raw.length + ' 行';
   }
   const Y = addDays(T,-1);
   const per = {};    // storeId -> {today:[a,c], yday:[a,c], mtd:[a,c], last7:bool}
   let blCnt = 0, blAmt = 0;
   const Y7 = addDays(T,-7);
-  const blActive = {};   // 待上线店 kdt → 本月有测试动作
+  const blActive = {};   // 待上线店 → 本月有测试动作
   raw.forEach(r => {
-    if(r.order_type !== 0 || [6,7,9].indexOf(r.item_type) >= 0) return;
-    if(!/核销|验券/.test(String(r.pay_channel_name || ''))) return;
-    const amt = (r.real_pay || 0)/100;
+    const amt = Number(r.amount) || 0;
     if(!amt) return;
-    const sid = kdtToStore[r.kdt_id];
-    const st = sid ? storeById[sid] : null;
-    if(!st || (st.store_type !== '连锁' && st.store_type !== '直营')) return;   // 陪跑/未映射不并入
+    const st = r.store_id ? storeById[r.store_id] : null;
+    if(!st || (st.store_type !== '连锁' && st.store_type !== '直营')) return;   // 陪跑/未挂接不并入
     if(st.status !== '在营'){ blCnt++; blAmt += amt; blActive[st.id] = 1; return; }   // 🛡 待上线/闭店拦截
-    const d = bjDay(r.create_time);
+    const d = r.form_date;
     let g = per[st.id]; if(!g) g = per[st.id] = { today:[0,0], yday:[0,0], mtd:[0,0], days:{} };
     g.mtd[0]+=amt; g.mtd[1]++;
     if(d === T){ g.today[0]+=amt; g.today[1]++; }
