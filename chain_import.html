@@ -50,6 +50,25 @@
   .prog > div { height:100%; background:#7c3aed; border-radius:8px; transition:width .3s; }
   select { height:34px; border-radius:8px; border:1px solid #d6d9e2; background:#fff; color:#1f2330; font-size:12px; padding:0 8px; outline:none; font-family:inherit; }
   select:focus { border-color:#7c3aed; }
+  /* ---- 报告按钮 / 事件表单（2026-09-28 统一 accent 配色 + 表单标签）---- */
+  .rp-btn { display:inline-block; background:var(--sx-accent,#7c3aed); color:#fff; font-weight:600;
+    border-radius:10px; padding:10px 20px; text-decoration:none; font-size:14px; letter-spacing:.01em; }
+  .rp-btn:active { transform:scale(.97); }
+  @media (hover:hover) and (pointer:fine) { .rp-btn:hover { background:var(--sx-accent-press,#6d28d9); } }
+  .evf { display:grid; gap:12px; }
+  .ev-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .ev-f { display:flex; flex-direction:column; gap:5px; }
+  .ev-f label { font-size:12px; font-weight:600; color:var(--sx-text-2,#6e6e73); }
+  .ev-f label .ev-opt { font-weight:400; color:var(--sx-text-3,#8e8e93); }
+  .ev-f select, .ev-f input { width:100%; box-sizing:border-box; height:40px; border-radius:10px;
+    border:1px solid var(--sx-separator-2,rgba(60,60,67,.22)); background:var(--sx-surface,#fff);
+    color:var(--sx-text,#1c1c1e); padding:0 10px; font-size:14px; font-family:inherit; outline:none; }
+  .ev-f select:focus, .ev-f input:focus { border-color:var(--sx-accent,#7c3aed); }
+  #evErr { color:var(--sx-red,#b91c1c); font-size:12px; }
+  #evBtn { height:42px; border:none; }
+  /* 浏览器自动填充的黄框修正 */
+  .ev-f input:-webkit-autofill, input#evNote:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #fff inset; -webkit-text-fill-color:#1c1c1e; }
 </style>
 <script src="theme.js"></script></head>
 <body>
@@ -146,23 +165,31 @@
 
     <div class="card" id="reportCard">
       <div class="card-title">周运营诊断报告</div>
-      <a href="chain_report.html" style="display:inline-block;background:#0a84ff;color:#fff;font-weight:700;border-radius:12px;padding:10px 18px;text-decoration:none;font-size:14px">生成本周诊断报告 →</a>
+      <a href="chain_report.html" class="rp-btn">生成本周诊断报告 →</a>
       <div class="hint" style="margin-top:8px">自动取上一个完整自然周 · 数据实时拉取 · 登录后台即可查看</div>
     </div>
 
     <div class="card" id="eventCard">
       <div class="card-title">特殊事件登记 <span style="font-size:12px;color:#8a8f9e;font-weight:500">闭店/培训/装修等，报告自动归因</span></div>
-      <div id="evForm" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <select id="evStore" style="padding:8px;border-radius:10px;border:1px solid #d8dbe3"><option value="">— 选择门店 —</option></select>
-        <select id="evType" style="padding:8px;border-radius:10px;border:1px solid #d8dbe3">
-          <option>闭店培训</option><option>装修</option><option>停业</option><option>团建</option>
-          <option>促销活动</option><option>新店爬坡</option><option>其他</option>
-        </select>
-        <input type="date" id="evStart" style="padding:8px;border-radius:10px;border:1px solid #d8dbe3">
-        <input type="date" id="evEnd" style="padding:8px;border-radius:10px;border:1px solid #d8dbe3">
-        <input id="evNote" placeholder="备注（可选）" style="grid-column:1/-1;padding:8px;border-radius:10px;border:1px solid #d8dbe3">
-        <button id="evBtn" style="grid-column:1/-1;padding:9px;border-radius:10px;border:none;background:#0a84ff;color:#fff;font-weight:700">登记事件</button>
-        <div id="evErr" style="grid-column:1/-1;color:#c0392b;font-size:12px"></div>
+      <div id="evForm" class="evf">
+        <div class="ev-row">
+          <div class="ev-f"><label>门店</label>
+            <select id="evStore"><option value="">— 选择门店 —</option></select>
+          </div>
+          <div class="ev-f"><label>事件类型</label>
+            <select id="evType">
+              <option>闭店培训</option><option>装修</option><option>停业</option><option>团建</option>
+              <option>促销活动</option><option>新店爬坡</option><option>其他</option>
+            </select>
+          </div>
+        </div>
+        <div class="ev-row">
+          <div class="ev-f"><label>开始日期</label><input type="date" id="evStart"></div>
+          <div class="ev-f"><label>结束日期 <span class="ev-opt">留空 = 同开始日期（单日事件）</span></label><input type="date" id="evEnd"></div>
+        </div>
+        <div class="ev-f"><label>备注（可选）</label><input id="evNote" autocomplete="off" placeholder="例：全店员工总部培训 2 天"></div>
+        <button id="evBtn" class="primary" style="width:100%">登记事件</button>
+        <div id="evErr"></div>
       </div>
       <div id="evList" style="margin-top:8px"></div>
     </div>
