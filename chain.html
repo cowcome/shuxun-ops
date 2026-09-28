@@ -316,8 +316,7 @@
       </div>
       <div id="zeroList" style="display:none; margin-top:10px; border-top:1px dashed rgba(255,255,255,0.15); padding-top:10px;"></div>
       <div class="health-banner" id="yzBanner">
-        数据源：有赞开放平台 · Supabase 实时同步。口径：顾客实付（真实核销订单，不含二维码收款 / 充值）；
-        内购订单不走有赞，故本数据即真实客户业绩（未对账，供经营参考）。
+        数据源：抖音来客 / 美团开店宝平台导出 · 每周「数据导入」（有赞通道已关停）。口径：业绩 = 核销 + 验券 + 记账核销；不含抖音线上买单（内购上翻）。门店归属按导入回填的 store_id 精确挂接。
       </div>
     </div>
 
@@ -346,7 +345,7 @@
       <div id="spActiveList"><div class="op">加载中…</div></div>
     </div>
 
-    <div class="foot">書荀连锁 · 数据源：有赞开放平台（实时）</div>
+    <div class="foot">書荀连锁 · 数据源：平台账单每周导入（Supabase）</div>
   </div>
 </div>
 
@@ -512,7 +511,7 @@ async function enterApp(){
    await loadChainStores();
    await loadSpecials();
    renderStores();
-   loadYz();                                        // 有赞实时数据（异步灌入，不阻塞首屏）
+   loadYz();                                        // 平台账单数据（异步灌入，不阻塞首屏）
    setInterval(() => loadYz(false), 5 * 60 * 1000); // 每 5 分钟自动刷新（缓存 TTL 3 分钟）
  }
 
@@ -890,7 +889,7 @@ function renderZeroList(){
   const box = $('zeroList');
   if(box.style.display === 'none') return;
   if(!zeroStores.length){
-    box.innerHTML = '<div style="font-size:13px;color:#4ade80">✅ 有赞营业门店今日全部有核销</div>';
+    box.innerHTML = '<div style="font-size:13px;color:#4ade80">✅ 在营门店今日全部有核销</div>';
     return;
   }
   let h = '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px">共 ' + zeroStores.length + ' 家 · 按本月累计降序（核销金额均为 0）</div>';
