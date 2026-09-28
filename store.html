@@ -46,7 +46,7 @@
   .chart { display:flex; align-items:flex-end; gap:6px; height:160px; padding:8px 2px 0; }
   .bar-w { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:4px; min-width:0; }
   .bar { width:100%; max-width:44px; border-radius:6px 6px 2px 2px; background:var(--sx-accent-soft); min-height:2px; position:relative; }
-  .bar .seg-mt { background:var(--sx-mei); } .bar .seg-dy { background:var(--sx-dou); } .bar .seg-ot { background:#94a3b8; }
+  .bar.seg-mt { background:var(--sx-mei); } .bar.seg-dy { background:var(--sx-dou); } .bar.seg-ot { background:#94a3b8; }
   .bar-l { font-size:10px; color:#8a8f9e; white-space:nowrap; }
   .bar-v { font-size:10px; color:#4b5563; white-space:nowrap; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -164,7 +164,7 @@
     </div>
 
     <div class="card">
-      <div style="font-weight:700;font-size:14px;margin-bottom:8px">逐月核销履历 <span style="font-weight:400;font-size:12px;color:#8a8f9e">（近 12 个月 · 柱内紫=美团 / 橙=抖音 / 灰=其他渠道）</span></div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:8px">逐月核销履历 <span style="font-weight:400;font-size:12px;color:#8a8f9e">（近 12 个月 · 柱内橙=美团 / 紫=抖音 / 灰=其他渠道）</span></div>
       <div class="chart" id="chart"></div>
     </div>
 
