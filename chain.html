@@ -639,7 +639,7 @@ function renderStores(){
 /* 平台数据行：美团 / 抖音 各一行（¥金额 + 单数）。数据源：Supabase chain_verify_orders（平台导入） */
 let storeMetrics = {};
 let zeroStores = [];    // 最新数据日 0 核销门店（营业中且本期导入数据出现过）
-const fmtY = (x) => '¥' + (Math.round((x||0)*100)/100);
+const fmtY = (x) => '¥' + Math.round(x||0);
 function platRows(x){
   const m = storeMetrics[x.id] || null;
   const fa = (k) => (m && m[k] != null) ? fmtY(m[k]) : '——';
