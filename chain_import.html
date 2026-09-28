@@ -55,33 +55,6 @@
     border-radius:10px; padding:10px 20px; text-decoration:none; font-size:14px; letter-spacing:.01em; }
   .rp-btn:active { transform:scale(.97); }
   @media (hover:hover) and (pointer:fine) { .rp-btn:hover { background:var(--sx-accent-press); } }
-  .evf { display:grid; gap:12px; }
-  .ev-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .ev-f { display:flex; flex-direction:column; gap:5px; }
-  .ev-f label { font-size:12px; font-weight:600; color:var(--sx-text-2,#6e6e73); }
-  .ev-f label .ev-opt { font-weight:400; color:var(--sx-text-3,#8e8e93); }
-  .ev-f select, .ev-f input { width:100%; box-sizing:border-box; height:40px; border-radius:10px;
-    border:1px solid var(--sx-separator-2,rgba(60,60,67,.22)); background:var(--sx-surface,#fff);
-    color:var(--sx-text,#1c1c1e); padding:0 10px; font-size:14px; font-family:inherit; outline:none; }
-  .ev-f select:focus, .ev-f input:focus { border-color:var(--sx-accent); }
-  #evErr { color:var(--sx-red,#b91c1c); font-size:12px; }
-  #evBtn { height:42px; border:none; }
-  /* 门店搜索选择器 */
-  .ev-search { position:relative; }
-  .ev-search input { width:100%; box-sizing:border-box; height:40px; border-radius:10px;
-    border:1px solid var(--sx-separator-2,rgba(60,60,67,.22)); background:var(--sx-surface,#fff);
-    color:var(--sx-text,#1c1c1e); padding:0 10px; font-size:14px; font-family:inherit; outline:none; }
-  .ev-search input:focus { border-color:var(--sx-accent); }
-  .ev-list { position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:30; display:none;
-    background:var(--sx-surface,#fff); border:1px solid var(--sx-separator-2,rgba(60,60,67,.22));
-    border-radius:10px; box-shadow:0 8px 24px rgba(16,24,40,.14); max-height:240px; overflow-y:auto; }
-  .ev-list .ev-it { padding:9px 12px; font-size:13px; color:var(--sx-text,#1c1c1e); cursor:pointer; }
-  .ev-list .ev-it:hover { background:var(--sx-accent-soft); }
-  .ev-list .ev-reg { color:var(--sx-text-3,#8e8e93); font-size:12px; }
-  .ev-list .ev-empty { padding:9px 12px; font-size:12px; color:var(--sx-text-3,#8e8e93); }
-  /* 浏览器自动填充的黄框修正 */
-  .ev-f input:-webkit-autofill, input#evNote:-webkit-autofill {
-    -webkit-box-shadow: 0 0 0 1000px #fff inset; -webkit-text-fill-color:#1c1c1e; }
 </style>
 <script src="theme.js"></script></head>
 <body>
@@ -181,35 +154,6 @@
       <a href="chain_report.html" class="rp-btn">生成本周诊断报告 →</a>
       <div class="hint" style="margin-top:8px">自动取上一个完整自然周 · 数据实时拉取 · 登录后台即可查看</div>
     </div>
-
-    <div class="card" id="eventCard">
-      <div class="card-title">特殊门店填报 <span style="font-size:12px;color:#8a8f9e;font-weight:500">与书荀连锁页同一份数据 · 实时同步 · 报告自动归因</span></div>
-      <div id="evForm" class="evf">
-        <div class="ev-row">
-          <div class="ev-f"><label>门店 *（输入省份 / 城市 / 行政区 / 店名 / 缩写 / 别名关键字，从候选中点击选择）</label>
-            <div class="ev-search">
-              <input id="evStoreQ" autocomplete="off" placeholder="如：百联 / 奉贤 / 上海…">
-              <div id="evStoreList" class="ev-list"></div>
-            </div>
-          </div>
-          <div class="ev-f"><label>类型 *</label>
-            <select id="evType">
-              <option>培训闭店</option><option>团建闭店</option><option>台风闭店</option><option>假日闭店</option>
-              <option>装修调整</option><option>特殊营业时间</option><option>其他</option>
-            </select>
-          </div>
-        </div>
-        <div class="ev-row">
-          <div class="ev-f"><label>开始日期 *</label><input type="date" id="evStart"></div>
-          <div class="ev-f"><label>结束日期 * <span class="ev-opt">留空 = 同开始日期（单日事件）</span></label><input type="date" id="evEnd"></div>
-        </div>
-        <div class="ev-f"><label>备注（可选）</label><input id="evNote" autocomplete="off" placeholder="例：全体员工去总部培训 3 天"></div>
-        <button id="evBtn" class="primary" style="width:100%">保 存</button>
-        <div id="evErr"></div>
-      </div>
-      <div id="evList" style="margin-top:8px"></div>
-    </div>
-
 
     <div class="card">
       <div class="card-title">① 选择导出文件</div>
@@ -636,84 +580,8 @@ $('importBtn').addEventListener('click', async () => {
 </script>
 
 <script>
-/* ---------------- 特殊门店填报（与连锁页同一张表 store_special_periods）---------------- */
-(async function(){
-  if(!session) return;
-  const isAdmin = String(userEmail).toLowerCase() === ADMIN_EMAIL;
-  const q = document.getElementById('evStoreQ'); if(!q) return;
-  const qlist = document.getElementById('evStoreList');
-  const list = document.getElementById('evList'), btn = document.getElementById('evBtn');
-  let STORES = [], pickedId = 0, pickedName = '';
-  try{
-    const rs = await sb('/rest/v1/stores?select=id,std_name,short_name,aliases,province,city,district&order=std_name.asc');
-    if(rs.ok) STORES = await rs.json();
-  }catch(e){}
-  /* 与连锁页同款关键字搜索：省份/城市/行政区/店名/缩写/别名，两种拼法都命中 */
-  function storeMatches(kw){
-    kw = kw.trim().toLowerCase();
-    if(!kw) return [];
-    return STORES.filter(function(x){
-      const parts = [x.province, x.city, x.district, x.std_name, x.short_name, x.aliases].filter(Boolean);
-      if(!parts.length) return false;
-      const hay = (parts.join(',') + ',' + parts.join('')).toLowerCase();
-      return hay.indexOf(kw) >= 0;
-    }).slice(0, 30);
-  }
-  function renderQ(){
-    const kw = q.value.trim();
-    if(!kw){ qlist.style.display='none'; qlist.innerHTML=''; return; }
-    const cand = storeMatches(kw);
-    if(!cand.length){ qlist.innerHTML='<div class="ev-empty">没有匹配「'+esc(q.value)+'」的门店</div>'; qlist.style.display='block'; return; }
-    qlist.innerHTML = cand.map(function(s){
-      const reg = [s.province, s.city, s.district].filter(Boolean).join('');
-      return '<div class="ev-it" data-id="'+s.id+'" data-n="'+esc(s.std_name)+'">'+esc(s.std_name)+
-        (s.short_name && s.short_name !== s.std_name ? '（'+esc(s.short_name)+'）' : '')+
-        (reg ? ' <span class="ev-reg">'+esc(reg)+'</span>' : '')+'</div>';
-    }).join('');
-    qlist.style.display='block';
-  }
-  q.addEventListener('input', renderQ);
-  q.addEventListener('focus', renderQ);
-  q.addEventListener('blur', function(){ setTimeout(function(){ qlist.style.display='none'; }, 180); });
-  qlist.addEventListener('mousedown', function(e){
-    const it = e.target.closest ? e.target.closest('.ev-it') : null; if(!it) return;
-    pickedId = +it.dataset.id; pickedName = it.dataset.n; q.value = pickedName;
-    qlist.style.display='none';
-  });
-  async function loadList(){
-    try{
-      const re = await sb('/rest/v1/store_special_periods?select=*&order=start_date.desc&limit=15');
-      if(!re.ok){ list.innerHTML='<div class="hint">特殊门店表拉取失败（HTTP '+re.status+'）</div>'; return; }
-      const evs = await re.json();
-      list.innerHTML = evs.length ? evs.map(e=>
-        '<div style="font-size:13px;padding:6px 0;border-bottom:1px solid #f0f0f2"><b>'+esc(e.special_type||'')+'</b> · '+esc(e.std_name||('门店#'+e.store_id))+' · '+esc(e.start_date)+'~'+esc(e.end_date||e.start_date)+(e.note?' · '+esc(e.note):'')+'</div>'
-      ).join('') : '<div class="hint">暂无记录。培训闭店、团建、台风、装修调整都值得填报。</div>';
-    }catch(e){ list.innerHTML='<div class="hint">列表加载失败：'+esc(e.message)+'</div>'; }
-  }
-  if(!isAdmin){
-    document.getElementById('evForm').innerHTML = '<div class="hint">事件登记仅限主账号操作；列表全员可见。</div>';
-  } else if(btn){
-    btn.addEventListener('click', async ()=>{
-      const store_id = pickedId, event_type = document.getElementById('evType').value,
-            start_date = document.getElementById('evStart').value,
-            end_date = document.getElementById('evEnd').value || start_date,
-            note = document.getElementById('evNote').value.trim();
-      const err = document.getElementById('evErr');
-      if(!store_id||!event_type||!start_date){ err.innerHTML='请先在「门店」框搜索并点选门店，再填类型和开始日期'; return; }
-      btn.disabled = true; btn.textContent = '保存中…';
-      try{
-        /* 与连锁页 saveSpecial 同一张表、同一套字段（store_special_periods） */
-        const r = await sb('/rest/v1/store_special_periods', {method:'POST', headers:{'Prefer':'return=minimal'}, body: JSON.stringify({store_id, std_name: pickedName, special_type: event_type, start_date, end_date, note, created_by: userEmail})});
-        if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.message||('HTTP '+r.status)); }
-        err.innerHTML=''; document.getElementById('evNote').value='';
-        pickedId = 0; pickedName = ''; q.value = '';
-        await loadList();
-      }catch(e){ err.innerHTML='保存失败：'+esc(e.message); }
-      btn.disabled=false; btn.textContent='保 存';
-    });
-  }
-  loadList();
-})();
+/* 特殊门店填报已收敛到书荀连锁页（chain.html）——2026-09-28 拍板只留一个入口，
+   两页写同一张 store_special_periods，无需重复入口 */
 </script>
 
 </body>
