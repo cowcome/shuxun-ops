@@ -189,7 +189,7 @@ const NEW_STORE_DAYS = 30;
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmtY = (x) => '¥' + (Math.round((x||0)*100)/100).toLocaleString('zh-CN');
+const fmtY = (x) => '¥' + Math.round(x||0).toLocaleString('zh-CN');
 function todayStr(){ return new Date(Date.now() + 8*3600000).toISOString().slice(0,10); }
 
 let session = null;
