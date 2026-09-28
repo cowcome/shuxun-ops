@@ -16,6 +16,12 @@
   .crumb a:hover { border-color:var(--sx-accent); }
   h1 { font-size:22px; margin:0; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .sub { font-size:13px; color:#8a8f9e; margin-top:4px; }
+  .backbtn { display:inline-flex; align-items:center; gap:5px; flex:0 0 auto; margin-top:3px;
+    padding:7px 13px 7px 10px; border-radius:9px; border:1px solid #d6d9e2; background:#fff;
+    color:#4b5563; font-size:13px; font-weight:600; text-decoration:none; line-height:1;
+    transition:background .12s, border-color .12s; }
+  .backbtn:hover { border-color:var(--sx-accent,#007AFF); color:var(--sx-accent,#007AFF); }
+  .backbtn:active { transform:scale(.97); }
   .badge { font-size:11px; padding:2px 9px; border-radius:20px; font-weight:600; white-space:nowrap; }
   .bg-open { background:#E5F5EF; color:#0F6E56; }
   .bg-pending { background:#FFF4E0; color:#8a5b00; }
@@ -136,9 +142,15 @@
 
   <!-- 主体 -->
   <div id="appView" class="hide">
-    <div class="card">
-      <h1><span id="stName">—</span><span id="stBadge"></span><span id="stNew"></span><span id="stSpecial"></span></h1>
-      <div class="sub" id="stMeta"></div>
+    <div class="card" style="display:flex;align-items:flex-start;gap:14px">
+      <a class="backbtn" href="chain.html" title="返回所有门店看板">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span>所有门店</span>
+      </a>
+      <div style="min-width:0">
+        <h1><span id="stName">—</span><span id="stBadge"></span><span id="stNew"></span><span id="stSpecial"></span></h1>
+        <div class="sub" id="stMeta"></div>
+      </div>
     </div>
 
     <div class="card" id="sumCard">
