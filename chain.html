@@ -310,9 +310,9 @@
     <div class="card">
       <div class="card-title">大盘健康度<span class="badge hb-wait" id="healthBadge">加载中…</span><span class="note" id="asOf"></span></div>
       <div class="hero-grid">
-        <div class="stat"><div class="k">今日核销金额</div><div class="v dim" id="stToday">—</div><div class="d" id="stTodayD">正在拉取本月账单…</div></div>
-        <div class="stat"><div class="k">对比昨日</div><div class="v dim" id="stDiff">—</div><div class="d">同口径按天对比</div></div>
-        <div class="stat" id="stZeroCard" style="cursor:pointer" title="点击展开/收起 0 核销门店明细"><div class="k">今日 0 核销门店</div><div class="v" id="stZero">—</div><div class="d" id="stZeroD">加载中…</div></div>
+        <div class="stat"><div class="k">最新数据日核销</div><div class="v dim" id="stToday">—</div><div class="d" id="stTodayD">正在拉取本月账单…</div></div>
+        <div class="stat"><div class="k">对比前一数据日</div><div class="v dim" id="stDiff">—</div><div class="d">同口径按天对比</div></div>
+        <div class="stat" id="stZeroCard" style="cursor:pointer" title="点击展开/收起 0 核销门店明细"><div class="k">0 核销门店</div><div class="v" id="stZero">—</div><div class="d" id="stZeroD">加载中…</div></div>
       </div>
       <div id="zeroList" style="display:none; margin-top:10px; border-top:1px dashed rgba(255,255,255,0.15); padding-top:10px;"></div>
       <div class="health-banner" id="yzBanner">
@@ -625,7 +625,7 @@ function renderStores(){
       '<div class="amt-row">' + (x.status==='待上线'
         ? '<span style="opacity:.55">🛡 未上线 · 测试数据已拦截</span>'
         : (met
-          ? '<div>今日 <b>'+fmtY(met.today)+'</b> · '+met.todayC+' 单</div><div>昨日 '+fmtY(met.yday)+' · '+met.ydayC+' 单</div>'
+          ? '<div>最新日 <b>'+fmtY(met.today)+'</b> · '+met.todayC+' 单</div><div>前日 '+fmtY(met.yday)+' · '+met.ydayC+' 单</div>'
           : '本月暂无订单')) + '</div>' +
     '</div>';
   }).join('');
@@ -769,6 +769,8 @@ async function loadYz(force){
     const metrics = {};
     yz.unmatched = []; yz.blocked = []; cvoSeen = {};
     const storeById = {}; allStores.forEach(s => storeById[s.id] = s);
+    const lastD = asOf || T;                       // 最新数据日：周度导入节奏下锚定数据末日，而非今天（今天永远没数）
+    const prevD = yzDateStr(Date.parse(lastD + 'T00:00:00+08:00') - 86400000);
     Object.keys(agg).forEach(key => {
       const g = agg[key];
       const amtAll = g.mtA + g.dyA + g.otA;
@@ -780,8 +782,8 @@ async function loadYz(force){
       }
       if(st){
         cvoSeen[sid] = 1;
-        const t = g.days[T]  || [0,0];
-        const y = g.days[yd] || [0,0];
+        const t = g.days[lastD] || [0,0];
+        const y = g.days[prevD] || [0,0];
         let mtd = 0; Object.keys(g.days).forEach(d => { if(d >= ms) mtd += g.days[d][0]; });
         metrics[sid] = { mtA:g.mtA, mtC:g.mtC, dyA:g.dyA, dyC:g.dyC,
           today:t[0], todayC:t[1], yday:y[0], ydayC:y[1], mtd:mtd };
@@ -799,12 +801,12 @@ async function loadYz(force){
     Object.values(metrics).forEach(m => { tA += m.today; tC += m.todayC; yA += m.yday; mA += m.mtd; });
     $('stToday').textContent = fmtY(tA);
     $('stToday').classList.remove('dim');
-    $('stTodayD').textContent = '今日 ' + tC + ' 单 · 本月累计 ' + fmtY(mA);
+    $('stTodayD').textContent = (lastD ? lastD.slice(5).replace('-','/') : '') + ' ' + tC + ' 单 · 本月累计 ' + fmtY(mA);
     const diff = tA - yA;
     const diffPct = yA ? Math.round(diff / yA * 100) : null;
     $('stDiff').innerHTML = (diff >= 0 ? '<span style="color:#4ade80">+' : '<span style="color:#f87171">') + fmtY(diff) + '</span>'
-      + '<span style="font-size:11px;opacity:.6"> vs 昨日 ' + fmtY(yA) + (diffPct === null ? '' : ' · ' + (diffPct >= 0 ? '+' : '') + diffPct + '%') + '</span>';
-    // 今日 0 核销门店（口径：营业中 + 本期导入数据里出现过的门店；数据外的门店不计入，避免永远挂零）
+      + '<span style="font-size:11px;opacity:.6"> vs 前日 ' + fmtY(yA) + (diffPct === null ? '' : ' · ' + (diffPct >= 0 ? '+' : '') + diffPct + '%') + '</span>';
+    // 0 核销门店（口径：营业中 + 本期导入数据里出现过的门店；锚定最新数据日）
     zeroStores = allStores
       .filter(x => classOf(x) === 'open' && cvoSeen[x.id])
       .filter(x => !metrics[x.id] || !(metrics[x.id].today > 0))
@@ -889,7 +891,7 @@ function renderZeroList(){
   const box = $('zeroList');
   if(box.style.display === 'none') return;
   if(!zeroStores.length){
-    box.innerHTML = '<div style="font-size:13px;color:#4ade80">✅ 在营门店今日全部有核销</div>';
+    box.innerHTML = '<div style="font-size:13px;color:#4ade80">✅ 最新数据日全部有核销</div>';
     return;
   }
   let h = '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px">共 ' + zeroStores.length + ' 家 · 按本月累计降序（核销金额均为 0）</div>';
@@ -900,7 +902,7 @@ function renderZeroList(){
     h += '<div style="background:rgba(248,113,113,0.10);border:1px solid rgba(248,113,113,0.25);border-radius:10px;padding:8px 10px">'
       + '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(s.short_name || s.std_name) + '</div>'
       + '<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px">'
-      + esc(city) + (city ? ' · ' : '') + '本月 ' + fmtY(m ? m.mtd : 0) + ' · 昨日 ' + fmtY(m ? m.yday : 0) + '</div></div>';
+      + esc(city) + (city ? ' · ' : '') + '本月 ' + fmtY(m ? m.mtd : 0) + ' · 前日 ' + fmtY(m ? m.yday : 0) + '</div></div>';
   });
   h += '</div>';
   box.innerHTML = h;
