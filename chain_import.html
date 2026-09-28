@@ -502,6 +502,50 @@ dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('ove
 dz.addEventListener('dragleave', () => dz.classList.remove('over'));
 dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); handleFiles(e.dataTransfer.files); });
 
+/* ---------------- 门店挂接：导入时自动解析 store_id ----------------
+   病根（9-28 定案）：本页此前只写 store_name，store_id 全靠 9-27 事后 SQL 回填，
+   新导入行 store_id 为空 → 详情页/大盘按 store_id 查不到。
+   方案：①自学习——从已挂接行拉「有赞门店名→store_id」映射（同一有赞源，名字全一致）
+        ②兜底——取括号内「-」后的店名，与主数据 std_name/short_name/aliases 比对 */
+let storeNameMap = null, STORE_ALIAS = {};
+async function buildStoreMap(){
+  if(storeNameMap) return storeNameMap;
+  const map = {};
+  try{
+    let from = 0;
+    while(true){
+      const resp = await sb('/rest/v1/chain_verify_orders?store_id=not.is.null&select=store_name,store_id',
+        { headers: { Range: from + '-' + (from+999) } });
+      if(!resp.ok) break;
+      const part = await resp.json();
+      part.forEach(r => { if(r.store_id && !map[r.store_name]) map[r.store_name] = r.store_id; });
+      if(part.length < 1000 || from > 200000) break;
+      from += 1000;
+    }
+  }catch(e){}
+  storeNameMap = map;
+  return map;
+}
+async function loadStoreAlias(){
+  if(Object.keys(STORE_ALIAS).length) return;
+  try{
+    const resp = await sb('/rest/v1/stores?store_type=eq.连锁&select=id,std_name,short_name,aliases');
+    if(resp.ok) (await resp.json()).forEach(s => {
+      [s.std_name, s.short_name].concat(String(s.aliases||'').split(/[,，、;；|]/)).forEach(n => {
+        n = String(n||'').trim(); if(n && !STORE_ALIAS[n]) STORE_ALIAS[n] = s.id;
+      });
+    });
+  }catch(e){}
+}
+function resolveSid(name, map){
+  if(map[name]) return map[name];
+  const m = String(name||'').match(/[（(]([^（()）-]+)-([^（()）]+)[）)]/);
+  const tail = m ? m[2].trim() : '';
+  if(tail && STORE_ALIAS[tail]) return STORE_ALIAS[tail];
+  if(tail) for(const k in STORE_ALIAS){ if(tail.indexOf(k) >= 0 || k.indexOf(tail) >= 0) return STORE_ALIAS[k]; }
+  return null;
+}
+
 /* ---------------- 导入 ---------------- */
 let importing = false;
 async function postBatch(batch, biz){
@@ -509,6 +553,7 @@ async function postBatch(batch, biz){
     order_no: r.order_no,
     platform: biz.key==='yz_all' ? r._pf : biz.platform,
     biz:      biz.key==='yz_all' ? r._biz : biz.biz,
+    store_id: r._sid || null,
     store_name: r.store_name, form_date: r.form_date,
     order_time: r.order_time, done_time: r.done_time,
     product_name: r.product_name, member_no: r.member_no, pay_type: r.pay_type,
@@ -544,6 +589,14 @@ $('importBtn').addEventListener('click', async () => {
   importing = true;
   $('importBtn').disabled = true;
   $('progBar').classList.remove('hide');
+  msg('正在建立门店挂接映射…', 'info');
+  await loadStoreAlias();
+  const smap = await buildStoreMap();
+  let unmatchedRows = 0;
+  jobs.forEach(j => j.parsed.rows.forEach(r => {
+    r._sid = resolveSid(r.store_name, smap);
+    if(!r._sid) unmatchedRows++;
+  }));
   const totalRows = jobs.reduce((a,j)=>a+j.parsed.rows.length,0);
   let doneRows = 0, inserted = 0; const fails = [];
   try{
@@ -564,7 +617,9 @@ $('importBtn').addEventListener('click', async () => {
     $('progInner').style.width = '100%';
     let html = '';
     if(!fails.length){
-      html = '<b style="color:#15803d">全部完成</b>：解析 '+totalRows+' 单 · 新写入 <b>'+inserted+'</b> 单 · 已存在自动跳过 '+(totalRows-inserted)+' 单。<br>可在「书荀连锁」看板查看最新数据。';
+      html = '<b style="color:#15803d">全部完成</b>：解析 '+totalRows+' 单 · 新写入 <b>'+inserted+'</b> 单 · 已存在自动跳过 '+(totalRows-inserted)+' 单。'
+           + (unmatchedRows ? '<br><span style="color:#b45309">注意：'+unmatchedRows+' 单未能自动识别门店（不进门店统计），跑一次「挂接SQL」即可补上。</span>' : '')
+           + '<br>可在「书荀连锁」看板查看最新数据。';
       fileJobs = []; renderFiles();
       msg('导入完成','ok');
     }else{
