@@ -345,7 +345,7 @@ function render(orders, stores, events){
   H+='<section><h2>门店数据对比<span class="badge">全门店</span></h2>'
     +'<div class="selrow"><select id="opSel">'+opsSel+'</select><span class="note" style="margin:0">列头点击排序 · 点店名展开平台拆分</span></div>'
     +'<table id="allTbl"><thead><tr>'
-    +'<th data-k="name">店名</th><th data-k="c">复盘周</th><th data-k="p">上周</th><th data-k="mc">本月累计</th><th data-k="mom">对比上月同期</th>'
+    +'<th data-k="name">店名</th><th data-k="op">运营人</th><th data-k="c">复盘周</th><th data-k="p">上周</th><th data-k="mc">本月累计</th><th data-k="mom">对比上月同期</th>'
     +'</tr></thead><tbody id="allBody"></tbody></table></section>';
 
   H+='<div class="foot">口径说明：金额=平台核销（抖音=核销+记账核销，美团=验券+记账核销）；不含内购上翻；'
@@ -357,12 +357,14 @@ function render(orders, stores, events){
 
   /* ---- 交互：总表排序/筛选 + 展开行 ---- */
   const STO={};
+  const opMap={};
+  stores.forEach(x=>{ opMap[(x.std_name||'').trim()]=(x.operator||'').trim(); });
   allStd.forEach(s=>{
     const c=(stW[s][iso(CUR)]||[0,0])[0], p=(stW[s][iso(PREV)]||[0,0])[0];
     const mo=stMonth[s]||[0,0];
     STO[s]={c,p,mc:mo[0],mp:mo[1],
       dy:(stPf[s][iso(CUR)]||{}).抖音||0, mt:(stPf[s][iso(CUR)]||{}).美团||0,
-      op:(stores.find(x=>x.std_name===s)||{}).operator||'',
+      op:opMap[(s||'').trim()]||'',
       tag:evInWeek(s).map(e=>e.special_type).join('、')};
   });
   const DIAG=stDaily;
@@ -376,9 +378,10 @@ function render(orders, stores, events){
   function renderTbl(){
     const rows=Object.keys(STO).filter(s=>!opFilter||STO[s].op===opFilter).map(s=>Object.assign({s},STO[s]));
     rows.forEach(r=>{ r.wow=r.p>0?r.c/r.p-1:(r.c>0?9e9:-1); r.mom=r.mp>0?r.mc/r.mp-1:(r.mc>0?9e9:-1); });
-    rows.sort((a,b)=>(sortK==='name'? a.s.localeCompare(b.s,'zh')*sortDir : (a[sortK]-b[sortK])*sortDir));
+    rows.sort((a,b)=>((sortK==='name'||sortK==='op')? String(a[sortK==='name'?'s':sortK]).localeCompare(String(b[sortK==='name'?'s':sortK]),'zh')*sortDir : (a[sortK]-b[sortK])*sortDir));
     $id('allBody').innerHTML=rows.map(r=>
       '<tr><td><span class="stname" data-s="'+esc(r.s)+'">'+esc(r.s)+'</span>'+(r.tag?'<span class="tag" style="background:#fff3e0;color:#b5651d">'+esc(r.tag)+'</span>':'')+'</td>'
+      +'<td style="color:#5a6b80;white-space:nowrap">'+esc(r.op||'—')+'</td>'
       +'<td style="font-weight:700">'+fmt(r.c)+'</td>'
       +'<td>'+fmt(r.p)+' '+pctCell(r.c,r.p)+'</td>'
       +'<td>'+fmt(r.mc)+'</td>'
