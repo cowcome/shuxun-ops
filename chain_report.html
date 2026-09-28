@@ -338,7 +338,10 @@ function render(orders, stores, events){
 
   /* 门店数据对比总表 */
   let opsSel='<option value="">全部运营人</option>';
-  operators.forEach(o=>{ opsSel+='<option value="'+esc(o)+'">'+esc(o)+'</option>'; });
+  operators.forEach(o=>{
+    const n=stores.filter(s=>(s.operator||'').trim()===o).length;
+    opsSel+='<option value="'+esc(o)+'">'+esc(o)+'（'+n+' 家）</option>';
+  });
   H+='<section><h2>门店数据对比<span class="badge">全门店</span></h2>'
     +'<div class="selrow"><select id="opSel">'+opsSel+'</select><span class="note" style="margin:0">列头点击排序 · 点店名展开平台拆分</span></div>'
     +'<table id="allTbl"><thead><tr>'
