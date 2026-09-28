@@ -416,8 +416,6 @@ const STORE_FIELDS = [
   ['operator','运营人','text',''],
   ['launch_date','上线日期','date',''],
   ['status','状态','select','在营|闭店|待上线'],
-  ['special_status','特殊营业','select','无|装修|店庆|暂停'],
-  ['special_until','特殊营业截止','date',''],
   ['closed_date','闭店日期','date',''],
   ['aliases','核对别名（逗号分隔）','text',''],
   ['note','备注','text','']
@@ -466,24 +464,15 @@ function renderStores(){
   return h;
 }
 // 状态灯判定（2026-09-21 拍板）：新店徽章=launch_date 起 30 天内自动；
-// 特殊营业琥珀灯=special_status 非空且未过 special_until（截止当天仍算）
+// 特殊营业琥珀灯已删（2026-09-28 拍板：特殊状态全站统一走「特殊门店填报」store_special_periods，主数据不再存状态标签）
 function isNewStore(x){
   if(!x.launch_date) return false;
   const d = new Date(x.launch_date);
   return !isNaN(d.getTime()) && (Date.now() - d.getTime()) < 30*864e5;
 }
-function isSpecialOpen(x){
-  if(!x.special_status || x.special_status==='无') return false;
-  if(x.special_until){
-    const u = new Date(x.special_until);
-    if(!isNaN(u.getTime()) && u.getTime() < new Date().setHours(0,0,0,0)) return false;
-  }
-  return true;
-}
 function storeBadges(x){
   let h = '';
   if(isNewStore(x)) h += '<span class="badge" style="margin-left:6px;background:#E8F1FD;color:#185FA5">新</span>';
-  if(isSpecialOpen(x)) h += '<span title="特殊营业：'+esc(x.special_status||'')+(x.special_until?'（至 '+esc(x.special_until)+'）':'')+'" style="display:inline-block;margin-left:6px;width:10px;height:10px;border-radius:50%;background:#f59e0b;vertical-align:middle"></span>';
   return h;
 }
 function setStType(t){
@@ -586,7 +575,6 @@ async function saveStore(){
   if(!body.std_name) return msg('公司内部标准名称为必填','err');
   if(!body.status) body.status = '在营';
   if(!body.store_type) body.store_type = '直营';
-  if(body.special_status === '无') body.special_status = null;
   const yzKdt = (($('sm_yz_kdt')||{}).value||'').trim();
   try{
     const id = editingStoreId;
