@@ -549,16 +549,25 @@ function resolveSid(name, map){
 /* ---------------- 导入 ---------------- */
 let importing = false;
 async function postBatch(batch, biz){
-  const payload = batch.map(r => ({
+  /* 平台分拣与文件名解耦（9-28 定案）：只要选了「全渠道自动分拣」，
+     就按每行支付方式映射平台/业务；不在映射表内 = 非业绩行，跳过不导 */
+  let rows = batch, skipped = 0;
+  if(biz.key === 'yz_all'){
+    rows = batch.filter(r => YZ_PAY_MAP[String(r.pay_type||'').trim()]);
+    skipped = batch.length - rows.length;
+  }
+  const payload = rows.map(r => {
+    const m = biz.key==='yz_all' ? YZ_PAY_MAP[String(r.pay_type||'').trim()] : null;
+    return {
     order_no: r.order_no,
-    platform: biz.key==='yz_all' ? r._pf : biz.platform,
-    biz:      biz.key==='yz_all' ? r._biz : biz.biz,
+    platform: m ? m[0] : biz.platform,
+    biz:      m ? m[1] : biz.biz,
     store_id: r._sid || null,
     store_name: r.store_name, form_date: r.form_date,
     order_time: r.order_time, done_time: r.done_time,
     product_name: r.product_name, member_no: r.member_no, pay_type: r.pay_type,
     amount: r.amount, status: '已完成', src_file: r.src_file
-  }));
+  };});
   let lastErr = '';
   for(let a=0; a<3; a++){
     try{
@@ -569,7 +578,7 @@ async function postBatch(batch, biz){
       });
       if(resp.ok){
         const arr = await resp.json().catch(()=>[]);
-        return { ok:true, inserted:Array.isArray(arr)?arr.length:0 };
+        return { ok:true, inserted:Array.isArray(arr)?arr.length:0, skipped:skipped };
       }
       const d = await resp.json().catch(()=>({}));
       lastErr = d.message || d.error_description || ('HTTP '+resp.status);
@@ -598,7 +607,7 @@ $('importBtn').addEventListener('click', async () => {
     if(!r._sid) unmatchedRows++;
   }));
   const totalRows = jobs.reduce((a,j)=>a+j.parsed.rows.length,0);
-  let doneRows = 0, inserted = 0; const fails = [];
+  let doneRows = 0, inserted = 0, skippedPay = 0; const fails = [];
   try{
     for(let ji=0; ji<jobs.length; ji++){
       const j = jobs[ji], b = biz(j.bizKey), rows = j.parsed.rows;
@@ -607,7 +616,7 @@ $('importBtn').addEventListener('click', async () => {
       for(let i=0; i<rows.length; i+=B){
         const r = await postBatch(rows.slice(i, i+B), b);
         doneRows += Math.min(B, rows.length - i);
-        if(r.ok){ jInserted += r.inserted; }
+        if(r.ok){ jInserted += r.inserted; skippedPay += r.skipped || 0; }
         else{ fails.push(j.name+'：'+r.error); break; }
         $('progInner').style.width = Math.round(doneRows/totalRows*100)+'%';
         $('importHint').innerHTML = '导入中 '+doneRows+'/'+totalRows+' …';
@@ -617,7 +626,8 @@ $('importBtn').addEventListener('click', async () => {
     $('progInner').style.width = '100%';
     let html = '';
     if(!fails.length){
-      html = '<b style="color:#15803d">全部完成</b>：解析 '+totalRows+' 单 · 新写入 <b>'+inserted+'</b> 单 · 已存在自动跳过 '+(totalRows-inserted)+' 单。'
+      html = '<b style="color:#15803d">全部完成</b>：解析 '+totalRows+' 单 · 新写入 <b>'+inserted+'</b> 单 · 已存在自动跳过 '+(totalRows-inserted)+' 单'
+           + (skippedPay ? ' · 排除非业绩 '+skippedPay+' 单' : '') + '。'
            + (unmatchedRows ? '<br><span style="color:#b45309">注意：'+unmatchedRows+' 单未能自动识别门店（不进门店统计），跑一次「挂接SQL」即可补上。</span>' : '')
            + '<br>可在「书荀连锁」看板查看最新数据。';
       fileJobs = []; renderFiles();
