@@ -325,7 +325,8 @@
         <div class="chip" data-f="new"><span class="dt dt-y"></span>新店<span class="cnt" id="cNew"></span></div>
         <div class="chip" data-f="old"><span class="dt dt-p"></span>老店<span class="cnt" id="cOld"></span></div>
         <div class="chip" data-f="pending">⏳ 待上线<span class="cnt" id="cPending"></span></div>
-        <button class="sm" id="spOpenBtn" style="margin-left:auto">＋ 特殊填报</button>
+        <select id="opFilter" style="margin-left:auto;align-self:center;height:30px;border-radius:8px;border:1px solid rgba(167,139,250,.45);background:#342B55;color:#fff;font-size:12px;padding:0 8px;outline:none"><option value="">全部运营人</option></select>
+        <button class="sm" id="spOpenBtn">＋ 特殊填报</button>
       </div>
       <div class="store-grid" id="storeGrid"><div class="op">加载中…</div></div>
     </div>
@@ -512,6 +513,7 @@ async function enterApp(){
 let allStores = [];     // stores 主表 · 连锁类型
 let specials = [];      // store_special_periods 全量记录
 let storeFilter = 'open';// all | open | special | new | old（默认营业中，崔姐 9-17 拍板）
+let opFilter = '';       // 运营人筛选（9-28 加：选人只看其名下门店）
 
 async function loadChainStores(){
   try{
@@ -573,12 +575,27 @@ function renderStores(){
   $('cPending').textContent = '('+cnt.pending+')';
 
   // 「营业」= 非待上线且非特殊（classOf 不产生 'open'，须单独判断——9-22 修复点灯筛选空结果）
+  // 运营人下拉（动态生成，保留当前选择）
+  const opSel = $('opFilter');
+  if(opSel){
+    const ops = [...new Set(allStores.map(x=>(x.operator||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh'));
+    const cur = opSel.value;
+    opSel.innerHTML = '<option value="">全部运营人</option>' + ops.map(o=>{
+      const n = allStores.filter(x=>(x.operator||'').trim()===o).length;
+      return '<option value="'+esc(o)+'">'+esc(o)+'（'+n+' 家）</option>';
+    }).join('');
+    if(ops.includes(cur)) opSel.value = cur;
+  }
+
   const list = allStores.filter(x => {
+    if(opFilter && (x.operator||'').trim() !== opFilter) return false;
     if(storeFilter==='all') return true;
     if(storeFilter==='open') return x.status !== '待上线' && !activeSpecialOf(x);
     return classOf(x)===storeFilter;
   });
-  $('storeCount').textContent = '共 ' + allStores.length + ' 家' + (storeFilter==='all' ? '' : ' · 当前筛选 '+list.length+' 家');
+  $('storeCount').textContent = '共 ' + allStores.length + ' 家'
+    + (opFilter ? ' · '+opFilter+' 名下 '+allStores.filter(x=>(x.operator||'').trim()===opFilter).length+' 家' : '')
+    + (storeFilter==='all' ? '' : ' · 当前筛选 '+list.length+' 家');
   if(!list.length){
     grid.innerHTML = '<div class="op">'+(storeFilter==='special' ? '当前没有特殊门店' : '没有符合条件的门店')+'</div>';
     return;
@@ -894,6 +911,10 @@ $('storeChips').addEventListener('click', (ev) => {
   document.querySelectorAll('#storeChips .chip').forEach(x=>x.classList.remove('on'));
   c.classList.add('on');
   storeFilter = c.dataset.f;
+  renderStores();
+});
+$('opFilter').addEventListener('change', (ev) => {
+  opFilter = ev.target.value;
   renderStores();
 });
 
