@@ -145,7 +145,7 @@
   <!-- 主界面 -->
   <div id="appView" class="hide">
     <h1>数据导入 <span style="font-size:13px;font-weight:500;color:#8a8f9e">· 连锁核销订单</span></h1>
-    <div class="sub">推荐：有赞后台导一份「连锁总部-交易账单明细」即可，全渠道自动分拣 · 自动去重</div>
+    <div class="sub">推荐：有赞后台导一份「连锁总部-交易账单明细」即可，全渠道自动分拣 · 自动去重；简化 4 列账单（日期 / 支付方式 / 所属门店 / 账单金额）同样支持</div>
 
     <div id="globalMsg"></div>
 
@@ -276,6 +276,7 @@ $('lgPwd').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); }
 /* ---------------- 文件分类 ---------------- */
 const BIZ_LIST = [
   { key:'yz_all',  label:'有赞连锁总部账单（全渠道自动分拣）', platform:'yz_all', biz:'' },
+  { key:'xz_sum',  label:'有赞简化账单（日期/支付方式/所属门店/账单金额）', platform:'yz_all', biz:'' },
   { key:'dy_hx',   label:'抖音核销',      platform:'抖音', biz:'核销' },
   { key:'dy_jz',   label:'抖音记账核销',  platform:'抖音', biz:'记账核销' },
   { key:'dy_md',   label:'抖音线上买单（不导入）', platform:'', biz:'' },
@@ -327,14 +328,17 @@ function parseWorkbook(buf, fileName){
   const aoa = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
   if(!aoa.length) throw new Error('文件为空');
 
-  // 定位表头行
+  // 定位表头行（两种制式：标准明细含订单号；简化日汇总=日期/支付方式/所属门店/账单金额）
   let hi = -1;
   for(let i=0;i<Math.min(aoa.length,20);i++){
     const row = aoa[i].map(c=>String(c).trim());
     if(row.indexOf('订单号')>=0 && row.indexOf('所属门店')>=0){ hi = i; break; }
+    if(row.indexOf('订单号')<0 && ['日期','支付方式','所属门店','账单金额'].every(n=>row.indexOf(n)>=0)){ hi = i; break; }
   }
-  if(hi < 0) throw new Error('找不到表头（订单号 / 所属门店）');
+  if(hi < 0) throw new Error('找不到表头（订单号+所属门店，或 日期/支付方式/所属门店/账单金额）');
   const head = aoa[hi].map(c=>String(c).trim());
+  const isXz = head.indexOf('订单号')<0 && ['日期','支付方式','所属门店','账单金额'].every(n=>head.indexOf(n)>=0);
+  if(isXz) return parseXzSum(aoa, hi, fileName);
   const ci = {};
   ['订单号','下单时间','完成时间','商品名称','所属门店','会员编号','支付方式','账单金额','状态'].forEach(name=>{
     ci[name] = head.indexOf(name);
@@ -412,9 +416,49 @@ function parseWorkbook(buf, fileName){
   const sum = list.reduce((a,r)=>a+r.amount,0);
   // 有赞单文件的合计行是全渠道总额，与业绩行不可比 → 不做对账
   const mismatch = (yzAll || totalAmt == null || !list.length) ? null : (sum - totalAmt);
-  return { rows:list, totalAmt, badRows, skipStatus, skipPay: skipPay||0, sum, mismatch, yzAll };
+  return { rows:list, totalAmt, badRows, skipStatus, skipPay: skipPay||0, sum, mismatch, yzAll, mode: yzAll ? 'yz_all' : 'classic' };
 }
 function pay_type_sanitize(s){ return s; }
+
+/* ---------------- 简化日汇总制式（日期/支付方式/所属门店/账单金额，无订单号） ----------------
+   每行 = 某店某平台某日的聚合；用「日期+门店+平台」哈希生成确定性合成单号 → 天然幂等，
+   同一份文件重复导、或重新导出同一天的数据，都按 on_conflict=order_no 自动跳过不会重复计数 */
+const XZ_PAY_MAP = { '抖音': ['抖音','核销'], '美团': ['美团','验券'] };
+function xzOrderNo(d, store, pay){
+  let h = 5381; const s = d + '|' + store + '|' + pay;
+  for(let i=0;i<s.length;i++){ h = ((h<<5) + h + s.charCodeAt(i)) >>> 0; }
+  return 'XZ' + d.replace(/-/g,'') + h.toString(36).toUpperCase();
+}
+function parseXzSum(aoa, hi, fileName){
+  const head = aoa[hi].map(c=>String(c).trim());
+  const cD = head.indexOf('日期'), cP = head.indexOf('支付方式'),
+        cS = head.indexOf('所属门店'), cA = head.indexOf('账单金额');
+  const rows = []; let totalAmt = null; let badRows = 0; let skipPay = 0;
+  for(let i=hi+1;i<aoa.length;i++){
+    const cs = aoa[i];
+    if(!cs || !cs.length) continue;
+    const payType = String(cs[cP]==null?'':cs[cP]).trim();
+    const store   = String(cs[cS]==null?'':cs[cS]).trim();
+    const amt     = toNum(cs[cA]);
+    if(!payType && !store){ if(!isNaN(amt)) totalAmt = amt; continue; }  // 表尾合计行
+    const m = XZ_PAY_MAP[payType];
+    if(!m){ skipPay++; continue; }                                       // 非业绩支付方式排除
+    let d = fmtDate(cs[cD]).slice(0,10);
+    const mm = d.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if(mm) d = mm[1]+'-'+pad2(+mm[2])+'-'+pad2(+mm[3]);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d) || !store || isNaN(amt) || amt <= 0){ badRows++; continue; }
+    rows.push({
+      order_no: xzOrderNo(d, store, payType), store_name: store, form_date: d,
+      order_time:'', done_time:'', product_name:'', member_no:'',
+      pay_type: payType, _pf: m[0], _biz: m[1],
+      amount: Math.round(amt*100)/100, src_file: fileName
+    });
+  }
+  const uniq = {}; rows.forEach(r=>{ uniq[r.order_no] = r; });
+  const list = Object.values(uniq);
+  const sum = list.reduce((a,r)=>a+r.amount,0);
+  return { rows:list, totalAmt, badRows, skipStatus:0, skipPay, sum, mismatch:null, yzAll:false, mode:'xz_sum' };
+}
 
 /* ---------------- 文件列表状态 ---------------- */
 let fileJobs = [];   // {name, buf, bizKey, parsed, error, force}
@@ -485,6 +529,7 @@ async function handleFiles(fileList){
     try{
       job.buf = await f.arrayBuffer();
       job.parsed = parseWorkbook(job.buf, f.name);
+      if(job.parsed && job.parsed.mode === 'xz_sum' && (job.bizKey === 'none' || !job.bizKey)) job.bizKey = 'xz_sum';
       if(job.bizKey === 'none') job.error = '';
     }catch(e){
       job.error = String(e.message || e).slice(0,60);
@@ -557,7 +602,8 @@ async function postBatch(batch, biz){
     skipped = batch.length - rows.length;
   }
   const payload = rows.map(r => {
-    const m = biz.key==='yz_all' ? YZ_PAY_MAP[String(r.pay_type||'').trim()] : null;
+    const m = (biz.key==='yz_all' || biz.key==='xz_sum')
+      ? (r._pf ? [r._pf, r._biz] : YZ_PAY_MAP[String(r.pay_type||'').trim()]) : null;
     return {
     order_no: r.order_no,
     platform: m ? m[0] : biz.platform,
