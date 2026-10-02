@@ -312,6 +312,8 @@ function shortName(s){ return SHORT_MAP[s] || String(s||'').replace(/^\d+/,'').s
 // ---------------------------------------------------------------------------
 // 匿名登录：RLS 收紧后，必须带上「已登录」身份才能读写。
 // 门店端完全无感知（不填邮箱密码），会话存 localStorage，过期自动续。
+// 走官方匿名登录端点 /auth/v1/anonymous（需在 Supabase 后台开启
+// "Allow anonymous sign-ins"）；若该端点不可用，回退到 /auth/v1/signup。
 // ---------------------------------------------------------------------------
 const SESSION_KEY = 'sb_anon_session';
 async function authPost(path, body) {
@@ -346,10 +348,18 @@ async function ensureAuth() {
     catch (e) { /* 续期失败 → 重新匿名登录 */ }
   }
   if (!pendingAuth) {
-    pendingAuth = authPost('/auth/v1/signup', {}).then(d => { pendingAuth = null; saveSession(d); return d.access_token; })
+    pendingAuth = anonLogin().then(d => { pendingAuth = null; saveSession(d); return d.access_token; })
       .catch(e => { pendingAuth = null; throw e; });
   }
   return pendingAuth;
+}
+// 匿名登录：优先官方匿名端点（需后台开 Allow anonymous sign-ins），失败回退 signup
+async function anonLogin() {
+  try {
+    return await authPost('/auth/v1/anonymous', {});
+  } catch (e) {
+    return await authPost('/auth/v1/signup', {});
+  }
 }
 async function authHeaders() {
   const t = await ensureAuth();
