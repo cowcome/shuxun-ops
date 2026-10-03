@@ -66,7 +66,7 @@
   .login-box h1 { text-align:center; }
   .err { color:#b91c1c; font-size:12px; margin-top:8px; }
   /* ---- 门店主数据超级大表（2026-10-03）：所有平台字段摊开 + 行内可编辑 ---- */
-  .bigtbl { font-size:12px; min-width:1560px; }
+  .bigtbl { font-size:12px; min-width:2050px; }
   .bigtbl th, .bigtbl td { padding:6px 8px; vertical-align:middle; }
   .bigtbl tr.grp th { text-align:center; font-size:12px; font-weight:700; padding:6px 4px; border-bottom:2px solid #e6e8ef; }
   .grp-标识 { background:#eef2ff; color:#3730a3; }
@@ -84,6 +84,14 @@
   .bigtbl tbody tr:hover td { background:#fafbff; }
   .bigtbl tbody tr:hover td.sticky-col { background:#f3f5ff; }
   .gap-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#f59e0b; margin-right:5px; vertical-align:middle; }
+  /* ---- 列宽（2026-10-03：BIG_COLS.w 之前是死配置，渲染未使用，这里用 CSS 落地）----
+     三个平台门店名列加宽到能显示全部文字；有赞账单名最长（「書荀头疗养生（台州-温岭银泰店）」21字）。 */
+  .bigtbl th.col-yz_bill_name, .bigtbl td.yz_bill_name { min-width:420px; }
+  .bigtbl th.col-meituan_name,  .bigtbl td.meituan_name  { min-width:340px; }
+  .bigtbl th.col-douyin_name,   .bigtbl td.douyin_name   { min-width:340px; }
+  .bigtbl th.col-detail_address, .bigtbl td.detail_address { min-width:340px; }
+  .bigtbl td.yz_bill_name .cell, .bigtbl td.meituan_name .cell,
+  .bigtbl td.douyin_name .cell,  .bigtbl td.detail_address .cell { font-size:12px; }
 </style>
 <script src="theme.js"></script></head>
 <body>
@@ -477,16 +485,15 @@ const BIG_GROUPS = [
   {name:'操作', cols:['_del']},
 ];
 const BIG_COLS = {
-  id:{l:'门店ID',t:'ro'}, std_name:{l:'标准名称',t:'text',req:true}, short_name:{l:'2字缩写',t:'text'},
-  yz_bill_name:{l:'有赞账单门店名',t:'text'}, kdt_id:{l:'有赞kdt_id',t:'ro'},
-  meituan_id:{l:'美团ID',t:'text'}, meituan_name:{l:'美团名称',t:'text'},
-  douyin_id:{l:'抖音ID',t:'text'}, douyin_name:{l:'抖音名称',t:'text'},
-  douyin_account_id:{l:'抖音号id',t:'text'}, douyin_sec_uid:{l:'抖音sec_uid',t:'text'},
-  province:{l:'省份',t:'text'}, city:{l:'城市',t:'text'}, district:{l:'行政区',t:'text'}, detail_address:{l:'详细地址',t:'text'},
-  store_type:{l:'性质',t:'sel',opts:['直营','连锁','陪跑','共管']}, operator:{l:'运营人',t:'text'},
-  launch_date:{l:'上线日期',t:'date'}, status:{l:'状态',t:'sel',opts:['在营','闭店','待上线']}, closed_date:{l:'闭店日期',t:'date'},
-  order_cnt:{l:'已匹配订单数',t:'ro'}, aliases:{l:'核对别名',t:'text'}, note:{l:'备注',t:'text'},
-  _del:{l:'操作',t:'ro'},
+  id:{l:'门店ID',t:'ro',w:64}, std_name:{l:'标准名称',t:'text',req:true,w:170}, short_name:{l:'2字缩写',t:'text',w:80},
+  yz_bill_name:{l:'有赞账单门店名',t:'text',w:420}, kdt_id:{l:'有赞kdt_id',t:'ro',w:120},
+  meituan_id:{l:'美团ID',t:'text',w:110}, meituan_name:{l:'美团名称',t:'text',w:340},
+  douyin_id:{l:'抖音ID',t:'text',w:150}, douyin_name:{l:'抖音名称',t:'text',w:340},  douyin_account_id:{l:'抖音号id',t:'text',w:150}, douyin_sec_uid:{l:'抖音sec_uid',t:'text',w:250},
+  province:{l:'省份',t:'text',w:70}, city:{l:'城市',t:'text',w:80}, district:{l:'行政区',t:'text',w:90}, detail_address:{l:'详细地址',t:'text',w:320},
+  store_type:{l:'性质',t:'sel',opts:['直营','连锁','陪跑','共管'],w:90}, operator:{l:'运营人',t:'text',w:90},
+  launch_date:{l:'上线日期',t:'date',w:130}, status:{l:'状态',t:'sel',opts:['在营','闭店','待上线'],w:100}, closed_date:{l:'闭店日期',t:'date',w:130},
+  order_cnt:{l:'已匹配订单数',t:'ro',w:110}, aliases:{l:'核对别名',t:'text',w:220}, note:{l:'备注',t:'text',w:220},
+  _del:{l:'操作',t:'ro',w:64},
 };
 let orderCntMap = {};
 function renderStores(){
@@ -502,7 +509,7 @@ function renderStores(){
   h += '<tr class="grp">';
   BIG_GROUPS.forEach(g=>{ h += '<th colspan="'+g.cols.length+'" class="grp-'+g.name+(g.cols[0]==='id'?' sticky-col':'')+'">'+g.name+'</th>'; });
   h += '</tr><tr>';
-  BIG_GROUPS.forEach(g=>{ g.cols.forEach(k=>{ const c=BIG_COLS[k]; h += '<th class="'+(k==='id'?'sticky-col':'')+'">'+(c.req?'<span style="color:#dc2626">*</span>':'')+c.l+'</th>'; }); });
+  BIG_GROUPS.forEach(g=>{ g.cols.forEach(k=>{ const c=BIG_COLS[k]; h += '<th class="col-'+k+(k==='id'?' sticky-col':'')+'">'+(c.req?'<span style="color:#dc2626">*</span>':'')+c.l+'</th>'; }); });
   h += '</tr></thead><tbody>';
   list.forEach(x=>{
     h += '<tr>';
