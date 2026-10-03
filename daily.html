@@ -4,6 +4,23 @@
 <meta charset="UTF-8" data-page-node-id="GCzpmACbfQ7YuBaam8gQys" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" data-page-node-id="o6bMANlgJMmm5qEfggtPj1" />
 <title>書荀每日数据填报</title>
+<script>
+// 版本自检：线上有新版本时自动强制刷新，绕过浏览器/CDN 缓存（2026-10-03 起）
+(function(){
+  var APP_VERSION = '20261003.1';
+  try {
+    if (location.search.indexOf('v=') !== -1) return; // 已带版本戳，避免重复重载
+    fetch('version.json?_=' + Date.now(), {cache:'no-store'})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        if (j && j.daily && j.daily !== APP_VERSION) {
+          location.replace('daily.html?v=' + encodeURIComponent(j.daily));
+        }
+      })
+      .catch(function(){});
+  } catch(e){}
+})();
+</script>
 <style>
   /* 视觉与结构对齐微信小程序 pages/report/：rpx 按 750 设计稿 /2 换算为 px */
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
