@@ -552,7 +552,7 @@ dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over
    新导入行 store_id 为空 → 详情页/大盘按 store_id 查不到。
    方案：①自学习——从已挂接行拉「有赞门店名→store_id」映射（同一有赞源，名字全一致）
         ②兜底——取括号内「-」后的店名，与主数据 std_name/short_name/aliases 比对 */
-let storeNameMap = null, STORE_ALIAS = {};
+let storeNameMap = null, STORE_ALIAS = {}, YZ_BILL_LOOKUP = {};
 async function buildStoreMap(){
   if(storeNameMap) return storeNameMap;
   const map = {};
@@ -574,8 +574,10 @@ async function buildStoreMap(){
 async function loadStoreAlias(){
   if(Object.keys(STORE_ALIAS).length) return;
   try{
-    const resp = await sb('/rest/v1/stores?store_type=eq.连锁&select=id,std_name,short_name,aliases');
+    const resp = await sb('/rest/v1/stores?select=id,std_name,short_name,aliases,yz_bill_name');
     if(resp.ok) (await resp.json()).forEach(s => {
+      // 优先建「有赞账单门店名 → 门店」精确映射（单一真相源，一对一，覆盖全性质）
+      if(s.yz_bill_name){ const n = String(s.yz_bill_name).trim(); if(n && !YZ_BILL_LOOKUP[n]) YZ_BILL_LOOKUP[n] = s.id; }
       [s.std_name, s.short_name].concat(String(s.aliases||'').split(/[,，、;；|]/)).forEach(n => {
         n = String(n||'').trim(); if(n && !STORE_ALIAS[n]) STORE_ALIAS[n] = s.id;
       });
@@ -584,10 +586,12 @@ async function loadStoreAlias(){
 }
 function resolveSid(name, map){
   if(!name) return null;
+  if(YZ_BILL_LOOKUP[name]) return YZ_BILL_LOOKUP[name];   // 优先：与 stores.yz_bill_name 精确匹配（单一真相源，一对一，不靠硬编码映射）
   if(map[name]) return map[name];
-  if(STORE_ALIAS[name]) return STORE_ALIAS[name];   // 精确命中主数据别名（下单门店名=门店标准名时直接命中，首轮重导也能挂对 store_id）
+  if(STORE_ALIAS[name]) return STORE_ALIAS[name];   // 兜底：精确命中主数据别名
   const m = String(name||'').match(/[（(]([^（()）-]+)-([^（()）]+)[）)]/);
   const tail = m ? m[2].trim() : '';
+  if(tail && YZ_BILL_LOOKUP[tail]) return YZ_BILL_LOOKUP[tail];
   if(tail && STORE_ALIAS[tail]) return STORE_ALIAS[tail];
   if(tail) for(const k in STORE_ALIAS){ if(tail.indexOf(k) >= 0 || k.indexOf(tail) >= 0) return STORE_ALIAS[k]; }
   return null;
