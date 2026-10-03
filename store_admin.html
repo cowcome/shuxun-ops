@@ -441,6 +441,7 @@ const STORE_FIELDS = [
   ['province','省份','text',''],
   ['city','城市','text',''],
   ['district','行政区','text',''],
+  ['detail_address','详细地址','text',''],
   ['store_type','门店性质','select','直营|连锁|陪跑|共管'],
   ['operator','运营人','text',''],
   ['launch_date','上线日期','date',''],
@@ -470,7 +471,7 @@ const BIG_GROUPS = [
   {name:'有赞', cols:['yz_bill_name','kdt_id']},
   {name:'美团', cols:['meituan_id','meituan_name']},
   {name:'抖音', cols:['douyin_id','douyin_name','douyin_account_id','douyin_sec_uid']},
-  {name:'归属', cols:['province','city','district','store_type','operator','launch_date','status','closed_date']},
+  {name:'归属', cols:['province','city','district','detail_address','store_type','operator','launch_date','status','closed_date']},
   {name:'统计', cols:['order_cnt']},
   {name:'其他', cols:['aliases','note']},
   {name:'操作', cols:['_del']},
@@ -481,7 +482,7 @@ const BIG_COLS = {
   meituan_id:{l:'美团ID',t:'text'}, meituan_name:{l:'美团名称',t:'text'},
   douyin_id:{l:'抖音ID',t:'text'}, douyin_name:{l:'抖音名称',t:'text'},
   douyin_account_id:{l:'抖音号id',t:'text'}, douyin_sec_uid:{l:'抖音sec_uid',t:'text'},
-  province:{l:'省份',t:'text'}, city:{l:'城市',t:'text'}, district:{l:'行政区',t:'text'},
+  province:{l:'省份',t:'text'}, city:{l:'城市',t:'text'}, district:{l:'行政区',t:'text'}, detail_address:{l:'详细地址',t:'text'},
   store_type:{l:'性质',t:'sel',opts:['直营','连锁','陪跑','共管']}, operator:{l:'运营人',t:'text'},
   launch_date:{l:'上线日期',t:'date'}, status:{l:'状态',t:'sel',opts:['在营','闭店','待上线']}, closed_date:{l:'闭店日期',t:'date'},
   order_cnt:{l:'已匹配订单数',t:'ro'}, aliases:{l:'核对别名',t:'text'}, note:{l:'备注',t:'text'},
@@ -495,7 +496,7 @@ function renderStores(){
   const list = storeRows.filter(x=>
     (!st || x.status===st) && (!ty || x.store_type===ty) && (!op || x.operator===op) &&
     (!kw || [x.std_name,x.short_name,x.aliases,x.meituan_name,x.douyin_name,x.meituan_id,x.douyin_id,x.operator,
-             x.yz_bill_name, x.city, String(orderCntMap[x.id]||'')]
+             x.yz_bill_name, x.city, x.detail_address, String(orderCntMap[x.id]||'')]
       .some(v=>String(v==null?'':v).toLowerCase().indexOf(kw)>=0)));
   let h = '<div class="tbl-wrap"><table class="bigtbl"><thead>';
   h += '<tr class="grp">';
