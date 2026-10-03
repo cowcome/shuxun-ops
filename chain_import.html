@@ -145,7 +145,7 @@
   <!-- 主界面 -->
   <div id="appView" class="hide">
     <h1>数据导入 <span style="font-size:13px;font-weight:500;color:#8a8f9e">· 连锁核销订单</span></h1>
-    <div class="sub">推荐：有赞后台导一份「连锁总部-交易账单明细」即可，全渠道自动分拣 · 自动去重；简化 4 列账单（日期 / 支付方式 / 所属门店 / 账单金额）同样支持</div>
+    <div class="sub">推荐：有赞后台导一份「连锁总部-交易账单明细」即可，全渠道自动分拣 · 自动去重；门店业绩归属按「下单门店」列判定（兼容旧版「所属门店」）。简化 4 列账单（日期 / 支付方式 / 所属门店 / 账单金额）同样支持</div>
 
     <div id="globalMsg"></div>
 
@@ -323,22 +323,27 @@ function parseWorkbook(buf, fileName){
   const aoa = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
   if(!aoa.length) throw new Error('文件为空');
 
+  // 门店归属列：优先「下单门店」（订单真实发生门店，避免误判核销业绩），无该列时退回「所属门店」（兼容旧文件）
+  const pickStoreCol = (h) => (h.indexOf('下单门店') >= 0 ? '下单门店' : (h.indexOf('所属门店') >= 0 ? '所属门店' : null));
   // 定位表头行（两种制式：标准明细含订单号；简化日汇总=日期/支付方式/所属门店/账单金额）
   let hi = -1;
   for(let i=0;i<Math.min(aoa.length,20);i++){
     const row = aoa[i].map(c=>String(c).trim());
-    if(row.indexOf('订单号')>=0 && row.indexOf('所属门店')>=0){ hi = i; break; }
+    if(row.indexOf('订单号')>=0 && pickStoreCol(row)){ hi = i; break; }
     if(row.indexOf('订单号')<0 && ['日期','支付方式','所属门店','账单金额'].every(n=>row.indexOf(n)>=0)){ hi = i; break; }
   }
-  if(hi < 0) throw new Error('找不到表头（订单号+所属门店，或 日期/支付方式/所属门店/账单金额）');
+  if(hi < 0) throw new Error('找不到表头（订单号+下单门店/所属门店，或 日期/支付方式/所属门店/账单金额）');
   const head = aoa[hi].map(c=>String(c).trim());
   const isXz = head.indexOf('订单号')<0 && ['日期','支付方式','所属门店','账单金额'].every(n=>head.indexOf(n)>=0);
   if(isXz) return parseXzSum(aoa, hi, fileName);
+  const sCol = pickStoreCol(head);
+  if(!sCol) throw new Error('表头缺少门店归属列（下单门店 或 所属门店）');
   const ci = {};
-  ['订单号','下单时间','完成时间','商品名称','所属门店','会员编号','支付方式','账单金额','状态'].forEach(name=>{
+  ['订单号','下单时间','完成时间','商品名称','会员编号','支付方式','账单金额','状态'].forEach(name=>{
     ci[name] = head.indexOf(name);
   });
-  const NEED = ['订单号','所属门店','账单金额'];
+  ci['store'] = head.indexOf(sCol);
+  const NEED = ['订单号', sCol, '账单金额'];
   for(const k of NEED){ if(ci[k] < 0) throw new Error('表头缺少「'+k+'」列'); }
 
   const rows = []; let totalAmt = null; let badRows = 0; let skipStatus = 0; let skipPay = 0;
@@ -377,8 +382,8 @@ function parseWorkbook(buf, fileName){
       if(!m){ skipPay++; continue; }
       pf = m[0]; bz = m[1];
     }
-    // 店名
-    let store = ci['所属门店']>=0 ? String(cs[ci['所属门店']]==null?'':cs[ci['所属门店']]).trim() : '';
+    // 店名（归属列：下单门店优先，否则所属门店）
+    let store = ci['store']>=0 ? String(cs[ci['store']]==null?'':cs[ci['store']]).trim() : '';
     if(store.indexOf('書荀') < 0 && store.indexOf('书荀') < 0){
       store = '';
       for(const c of cs){ const s=String(c==null?'':c).trim(); if(s.indexOf('書荀')>=0 || s.indexOf('书荀')>=0){ store=s; break; } }
@@ -578,7 +583,9 @@ async function loadStoreAlias(){
   }catch(e){}
 }
 function resolveSid(name, map){
+  if(!name) return null;
   if(map[name]) return map[name];
+  if(STORE_ALIAS[name]) return STORE_ALIAS[name];   // 精确命中主数据别名（下单门店名=门店标准名时直接命中，首轮重导也能挂对 store_id）
   const m = String(name||'').match(/[（(]([^（()）-]+)-([^（()）]+)[）)]/);
   const tail = m ? m[2].trim() : '';
   if(tail && STORE_ALIAS[tail]) return STORE_ALIAS[tail];
@@ -614,7 +621,7 @@ async function postBatch(batch, biz){
     try{
       const resp = await sb('/rest/v1/chain_verify_orders?on_conflict=order_no&select=order_no', {
         method:'POST',
-        headers:{ 'Prefer':'resolution=ignore-duplicates,return=representation' },
+        headers:{ 'Prefer':'resolution=merge-duplicates,return=representation' },
         body: JSON.stringify(payload)
       });
       if(resp.ok){
@@ -667,7 +674,7 @@ $('importBtn').addEventListener('click', async () => {
     $('progInner').style.width = '100%';
     let html = '';
     if(!fails.length){
-      html = '<b style="color:#15803d">全部完成</b>：解析 '+totalRows+' 单 · 新写入 <b>'+inserted+'</b> 单 · 已存在自动跳过 '+(totalRows-inserted)+' 单'
+      html = '<b style="color:#15803d">全部完成</b>：解析 '+totalRows+' 单 · 写入/更新 <b>'+inserted+'</b> 单 · 已存在跳过 '+(totalRows-inserted)+' 单'
            + (skippedPay ? ' · 排除非业绩 '+skippedPay+' 单' : '') + '。'
            + (unmatchedRows ? '<br><span style="color:#b45309">注意：'+unmatchedRows+' 单未能自动识别门店（不进门店统计），跑一次「挂接SQL」即可补上。</span>' : '')
            + '<br>可在「书荀连锁」看板查看最新数据。';
