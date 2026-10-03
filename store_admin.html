@@ -156,6 +156,7 @@
       <button class="sm" id="chipStores" onclick="switchView('stores')">门店主数据</button>
       <button class="sm" id="chipStaff" onclick="switchView('staff')" style="display:none">运营人员</button>
       <button class="sm" id="chipTodo" onclick="switchView('todo')">待办 <span class="todo-badge" id="todoBadge" style="display:none">0</span></button>
+      <button class="sm" id="chipYzmap" onclick="switchView('yzmap')">有赞映射复核</button>
     </div>
 
     <!-- 待认领有赞店横幅（同步器自动发现，全员可见；认领建店全员可用，忽略仅主账号） -->
@@ -246,6 +247,13 @@
         <div id="todoBody"><div class="empty">加载中…</div></div>
       </div>
     </div>
+  <!-- 有赞映射复核（2026-10-03 新增：只读大表，复核账单门店名→门店 归因映射） -->
+  <div id="viewYzmap" class="hide">
+    <div class="card">
+      <div class="card-title">有赞账单门店名 → 门店 映射复核（业绩归属判定源）</div>
+      <div id="yzmapBody"><div class="empty">加载中…</div></div>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -430,6 +438,7 @@ async function loadStores(){
     setStType(stTypeFilter);
     $('stBody').innerHTML = storeRows.length ? renderStores() : '<div class="empty">主表为空，请先执行 stores_master_setup.sql</div>';
     refreshTodo();
+    if($('viewYzmap') && !$('viewYzmap').classList.contains('hide')) renderYzMap();
   }catch(err){
     $('stBody').innerHTML = '<div class="empty">加载失败：'+esc(err.message)+'</div>';
   }
@@ -508,8 +517,180 @@ async function loadKdtMap(){
     $('stBody').innerHTML = renderStores();
     refreshTodo();
   }
+  if($('viewYzmap') && !$('viewYzmap').classList.contains('hide')) renderYzMap();
 }
 function kdtOfStore(sid){ const m = kdtMapRows.find(x=>x.store_id===sid); return m ? m.kdt_id : ''; }
+
+/* ---------------- 有赞映射复核（2026-10-03 新增：只读大表，复核账单门店名→门店 归因映射） ----------------
+   映射源 = _挂接SQL_一键版.sql 的 (有赞账单门店名 → store_id) 列表（95 条）。
+   该列表决定订单重导后业绩归哪家店，是「名称有没有挂错店」的唯一权威，故铺成大表逐项核对。 */
+const YZ_BILL_MAP = [
+ ['書荀头疗养生（赣州-于都万达店）',13],
+ ['書荀头疗养生（苏州-苏州宝带店）',14],
+ ['書荀头疗养生（衡阳-衡东峥嵘店）',15],
+ ['書荀头疗养生（随州-随州海翼店）',16],
+ ['書荀头疗养生（贵阳-贵阳万达店）',17],
+ ['書荀头疗养生（曲靖-曲靖云玉店）',18],
+ ['書荀头疗养生（版纳-版纳爱琴海）',19],
+ ['書荀头疗养生（苏州-苏州木渎店）',20],
+ ['書荀头疗养生（苏州-苏州横泾店）',21],
+ ['書荀头疗养生（赣州-泰和嘉和府）',22],
+ ['書荀头疗养生（昆明-昆明润城店）',23],
+ ['書荀头疗养生（苏州-苏州龙湖店）',24],
+ ['書荀头疗养生（苏州-苏州园区店）',25],
+ ['書荀头疗养生（番禺-番禺天骄店）',26],
+ ['書荀头疗养生（潮洲-潮州新丰店）',27],
+ ['書荀头疗养生（南阳-南阳万达坊）',28],
+ ['書荀头疗养生（金华-东阳吉祥店）',29],
+ ['書荀头疗养生（苏州-苏州吾悦店）',30],
+ ['書荀头疗养生（赣州-赣州君尚店）',31],
+ ['書荀头疗养生（杭州-杭州清泰街）',32],
+ ['書荀头疗养生（衡阳-衡阳银泰城）',33],
+ ['書荀头疗养生（常州-常州吾悦店）',34],
+ ['書荀头疗养生（随州-随州水郡世家）',36],
+ ['書荀头疗养生（金华-东阳江北之芯）',37],
+ ['書荀头疗养生（合肥-合肥万象汇）',38],
+ ['書荀头疗养生（衡阳-隆回紫霞园）',39],
+ ['書荀头疗养生（柳州-柳州天誉店）',40],
+ ['書荀头疗养生（昆明-昆明南悦城）',41],
+ ['書荀头疗养生（潮州-潮州上饶店）',42],
+ ['書荀头疗养生（曲靖-曲靖万达店）',43],
+ ['書荀头疗养生（曲靖-曲靖218店）',44],
+ ['書荀头疗养生（苏州-南京龙江店）',45],
+ ['書荀头疗养生（贵阳-贵阳观府店）',46],
+ ['書荀头疗养生（版纳-版纳古城店）',47],
+ ['書荀头疗养生（金华-东阳艺海店）',48],
+ ['書荀头疗养生（保定-保定盛和嘉园）',49],
+ ['書荀头疗养生（赣州-赣州中海店）',50],
+ ['書荀头疗养生（南阳-南阳森林半岛）',51],
+ ['書荀头疗养生（驻马店-平舆华鼎店）',52],
+ ['書荀头疗养生（随州-随州广水店）',53],
+ ['書荀头疗养生（浏阳-浏阳碧桂园）',54],
+ ['書荀头疗养生（上海-闵行龙茗店）',55],
+ ['書荀头疗养生（常州-常州歌林公园）',56],
+ ['書荀头疗养生（合肥-合肥银泰店）',57],
+ ['書荀头疗养生（南阳-南阳吾悦店）',58],
+ ['書荀头疗养生（杭州-杭州凤起店）',60],
+ ['書荀头疗养生（包头-九原万达店）',61],
+ ['書荀头疗养生（广州1-海珠和丰店）',62],
+ ['書荀头疗养生（沈阳-沈阳万达店）',63],
+ ['書荀头疗养生（曲靖-陆良图腾店）',64],
+ ['書荀头疗养生（荆州-荆州西路店）',65],
+ ['書荀头疗养生（衡阳-隆回沿江店）',66],
+ ['書荀头疗养生（广州2-海珠市二宫）',67],
+ ['書荀头疗养生（上海-闵行银都店）',68],
+ ['書荀头疗养生（上海-徐汇龙吴店）',69],
+ ['書荀头疗养生（台州-温岭银泰店）',70],
+ ['書荀头疗养生（台州-温岭万昌店）',70],
+ ['書荀头疗养生（昆山-常熟珠江店）',71],
+ ['書荀头疗养生（广州2-天河金茂店）',72],
+ ['書荀头疗养生（海口-海口N次方店）',73],
+ ['書荀头疗养生（中山-中山明珠店）',74],
+ ['書荀头疗养生（贵阳-观山湖万象汇）',75],
+ ['書荀头疗养生（昆明-西山佳湖店）',76],
+ ['書荀头疗养生（上海2-徐汇大木桥店）',77],
+ ['書荀头疗养生（衡阳-株洲华晨御园）',78],
+ ['書荀头疗养生（合肥-庐阳橡树湾）',79],
+ ['書荀头疗养生（昆山-昆山光明店）',80],
+ ['書荀头疗养生（昆山-昆山金浦店）',81],
+ ['書荀头疗养生（赣州-泰和经四路）',82],
+ ['書荀头疗养生（北京-石景山苹果园）',83],
+ ['書荀头疗养生（十堰-张湾万达店）',84],
+ ['書荀头疗养生（苏州-昆山花园店）',85],
+ ['書荀头疗养生（大连-高新锦绣国际）',86],
+ ['書荀头疗养生（广州2-白云梅花园）',87],
+ ['書荀头疗养生（中山-中山龙湖店）',89],
+ ['書荀头疗养生（中山-中山联祥店）',90],
+ ['書荀头疗养生（贵阳-南明逸天城）',105],
+ ['書荀头疗养生（贵阳-观山湖悦然时光）',106],
+ ['書荀头疗养生（番禺-番禺尚上店）',107],
+ ['書荀头疗养生（昆山-昆山黑龙江店）',108],
+ ['書荀头疗养生（广州2-白云佳润店）',109],
+ ['書荀头疗养生（荆州-沙市佳园店）',110],
+ ['書荀头疗养生（成都-武侯锦城万达）',111],
+ ['書荀头疗养生（杭州-上城庆春银泰）',112],
+ ['書荀头疗养生（上海3-奉贤百联店）',113],
+ ['書荀头疗养生（保定-竞秀皇城店）',114],
+ ['書荀头疗养生（上海2-普陀梅川路）',115],
+ ['書荀头疗养生（揭阳-惠来雅南店）',118],
+ ['書荀头疗养生（揭阳-惠来美城店）',118],
+ ['書荀头疗养生（包头-青山颐泰店）',121],
+ ['書荀头疗养生（潮州-潮安腾瑞店）',122]
+];
+// 注意：列表已按 _挂接SQL_一键版.sql 原样录入；若你复核发现某条挂错店，告诉我具体行号，我改 SQL 并重导。
+function parseRegion(name){
+  const m = String(name).match(/（([^-（）]+)-/);
+  if(!m) return '';
+  return m[1].replace(/[0-9A-Za-z]+$/, '');   // 去掉「广州1/上海2」这类后缀，便于与门店城市比对
+}
+function renderYzMap(){
+  const box = $('yzmapBody'); if(!box) return;
+  if(!storeRows.length){ box.innerHTML = '<div class="empty">门店主数据加载中…</div>'; return; }
+  const byId = {}; storeRows.forEach(s=>{ byId[s.id] = s; });
+  const kdtBySid = {}; kdtMapRows.forEach(m=>{ if(m.store_id!=null) kdtBySid[m.store_id] = m.kdt_id; });
+  const targeted = new Set(YZ_BILL_MAP.map(x=>x[1]));
+  const sidCount = {}; YZ_BILL_MAP.forEach(x=>{ sidCount[x[1]] = (sidCount[x[1]]||0) + 1; });
+
+  const kw = (($('yzmapSearch') && $('yzmapSearch').value) || '').trim().toLowerCase();
+  const onlyAnom = $('yzmapOnlyAnom') && $('yzmapOnlyAnom').checked;
+
+  let rows = YZ_BILL_MAP.map(([name, sid])=>{
+    const st = byId[sid];
+    const anom = [];
+    if(!st){ anom.push('系统内无此门店（id='+sid+'）'); }
+    else{
+      const region = parseRegion(name);
+      if(region && st.city && region !== st.city) anom.push('账单地区「'+region+'」与门店城市「'+st.city+'」不一致 · 待核对');
+      if(st.store_type !== '连锁' && st.store_type !== '陪跑') anom.push('门店性质='+st.store_type+'（非连锁/陪跑，确认是否该挂业绩）');
+      if(st.status === '闭店') anom.push('门店已闭店');
+    }
+    return { name:name, sid:sid, st:st, anom:anom, dup: sidCount[sid] > 1, kdt: kdtBySid[sid] };
+  });
+  if(kw) rows = rows.filter(r => (r.name + (r.st ? r.st.std_name : '') + (r.st ? (r.st.city||'') : '')).toLowerCase().indexOf(kw) >= 0);
+  if(onlyAnom) rows = rows.filter(r => r.anom.length);
+
+  const anomCount = rows.filter(r => r.anom.length).length;
+  let h = '';
+  h += '<div style="font-size:12px;color:#6b7280;margin-bottom:10px">共 '+YZ_BILL_MAP.length+' 条账单门店名映射，当前筛选显示 <b>'+rows.length+'</b> 条，其中 <b style="color:#b91c1c">'+anomCount+'</b> 条标记异常。下方为只读复核；发现错配请告诉我具体哪条，我改 _挂接SQL_一键版.sql（改完重导即可生效，不翻倍）。</div>';
+  h += '<div class="inline" style="margin-bottom:10px">'+
+       '<div style="flex:1;min-width:180px"><input type="text" id="yzmapSearch" placeholder="搜索账单名 / 标准名 / 城市" oninput="renderYzMap()" /></div>'+
+       '<div style="flex:0 0 auto;display:flex;align-items:center;gap:6px"><label style="font-size:13px;color:#4b5563;white-space:nowrap"><input type="checkbox" id="yzmapOnlyAnom" onchange="renderYzMap()" /> 只看异常</label></div>'+
+       '</div>';
+  h += '<div class="tbl-wrap"><table><thead><tr>'+
+       '<th>有赞账单门店名（下单门店）</th><th>映射门店ID</th><th>系统内标准名称</th><th>性质</th><th>状态</th><th>有赞kdt_id</th><th>异常标记</th>'+
+       '</tr></thead><tbody>';
+  if(!rows.length){
+    h += '<tr><td colspan="7" style="text-align:center;color:#8a8f9e;padding:16px">无匹配项</td></tr>';
+  }
+  rows.forEach(r=>{
+    const st = r.st;
+    h += '<tr'+(r.anom.length ? ' style="background:#FEF2F2"' : '')+'>'+
+      '<td>'+esc(r.name)+'</td>'+
+      '<td>'+r.sid+'</td>'+
+      '<td class="store">'+(st ? esc(st.std_name) : '<span style="color:#b91c1c">—（缺失）</span>')+(r.dup ? ' <span class="badge" style="background:#E8F1FD;color:#185FA5">同店'+sidCount[r.sid]+'条</span>' : '')+'</td>'+
+      '<td>'+(st ? esc(st.store_type||'') : '')+'</td>'+
+      '<td>'+(st ? esc(st.status||'') : '')+'</td>'+
+      '<td>'+(r.kdt ? esc(r.kdt) : '<span style="color:#8a8f9e">—</span>')+'</td>'+
+      '<td>'+(r.anom.length ? r.anom.map(a=>'<span class="gap-tag" style="background:#FEE2E2;color:#b91c1c;margin:1px;display:inline-block;padding:1px 7px;border-radius:6px;font-size:11px">'+esc(a)+'</span>').join('') : '<span style="color:#16a34a">✓</span>')+'</td>'+
+      '</tr>';
+  });
+  h += '</tbody></table></div>';
+
+  // Part B：连锁门店缺失账单名映射（重导后订单会拿不到 store_id 而落空）
+  const missing = storeRows.filter(s => s.store_type === '连锁' && !targeted.has(s.id));
+  h += '<div class="card-title" style="margin-top:18px">缺失账单名映射的连锁门店（'+missing.length+' 家）</div>';
+  h += '<div style="font-size:12px;color:#6b7280;margin-bottom:6px">这些连锁门店在上方映射里没有对应条目，重导后其订单会因拿不到 store_id 而落空（业绩不计入看板）。</div>';
+  h += '<div class="tbl-wrap"><table><thead><tr><th>门店ID</th><th>标准名称</th><th>性质</th><th>状态</th><th>城市</th><th>有赞kdt_id</th></tr></thead><tbody>';
+  if(!missing.length){
+    h += '<tr><td colspan="6" style="text-align:center;color:#16a34a;padding:14px">✓ 无缺失</td></tr>';
+  }else{
+    missing.forEach(s=>{
+      h += '<tr><td>'+s.id+'</td><td class="store">'+esc(s.std_name)+'</td><td>'+esc(s.store_type||'')+'</td><td>'+esc(s.status||'')+'</td><td>'+esc(s.city||'—')+'</td><td>'+(kdtBySid[s.id] ? esc(kdtBySid[s.id]) : '<span style="color:#8a8f9e">—</span>')+'</td></tr>';
+    });
+  }
+  h += '</tbody></table></div>';
+  box.innerHTML = h;
+}
 function openStoreEdit(id, prefill){
   prefill = prefill || {};
   editingStoreId = id || null;
@@ -720,7 +901,7 @@ async function loadOperators(){
   }catch(e){ operatorsDB = null; }
 }
 /* ---------------- 视角切换：门店主数据 | 运营人员 | 待办 ---------------- */
-const VIEWS = ['stores','staff','todo'];
+const VIEWS = ['stores','staff','todo','yzmap'];
 function switchView(v){
   VIEWS.forEach(function(k){
     const el = $('view'+k.charAt(0).toUpperCase()+k.slice(1));
@@ -736,6 +917,7 @@ function switchView(v){
   });
   if(v==='staff') renderOpsManager();
   if(v==='todo') renderTodoView();
+  if(v==='yzmap') renderYzMap();
 }
 
 /* ---------------- 门店待办（2026-09-23 拍板：按门店聚合 / 必需清单 / 忽略落库） ----------------
