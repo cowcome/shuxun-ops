@@ -273,7 +273,7 @@ function render(orders, stores, events){
       const mc=(stPf[s][iso(CUR)]||{}).美团||0, mp=P4.reduce((a,m)=>a+((stPf[s][m]||{}).美团||0),0);
       const dc=(stPf[s][iso(CUR)]||{}).抖音||0, dp=P4.reduce((a,m)=>a+((stPf[s][m]||{}).抖音||0),0);
       const mtThr = mtStd>0?1.5*mtStd:0.20;
-      if(Math.abs(mc/c[0]-mp/base4)>mtThr) pf_odd.push({s,mtOld:mp/base4,mtNew:mc/c[0],dyOld:dp/base4,dyNew:dc/c[0]});
+      if(Math.abs(mc/c[0]-mp/base4)>mtThr) pf_odd.push({s,mtOld:mp/base4,mtNew:mc/c[0],dyOld:dp/base4,dyNew:dc/c[0],mc,dc});
     }
   }
   gainers.sort((a,b)=>b[4]-a[4]); droppers.sort((a,b)=>a[4]-b[4]);
@@ -381,10 +381,10 @@ function render(orders, stores, events){
     wn+='<div class="warn"><span class="wt">📉 连续两周下滑 · '+cont_down.length+' 家</span><br>'+cont_down.map(([s,a,b,c,x])=>esc(s)+'：'+money(a)+' → '+money(b)+' → '+money(c)+'（两周累计 <span style="color:'+DN+'">'+sign(x).replace('%','')+'%</span>）').join('<br>')+'</div>';
   }
   if(pf_odd.length){
-    wn+='<div class="warn"><span class="wt">🔀 平台结构异动 · '+pf_odd.length+' 家</span><br>'+pf_odd.slice(0,6).map(({s,mtOld,mtNew,dyOld,dyNew})=>{
+    wn+='<div class="warn"><span class="wt">🔀 平台结构异动 · '+pf_odd.length+' 家</span><br>'+pf_odd.slice(0,6).map(({s,mtOld,mtNew,dyOld,dyNew,mc,dc})=>{
       const parts=[];
-      if(mtNew>mtOld) parts.push('<span style="color:#f97316;font-weight:600">美团占比 '+Math.round(mtOld*100)+'% → '+Math.round(mtNew*100)+'% ↑</span>');
-      if(dyNew>dyOld) parts.push('<span style="color:#7c5cff;font-weight:600">抖音占比 '+Math.round(dyOld*100)+'% → '+Math.round(dyNew*100)+'% ↑</span>');
+      if(mtNew>mtOld) parts.push('<span style="color:#f97316;font-weight:600">美团 '+money(mc)+'（占比 '+Math.round(mtOld*100)+'%→'+Math.round(mtNew*100)+'% ↑）</span>');
+      if(dyNew>dyOld) parts.push('<span style="color:#7c5cff;font-weight:600">抖音 '+money(dc)+'（占比 '+Math.round(dyOld*100)+'%→'+Math.round(dyNew*100)+'% ↑）</span>');
       return esc(s)+'：'+(parts.length?parts.join(' ｜ '):'—');
     }).join('<br>')+'</div>';
   }
