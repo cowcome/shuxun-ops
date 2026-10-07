@@ -36,6 +36,8 @@ td:first-child{font-weight:600;max-width:150px;overflow:hidden;text-overflow:ell
 .axl{font-size:11px;fill:#6e6e73}
 .axw{font-size:9px;fill:#fff;font-weight:600}
 .axb{font-size:9px;fill:#7a4d00;font-weight:600}
+/* 本周（复盘周）X 轴标签高亮，一眼区分历史 7 周 */
+.ax-cur{fill:#0a84ff;font-weight:700}
 .stname{color:#0a84ff;cursor:pointer;border-bottom:1px dashed #0a84ff}
 tr.drow td{background:#fafafc;white-space:normal}
 .note{font-size:12px;color:#6e6e73;margin-top:8px}
@@ -251,7 +253,7 @@ function render(orders, stores, events){
   /* 大盘 */
   let H='<div class="hero"><h1>连锁门店运营周诊断</h1><div class="sub">复盘上周 '+iso(CUR)+'（周一）~ '+iso(CURR)+'（周日） · 数据截至 '+TODAY+' 实时拉取 · 平台账单口径</div></div>';
   H+='<section><h2>上周结论<span class="badge">先看这里</span></h2><ul class="concl">'+C+'</ul></section>';
-  H+='<section><h2>大盘速览</h2><div class="kgrid">'
+  H+='<section><h2>大盘速览<span class="badge" style="margin-left:8px;font-weight:400">核销口径 '+iso(CUR)+' ~ '+iso(CURR)+'</span></h2><div class="kgrid">'
     +'<div class="kpi"><div class="kpi-l">核销金额</div><div class="kpi-v">'+money(cw.amt)+'</div><div class="kpi-s">环比 '+delta(dWow)+' · 对比上月同期 '+delta(d4w)+'</div></div>'
     +'<div class="kpi"><div class="kpi-l">核销单数</div><div class="kpi-v">'+cw.cnt+' 单</div><div class="kpi-s">环比 '+delta(pct(cw.cnt,pw.cnt||1))+'</div></div>'
     +'</div></section>';
@@ -277,12 +279,16 @@ function render(orders, stores, events){
     const x=pad+(m.getTime()-weeks[0].getTime())/(7*86400000)*bw;
     if(hMt>0.5) bars+='<rect x="'+(x+3).toFixed(1)+'" y="'+(base-hMt).toFixed(1)+'" width="'+(bw-6).toFixed(1)+'" height="'+hMt.toFixed(1)+'" fill="'+MT+'"/>';
     if(hDy>0.5) bars+='<rect x="'+(x+3).toFixed(1)+'" y="'+(base-hMt-hDy).toFixed(1)+'" width="'+(bw-6).toFixed(1)+'" height="'+hDy.toFixed(1)+'" rx="3" fill="'+DY+'"/>';
-    bars+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(Hh-12)+'" class="ax" text-anchor="middle">'+(m.getMonth()+1)+'/'+m.getDate()+'</text>';
+    /* X 轴标注：M/D（周一）＋ 每柱代表周一~周日的提示 */
+    const isCur = (iso(m)===iso(CUR));
+    bars+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(Hh-12)+'" class="ax'+(isCur?' ax-cur':'')+'" text-anchor="middle">'+(m.getMonth()+1)+'/'+m.getDate()+'</text>';
     if(tot>0) bars+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(base-hMt-hDy-6).toFixed(1)+'" class="axv" text-anchor="middle">'+(tot>=10000?(tot/10000).toFixed(1)+'万':Math.round(tot))+'</text>';
     if(hDy>=16) bars+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(base-hMt-hDy/2+3).toFixed(1)+'" class="axw" text-anchor="middle">'+(dyv>=10000?(dyv/10000).toFixed(1)+'万':Math.round(dyv))+'</text>';
     if(hMt>=16) bars+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(base-hMt/2+3).toFixed(1)+'" class="axb" text-anchor="middle">'+(mtv>=10000?(mtv/10000).toFixed(1)+'万':Math.round(mtv))+'</text>';
   });
-  H+='<section><h2>核销趋势（完整自然周 · 抖音/美团堆叠）</h2><svg viewBox="0 0 '+W+' '+Hh+'" class="chart">'+bars+'</svg></section>';
+  H+='<section><h2>核销趋势（完整自然周 · 抖音/美团堆叠）'
+    +'<span class="badge" style="margin-left:8px;font-weight:400">近8周 '+iso(weeks[0])+' ~ '+iso(CURR)+'，最右一根=本周 '+iso(CUR)+'~'+iso(CURR)+'</span>'
+    +'</h2><svg viewBox="0 0 '+W+' '+Hh+'" class="chart">'+bars+'</svg></section>';
 
   /* 涨跌榜 */
   function rankTable(items,inv){
@@ -336,7 +342,11 @@ function render(orders, stores, events){
   H+='<section><h2>门店数据对比<span class="badge">全门店</span></h2>'
     +'<div class="selrow"><select id="opSel">'+opsSel+'</select><span class="note" style="margin:0">列头点击排序 · 点店名展开平台拆分</span></div>'
     +'<table id="allTbl"><thead><tr>'
-    +'<th data-k="name">店名</th><th data-k="op">运营人</th><th data-k="c">复盘周</th><th data-k="p">上周</th><th data-k="mc">本月累计</th><th data-k="mom">对比上月同期</th>'
+    +'<th data-k="name">店名</th><th data-k="op">运营人</th>'
+    +'<th data-k="c" title="复盘周 '+iso(CUR)+' ~ '+iso(CURR)+'">复盘周<span style="display:block;font-weight:400;font-size:10px;color:#8a8a8e">'+iso(CUR).slice(5)+'~'+iso(CURR).slice(5)+'</span></th>'
+    +'<th data-k="p" title="上一自然周 '+iso(PREV)+' ~ '+iso(addD(PREV,6))+'">上周<span style="display:block;font-weight:400;font-size:10px;color:#8a8a8e">'+iso(PREV).slice(5)+'~'+iso(addD(PREV,6)).slice(5)+'</span></th>'
+    +'<th data-k="mc">本月累计<span style="display:block;font-weight:400;font-size:10px;color:#8a8a8e">'+MS.slice(5)+'~'+iso(CURR).slice(5)+'</span></th>'
+    +'<th data-k="mom">对比上月同期<span style="display:block;font-weight:400;font-size:10px;color:#8a8a8e">'+PMS.slice(5)+'~'+PME.slice(5)+'</span></th>'
     +'</tr></thead><tbody id="allBody"></tbody></table></section>';
 
   H+='<div class="foot">口径说明：金额=平台核销（抖音=核销+记账核销，美团=验券+记账核销）；不含内购上翻；'
