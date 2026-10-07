@@ -171,7 +171,7 @@ function render(orders, stores, events){
   }
   function evInWeek(s){
     return (evHits[s]||[]).filter(e=>{
-      const a=e.start_date, b=e.end_date||e.start_date;
+      const a=e.start_date, b=e.end_date||TODAY;
       return a<=iso(CURR) && b>=iso(CUR);
     });
   }
@@ -184,6 +184,7 @@ function render(orders, stores, events){
     wk[m]=wk[m]||{amt:0,cnt:0,pf:{}};
     wk[m].amt+=Number(o.amount)||0; wk[m].cnt++;
     wk[m].pf[o.platform]=(wk[m].pf[o.platform]||0)+(Number(o.amount)||0);
+    if(o.biz==='记账核销'){ wk[m].bk=(wk[m].bk||0)+(Number(o.amount)||0); wk[m].pfBk=wk[m].pfBk||{}; wk[m].pfBk[o.platform]=(wk[m].pfBk[o.platform]||0)+(Number(o.amount)||0); }
     if(EXCL.includes(st.status)) continue;
     const s=st.std_name;
     stW[s]=stW[s]||{}; stW[s][m]=stW[s][m]||[0,0];
@@ -209,28 +210,67 @@ function render(orders, stores, events){
   const cw=oload([iso(CUR)]), pw=oload([iso(PREV)]), lw=oload([iso(LAG4)]);
   const p4=oload(P4);
 
+  /* 自适应阈值 / 停业可比 辅助 */
+  const wkKeys = Array.from({length:8},(_,i)=>iso(addD(CUR,-49+i*7)));
+  const cwBk = (wk[iso(CUR)]||{}).bk||0;
+  const cwPfBk = (wk[iso(CUR)]||{}).pfBk||{};
+  function stat(arr){
+    const a=arr.filter(v=>typeof v==='number'&&isFinite(v));
+    const n=a.length; if(!n) return {n:0,mean:0,std:0,median:0};
+    const mean=a.reduce((x,y)=>x+y,0)/n;
+    const std=Math.sqrt(a.reduce((x,y)=>x+(y-mean)**2,0)/(n-1||1));
+    const s=[...a].sort((x,y)=>x-y);
+    const median = n%2? s[(n-1)/2] : (s[n/2-1]+s[n/2])/2;
+    return {n,mean,std,median};
+  }
+  function businessDays(s, ds, de){
+    const evs = evHits[s]||[];
+    let busy=0;
+    const d0=new Date(ds+'T00:00:00'), d1=new Date(de+'T00:00:00');
+    for(let d=new Date(d0); d<=d1; d.setDate(d.getDate()+1)){
+      const isoD=iso(d);
+      const closed = evs.some(e=>{ const a=e.start_date, b=e.end_date||TODAY; return a<=isoD && b>=isoD; });
+      if(!closed) busy++;
+    }
+    return busy;
+  }
+
   /* 诊断 */
   const allStd=Object.keys(stW).sort();
-  const gainers=[],droppers=[],blank=[],blankEv=[],cont_down=[],aov_odd=[],pf_odd=[];
+  const gainers=[],droppers=[],blank=[],cont_down=[],aov_odd=[],pf_odd=[],closedStores=[];
   for(const s of allStd){
     const c=stW[s][iso(CUR)]||[0,0], p=stW[s][iso(PREV)]||[0,0];
     const base4=P4.reduce((a,m)=>a+((stW[s][m]||[0,0])[0]),0);
     const cnt4=P4.reduce((a,m)=>a+((stW[s][m]||[0,0])[1]),0);
     const wk4=base4/4;
     const evs=evInWeek(s), evHard=evs.filter(e=>['培训闭店','团建闭店','台风闭店','假日闭店','装修调整'].includes(e.special_type));
+    const closed = evHard.length>0;
+    if(closed){ closedStores.push([s,evHard]); continue; }   // 停业店不进任何涨跌/预警榜，单独做可比日均
+    // 该店近 8 周自身统计（自适应阈值）
+    const series = wkKeys.map(m=>(stW[s][m]?stW[s][m][0]:0));
+    const p50 = stat(series).median;
+    const deltas=[]; for(let i=1;i<series.length;i++){ if(series[i-1]>0) deltas.push((series[i]-series[i-1])/series[i-1]); }
+    const dropStd = deltas.length>=5 ? stat(deltas).std : 0;
+    const aovSeries = wkKeys.map(m=>{ const w=stW[s][m]; return (w&&w[1]>0)?w[0]/w[1]:null; }).filter(v=>v!=null);
+    const aovStd = aovSeries.length>=5 ? stat(aovSeries).std : 0;
+    const mtShareSeries = wkKeys.map(m=>{ const w=stW[s][m]; if(!w||w[0]<=0) return null; const mt=((stPf[s]&&stPf[s][m])||{}).美团||0; return mt/w[0]; }).filter(v=>v!=null);
+    const mtStd = mtShareSeries.length>=5 ? stat(mtShareSeries).std : 0;
     if(c[0]>0&&p[0]>0&&c[0]>=500) gainers.push([s,p[0],c[0],pct(c[0],p[0]),c[0]-p[0]]);
-    if(p[0]>=800&&c[0]<p[0]) droppers.push([s,p[0],c[0],pct(c[0],p[0]),c[0]-p[0]]);
-    if(wk4>=300&&c[0]===0){ (evHard.length?blankEv:blank).push([s,wk4,evHard]); }
+    if(p[0]>=Math.max(500,p50*0.5)&&c[0]<p[0]) droppers.push([s,p[0],c[0],pct(c[0],p[0]),c[0]-p[0]]);
+    if(c[0]===0&&p50>=Math.max(150,p50*0.3)) blank.push([s,wk4]);
     const w2=stW[s][iso(addD(PREV,-7))]||[0,0];
-    if(w2[0]>=500&&w2[0]>p[0]&&p[0]>c[0]&&p[0]>0&&c[0]>0&&pct(p[0],w2[0])<=-10&&pct(c[0],p[0])<=-10)
+    const dropThr = dropStd>0?1.5*dropStd:0.10;
+    if(w2[0]>=500&&w2[0]>p[0]&&p[0]>c[0]&&p[0]>0&&c[0]>0&&pct(p[0],w2[0])<=-(dropThr*100)&&pct(c[0],p[0])<=-(dropThr*100))
       cont_down.push([s,w2[0],p[0],c[0],pct(c[0],w2[0])]);
     if(c[1]>=10&&cnt4>=10){
       const ac=c[0]/c[1], ap=base4/cnt4;
-      if(ac<ap*0.8) aov_odd.push([s,ap,ac,pct(ac,ap),c[1]]);
+      const aovThr = aovStd>0?1.5*aovStd:ap*0.2;
+      if(Math.abs(ac-ap)>aovThr) aov_odd.push([s,ap,ac,pct(ac,ap),c[1]]);
     }
     if(c[0]>=2000&&base4>=2000){
       const mc=(stPf[s][iso(CUR)]||{}).美团||0, mp=P4.reduce((a,m)=>a+((stPf[s][m]||{}).美团||0),0);
-      if(Math.abs(mc/c[0]-mp/base4)>=0.20) pf_odd.push([s,mp/base4,mc/c[0]]);
+      const mtThr = mtStd>0?1.5*mtStd:0.20;
+      if(Math.abs(mc/c[0]-mp/base4)>mtThr) pf_odd.push([s,mp/base4,mc/c[0]]);
     }
   }
   gainers.sort((a,b)=>b[4]-a[4]); droppers.sort((a,b)=>a[4]-b[4]);
@@ -245,8 +285,8 @@ function render(orders, stores, events){
   C+='<li>平台结构：美团占'+Math.round(mtC*100/Math.max(cw.amt,1))+'%、抖音占'+Math.round(dyC*100/Math.max(cw.amt,1))+'%；抖音环比 '+sign(pct(dyC,pw.pf.抖音||0)).replace('%','')+'%、美团环比 '+sign(pct(mtC,pw.pf.美团||0)).replace('%','')+'%。</li>';
   if(gainers.length){ const g=gainers[0]; C+='<li>最亮门店：'+esc(g[0])+'，周环比 '+sign(g[3]).replace('%','')+'%（'+money(g[1])+' → '+money(g[2])+'）。</li>'; }
   if(droppers.length){ const d0=droppers[0]; C+='<li>最大下滑：'+esc(d0[0])+'，周环比 '+sign(d0[3]).replace('%','')+'%（'+money(d0[1])+' → '+money(d0[2])+'）。</li>'; }
-  if(blank.length) C+='<li>裸奔预警 '+blank.length+' 家（近4周周均≥¥300 但上周零核销）。</li>';
-  if(blankEv.length) C+='<li>有因停业 '+blankEv.length+' 家（上周零核销但命中特殊门店填报，未计入预警）。</li>';
+  if(blank.length) C+='<li>裸奔预警 '+blank.length+' 家（自身近8周常态周核销≥¥150 但上周零核销，阈值已自适应）。</li>';
+  if(closedStores.length) C+='<li>有因停业 '+closedStores.length+' 家（特殊门店填报命中，已在预警区单列可比日均，不计入涨跌/预警榜）。</li>';
   if(cont_down.length) C+='<li>连续两周下滑 '+cont_down.length+' 家，建议优先安排回访。</li>';
   if(Object.keys(evHits).some(s=>evInWeek(s).length)) C+='<li>上周有 '+allStd.filter(s=>evInWeek(s).length).length+' 家门店命中特殊门店填报，相关环比已可结合事件解读。</li>';
 
@@ -254,7 +294,7 @@ function render(orders, stores, events){
   let H='<div class="hero"><h1>连锁门店运营周诊断</h1><div class="sub">复盘上周 '+iso(CUR)+'（周一）~ '+iso(CURR)+'（周日） · 数据截至 '+TODAY+' 实时拉取 · 平台账单口径</div></div>';
   H+='<section><h2>上周结论<span class="badge">先看这里</span></h2><ul class="concl">'+C+'</ul></section>';
   H+='<section><h2>大盘速览<span class="badge" style="margin-left:8px;font-weight:400">核销口径 '+iso(CUR)+' ~ '+iso(CURR)+'</span></h2><div class="kgrid">'
-    +'<div class="kpi"><div class="kpi-l">核销金额</div><div class="kpi-v">'+money(cw.amt)+'</div><div class="kpi-s">环比 '+delta(dWow)+' · 对比上月同期 '+delta(d4w)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-l">核销金额 <span class="tag" style="background:#e8f0ff;color:#0a84ff">账单导入·真实业绩</span></div><div class="kpi-v">'+money(cw.amt)+'</div><div class="kpi-s">环比 '+delta(dWow)+' · 对比上月同期 '+delta(d4w)+'</div><div class="kpi-s" style="color:#8a6d00">后台记账 '+money(cwBk)+'（占 '+(cwBk*100/Math.max(cw.amt,1)).toFixed(0)+'%）· 其余为券核销自动回传</div></div>'
     +'<div class="kpi"><div class="kpi-l">核销单数</div><div class="kpi-v">'+cw.cnt+' 单</div><div class="kpi-s">环比 '+delta(pct(cw.cnt,pw.cnt||1))+'</div></div>'
     +'</div></section>';
 
@@ -262,7 +302,8 @@ function render(orders, stores, events){
   let pr='';
   [['抖音',dyC],['美团',mtC]].forEach(([nm,a])=>{
     const b=(pw.pf[nm]||0), c=(lw.pf[nm]||0);
-    pr+='<tr><td>'+nm+'</td><td>'+money(a)+'</td><td>'+Math.round(a*100/Math.max(cw.amt,1))+'%</td><td>'+delta(pct(a,b))+'</td><td>'+delta(pct(a,c))+'</td></tr>';
+    const bk=(cwPfBk[nm])||0, bkPct=a>0?Math.round(bk*100/a):0;
+    pr+='<tr><td>'+nm+'</td><td>'+money(a)+'<div style="font-size:10px;color:#8a8a8e;margin-top:2px">后台记账 '+money(bk)+'（'+bkPct+'%）</div></td><td>'+Math.round(a*100/Math.max(cw.amt,1))+'%</td><td>'+delta(pct(a,b))+'</td><td>'+delta(pct(a,c))+'</td></tr>';
   });
   H+='<section><h2>平台结构</h2><table><thead><tr><th>平台</th><th>金额</th><th>占比</th><th>环比</th><th>对比上月同期</th></tr></thead><tbody>'+pr+'</tbody></table></section>';
 
@@ -300,15 +341,32 @@ function render(orders, stores, events){
       +'<div class="note">👆 点击门店名展开：平台拆分 + 两周逐日对比</div>';
   }
   H+='<section><h2>增长榜 TOP8<span class="badge">周环比</span></h2>'+(gainers.length?rankTable(gainers):'<div class="empty">上周无符合统计条件的增长门店（上周≥¥500 且前一周有基数）</div>')+'</section>';
-  H+='<section><h2>下滑榜 TOP8<span class="badge">前一周≥¥800 才入榜</span></h2>'+(droppers.length?rankTable(droppers):'<div class="empty">上周无显著下滑门店</div>')+'</section>';
+  H+='<section><h2>下滑榜 TOP8<span class="badge">周环比·自适应阈值</span></h2>'+(droppers.length?rankTable(droppers):'<div class="empty">上周无显著下滑门店</div>')+'</section>';
 
   /* 预警 */
   let wn='';
   if(blank.length){
     wn+='<div class="warn"><span class="wt">🚨 裸奔预警 · '+blank.length+' 家</span><br>上周零核销：'+blank.map(([s,w])=>'<b>'+esc(s)+'</b>（近4周周均'+money(w)+'）').join('、')+'。</div>';
   }
-  if(blankEv.length){
-    wn+='<div class="warn"><span class="wt">🏷️ 有因停业 · '+blankEv.length+' 家（不报警）</span><br>'+blankEv.map(([s,w,evs])=>esc(s)+'：'+evs.map(e=>esc(e.special_type)+'（'+e.start_date+'起）').join('、')).join('<br>')+'</div>';
+  if(closedStores.length){
+    wn+='<div class="warn"><span class="wt">🏷️ 有因停业 · '+closedStores.length+' 家（不报警，仅做可比日均）</span>';
+    closedStores.forEach(([s,evs])=>{
+      const curAmt=(stW[s][iso(CUR)]||[0,0])[0], curBusy=businessDays(s,iso(CUR),iso(CURR));
+      const prevAmt=(stW[s][iso(PREV)]||[0,0])[0], prevBusy=businessDays(s,iso(PREV),iso(addD(PREV,6)));
+      const lmAmt=(stMonth[s]||[0,0])[1], lmBusy=businessDays(s,PMS,PME);
+      const curDay=curBusy>0?curAmt/curBusy:0, prevDay=prevBusy>0?prevAmt/prevBusy:0, lmDay=lmBusy>0?lmAmt/lmBusy:0;
+      let line=esc(s)+'：'+evs.map(e=>esc(e.special_type)+'（'+e.start_date+'起'+(e.end_date?(' 至 '+e.end_date):'')+'）').join('、');
+      if(curBusy===0) line+=' → 整周停业（无可比营业日）';
+      else{
+        line+=' → 本周营业'+curBusy+'天，日均'+money(curDay);
+        if(curBusy>=3){
+          if(prevBusy>0&&prevAmt>0) line+=' ｜ 上周日均'+money(prevDay)+'（'+delta(pct(curDay,prevDay))+'）';
+          if(lmBusy>0&&lmAmt>0) line+=' ｜ 上月营业日均'+money(lmDay)+'（'+delta(pct(curDay,lmDay))+'）';
+        }else line+='（营业日不足3天，不报环比）';
+      }
+      wn+='<br>'+line;
+    });
+    wn+='</div>';
   }
   if(cont_down.length){
     wn+='<div class="warn"><span class="wt">📉 连续两周下滑 · '+cont_down.length+' 家</span><br>'+cont_down.map(([s,a,b,c,x])=>esc(s)+'：'+money(a)+' → '+money(b)+' → '+money(c)+'（两周累计 <span style="color:'+DN+'">'+sign(x).replace('%','')+'%</span>）').join('<br>')+'</div>';
@@ -327,7 +385,7 @@ function render(orders, stores, events){
   ev+='<li><b>登记入口</b>：书荀连锁页「特殊门店填报」或 数据导入页「特殊门店填报」——两处同一份数据（store_special_periods），实时同步。填门店 + 起止日期 + 类型，报告自动归因。</li>';
   const wkEvents=allStd.filter(s=>evInWeek(s).length);
   if(wkEvents.length){
-    ev+='<li><b>本期命中 '+wkEvents.length+' 家</b>：'+wkEvents.map(s=>esc(s)+'（'+evInWeek(s).map(e=>esc(e.special_type)).join('、')+'）').join('、')+'。下滑/裸奔已结合事件归因。</li>';
+    ev+='<li><b>本期命中 '+wkEvents.length+' 家</b>：'+wkEvents.map(s=>esc(s)+'（'+evInWeek(s).map(e=>esc(e.special_type)).join('、')+'）').join('、')+'。已在预警区·有因停业单列可比日均，不计入涨跌/预警榜。</li>';
   }else{
     ev+='<li><b>本期无命中</b>。复盘周内若有门店培训闭店/装修，记得补填报，下滑榜单会自动挂标签。</li>';
   }
@@ -350,8 +408,10 @@ function render(orders, stores, events){
     +'</tr></thead><tbody id="allBody"></tbody></table></section>';
 
   H+='<div class="foot">口径说明：金额=平台核销（抖音=核销+记账核销，美团=验券+记账核销）；不含内购上翻；'
+    +'<b>来源标签</b>：全部金额来自每周账单导入（chain_verify_orders），其中「券核销」=抖音来客/美团开店宝自动回传、「后台记账」=门店在有赞后台手工记账，<b>二者均为真实业绩、仅核销通道不同</b>；'
     +'待上线/闭店/停业门店不计入门店诊断；「对比上月同期」= -28 天同星期对齐（大盘）/ 同长度月窗口（本月列）；'
     +'本月累计='+MS+'~'+iso(CURR)+'，上月同期='+PMS+'~'+PME+'；环比=对上一自然周。'
+    +'预警阈值已改为按各店近 8 周自身水平自适应（裸奔/下滑/连降/客单/平台结构），停业店单列可比日均、不计入预警榜。'
     +'数据源：chain_verify_orders（每周账单导入）· 生成于 '+TODAY+'</div>';
 
   $id('app').innerHTML=H;
