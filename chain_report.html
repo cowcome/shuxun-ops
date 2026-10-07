@@ -271,8 +271,9 @@ function render(orders, stores, events){
     }
     if(c[0]>=2000&&base4>=2000){
       const mc=(stPf[s][iso(CUR)]||{}).美团||0, mp=P4.reduce((a,m)=>a+((stPf[s][m]||{}).美团||0),0);
+      const dc=(stPf[s][iso(CUR)]||{}).抖音||0, dp=P4.reduce((a,m)=>a+((stPf[s][m]||{}).抖音||0),0);
       const mtThr = mtStd>0?1.5*mtStd:0.20;
-      if(Math.abs(mc/c[0]-mp/base4)>mtThr) pf_odd.push([s,mp/base4,mc/c[0]]);
+      if(Math.abs(mc/c[0]-mp/base4)>mtThr) pf_odd.push({s,mtOld:mp/base4,mtNew:mc/c[0],dyOld:dp/base4,dyNew:dc/c[0]});
     }
   }
   gainers.sort((a,b)=>b[4]-a[4]); droppers.sort((a,b)=>a[4]-b[4]);
@@ -379,31 +380,20 @@ function render(orders, stores, events){
   if(cont_down.length){
     wn+='<div class="warn"><span class="wt">📉 连续两周下滑 · '+cont_down.length+' 家</span><br>'+cont_down.map(([s,a,b,c,x])=>esc(s)+'：'+money(a)+' → '+money(b)+' → '+money(c)+'（两周累计 <span style="color:'+DN+'">'+sign(x).replace('%','')+'%</span>）').join('<br>')+'</div>';
   }
-  if(aov_odd.length){
-    wn+='<div class="warn"><span class="wt">💴 客单异动 · '+aov_odd.length+' 家</span><br>'+aov_odd.slice(0,6).map(([s,a,c,x,n])=>esc(s)+'：客单 '+money(a)+' → '+money(c)+'（'+delta(x)+'），上周 '+n+' 单').join('<br>')+'</div>';
-  }
   if(pf_odd.length){
-    wn+='<div class="warn"><span class="wt">🔀 平台结构异动 · '+pf_odd.length+' 家</span><br>'+pf_odd.slice(0,6).map(([s,a,b])=>esc(s)+'：美团占比 '+Math.round(a*100)+'% → '+Math.round(b*100)+'%').join('<br>')+'</div>';
+    wn+='<div class="warn"><span class="wt">🔀 平台结构异动 · '+pf_odd.length+' 家</span><br>'+pf_odd.slice(0,6).map(({s,mtOld,mtNew,dyOld,dyNew})=>{
+      const parts=[];
+      if(mtNew>mtOld) parts.push('<span style="color:#f97316;font-weight:600">美团占比 '+Math.round(mtOld*100)+'% → '+Math.round(mtNew*100)+'% ↑</span>');
+      if(dyNew>dyOld) parts.push('<span style="color:#7c5cff;font-weight:600">抖音占比 '+Math.round(dyOld*100)+'% → '+Math.round(dyNew*100)+'% ↑</span>');
+      return esc(s)+'：'+(parts.length?parts.join(' ｜ '):'—');
+    }).join('<br>')+'</div>';
   }
   if(!wn) wn='<div class="warn">本周四项预警全部清洁 🎉</div>';
-  H+='<section><h2>预警区<span class="badge">裸奔/连降/客单/平台</span></h2><div class="warnbox">'+wn+'</div></section>';
+  H+='<section><h2>预警区<span class="badge">裸奔/连降/平台</span></h2><div class="warnbox">'+wn+'</div></section>';
 
   /* 特殊门店 */
   let ev='';
-  ev+='<li><b>登记入口</b>：书荀连锁页「特殊门店填报」或 数据导入页「特殊门店填报」——两处同一份数据（store_special_periods），实时同步。填门店 + 起止日期 + 类型，报告自动归因。</li>';
-  const wkEvents=allStd.filter(s=>evInWeek(s).length);
-  if(wkEvents.length){
-    const fmtEv=e=>{
-      const d=(new Date(e.start_date)-new Date('1970-01-01'))/(864e5), ed=e.end_date||e.start_date;
-      const d2=(new Date(ed)-new Date('1970-01-01'))/(864e5);
-      const days=d2-d+1;
-      const md=d=>d.slice(5).replace('-','/');
-      return esc(e.special_type)+'（'+md(e.start_date)+(e.end_date?' ~ '+md(e.end_date):' 起')+' · '+days+'天）';
-    };
-    ev+='<li><b>本期命中 '+wkEvents.length+' 家</b>：'+wkEvents.map(s=>esc(s)+'：'+evInWeek(s).map(fmtEv).join('、')).join('；')+'。已在预警区·有因停业单列可比日均，不计入涨跌/预警榜。</li>';
-  }else{
-    ev+='<li><b>本期无命中</b>。复盘周内若有门店培训闭店/装修，记得补填报，下滑榜单会自动挂标签。</li>';
-  }
+  ev+='<li><b>登记入口</b>：书荀连锁页「特殊门店填报」或 数据导入页「特殊门店填报」——两处同一份数据（store_special_periods），实时同步。填门店 + 起止日期 + 类型，报告自动归因。命中门店已在上方「预警区·有因停业」单列可比日均。</li>';
   H+='<section><h2>特殊门店联动<span class="badge">已接入</span></h2><ul class="concl" style="font-size:13.5px">'+ev+'</ul></section>';
 
   /* 门店数据对比总表 */
@@ -426,7 +416,7 @@ function render(orders, stores, events){
     +'<b>来源标签</b>：全部金额来自每周账单导入（chain_verify_orders），其中「券核销」=抖音来客/美团开店宝自动回传、「后台记账」=门店在有赞后台手工记账，<b>二者均为真实业绩、仅核销通道不同</b>；'
     +'待上线/闭店/停业门店不计入门店诊断；「对比上月同期」= -28 天同星期对齐（大盘）/ 同长度月窗口（本月列）；'
     +'本月累计='+MS+'~'+iso(CURR)+'，上月同期='+PMS+'~'+PME+'；环比=对上一自然周。'
-    +'预警阈值已改为按各店近 8 周自身水平自适应（裸奔/下滑/连降/客单/平台结构），停业店单列可比日均、不计入预警榜。'
+    +'预警阈值已改为按各店近 8 周自身水平自适应（裸奔/下滑/连降/平台结构），停业店单列可比日均、不计入预警榜。'
     +'数据源：chain_verify_orders（每周账单导入）· 生成于 '+TODAY+'</div>';
 
   $id('app').innerHTML=H;
