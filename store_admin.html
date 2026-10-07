@@ -92,6 +92,16 @@
   .bigtbl th.col-detail_address, .bigtbl td.detail_address { min-width:340px; }
   .bigtbl td.yz_bill_name .cell, .bigtbl td.meituan_name .cell,
   .bigtbl td.douyin_name .cell,  .bigtbl td.detail_address .cell { font-size:12px; }
+  /* ---- 列宽拖拽（2026-10-07）：表头右缘可拖，宽度存 localStorage 跨会话保留 ---- */
+  .bigtbl thead th.col-resizable { position:relative; cursor:default; user-select:none; }
+  .bigtbl thead th.col-resizable::after {
+    content:''; position:absolute; top:0; right:-3px; width:7px; height:100%;
+    cursor:col-resize; z-index:4;
+  }
+  .bigtbl thead th.col-resizable:hover::after { background:rgba(0,122,255,.18); }
+  .bigtbl thead th.col-dragging::after { background:var(--sx-accent); box-shadow:0 0 0 1px var(--sx-accent); }
+  body.col-resizing { cursor:col-resize !important; user-select:none !important; }
+  .bigtbl .cell { width:100%; }
 </style>
 <script src="theme.js"></script></head>
 <body>
@@ -229,6 +239,10 @@
     <!-- 主数据表 -->
     <div class="card">
       <div class="card-title">门店主数据（Supabase stores 主表 · 唯一权威源）</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;color:#8a8f9e">
+        <span>💡 核对时可<b style="color:#4b5563">拖动表头右缘</b>调列宽（宽度自动记住）· <b style="color:#4b5563">双击表头</b>单列恢复默认</span>
+        <button class="sm" onclick="resetAllColW()" style="margin-left:auto">恢复全部默认列宽</button>
+      </div>
       <div id="stBody"><div class="empty">加载中…</div></div>
     </div>
     </div>
@@ -466,6 +480,7 @@ async function loadStores(){
     fillOpFilter();
     setStType(stTypeFilter);
     $('stBody').innerHTML = storeRows.length ? renderStores() : '<div class="empty">主表为空，请先执行 stores_master_setup.sql</div>';
+    applyColW(); initColResize();
     refreshTodo();
     loadOrderCounts();   // 异步拉「已匹配订单数」，回来后重渲大表
     if($('viewYzmap') && !$('viewYzmap').classList.contains('hide')) renderYzMap();
@@ -521,6 +536,95 @@ function renderStores(){
   h += '<div style="margin-top:8px;font-size:12px;color:#8a8f9e">在营门店 <b style="color:#0F6E56;font-size:15px">'+activeCnt+'</b> 家 ｜ 当前显示 '+list.length+' / '+storeRows.length+' 家 ｜ 改任意单元格失焦即自动保存（写入操作日志）｜ 「有赞账单门店名」= 有赞账单「下单门店」列原值，一对一（重导/挂接据此归因）</div>';
   return h;
 }
+/* ================= 门店大表 · 列宽拖拽（2026-10-07） =================
+   需求：各列长度差异大，核对某列时要能完整显示 → 表头右缘可拖，宽度持久化。
+   实现：mousedown 在表头右缘 → 实时改 th/td 的 min-width（同列所有单元格）→
+        拖完写 localStorage，下次渲染先套用。列宽只影响本机浏览器，不写库。      */
+const COLW_KEY = 'sx_bigcolw_v1';
+function getColW(){ try { return JSON.parse(localStorage.getItem(COLW_KEY)) || {}; } catch(e){ return {}; } }
+function setColW(o){ try { localStorage.setItem(COLW_KEY, JSON.stringify(o)); } catch(e){} }
+/* 把已存宽度套到当前已渲染的大表上（须在 innerHTML 写入后调用） */
+function applyColW(){
+  const w = getColW();
+  const tbl = document.querySelector('.bigtbl');
+  if(!tbl) return;
+  for(const k in w){
+    if(!w[k]) continue;
+    tbl.querySelectorAll('.col-'+k).forEach(el=>{ el.style.minWidth = w[k]+'px'; });
+    tbl.querySelectorAll('td.'+k).forEach(el=>{ el.style.minWidth = w[k]+'px'; });
+  }
+}
+/* 双击表头右缘 = 恢复该列默认宽度 */
+function resetColW(k){
+  const w = getColW(); delete w[k]; setColW(w);
+  const tbl = document.querySelector('.bigtbl'); if(!tbl) return;
+  const d = (BIG_COLS[k] && BIG_COLS[k].w) || 120;
+  tbl.querySelectorAll('.col-'+k).forEach(el=>{ el.style.minWidth = d+'px'; });
+  tbl.querySelectorAll('td.'+k).forEach(el=>{ el.style.minWidth = d+'px'; });
+}
+/* 一键恢复全部默认列宽 */
+function resetAllColW(){
+  if(!confirm('恢复全部列为默认宽度？你调过的列宽会被清空。')) return;
+  setColW({});
+  const tbl = document.querySelector('.bigtbl'); if(!tbl) return;
+  for(const k in BIG_COLS){
+    const d = BIG_COLS[k].w || 120;
+    tbl.querySelectorAll('.col-'+k).forEach(el=>{ el.style.minWidth = d+'px'; });
+    tbl.querySelectorAll('td.'+k).forEach(el=>{ el.style.minWidth = d+'px'; });
+  }
+  tbl.style.minWidth = '';
+}
+/* 给表头装拖拽把手 */
+function initColResize(){
+  const tbl = document.querySelector('.bigtbl');
+  if(!tbl || tbl.dataset.resizeOn) return;
+  tbl.dataset.resizeOn = '1';
+  tbl.querySelectorAll('thead tr:last-child th').forEach(th=>{
+    const key = (th.className.match(/col-([\w]+)/)||[])[1];
+    if(!key) return;                       // 分组行/粘性列不参与
+    th.classList.add('col-resizable');
+    th.title = (BIG_COLS[key] && BIG_COLS[key].l || key) + ' · 拖右缘调宽，双击恢复默认';
+  });
+  tbl.addEventListener('mousedown', e=>{
+    const th = e.target.closest('th.col-resizable');
+    if(!th || e.button !== 0) return;
+    const key = (th.className.match(/col-([\w]+)/)||[])[1];
+    if(!key) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = th.getBoundingClientRect().width;
+    const MIN = 48, MAX = 900;
+    const w = getColW();
+    w[key] = Math.round(startW);
+    setColW(w);                            // 拖动过程即持久化，中途刷新也不丢
+    document.body.classList.add('col-resizing');
+    th.classList.add('col-dragging');
+    const move = ev=>{
+      const nw = Math.min(MAX, Math.max(MIN, startW + (ev.clientX - startX)));
+      w[key] = Math.round(nw); setColW(w);
+      tbl.querySelectorAll('.col-'+key).forEach(el=>{ el.style.minWidth = nw+'px'; });
+      tbl.querySelectorAll('td.'+key).forEach(el=>{ el.style.minWidth = nw+'px'; });
+      // 表格整体宽度跟随，避免右侧留白
+      const tw = Array.from(tbl.querySelectorAll('thead tr:last-child th'))
+                 .reduce((a,x)=>a+x.getBoundingClientRect().width,0);
+      tbl.style.minWidth = Math.round(tw)+'px';
+    };
+    const up = ()=>{
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      document.body.classList.remove('col-resizing');
+      th.classList.remove('col-dragging');
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  });
+  tbl.addEventListener('dblclick', e=>{
+    const th = e.target.closest('th.col-resizable');
+    if(!th) return;
+    const key = (th.className.match(/col-([\w]+)/)||[])[1];
+    if(key) resetColW(key);
+  });
+}
 function bigCell(x, k){
   const c = BIG_COLS[k];
   if(c.t==='ro'){
@@ -562,7 +666,10 @@ async function loadOrderCounts(){
     const r = await sb('/rest/v1/rpc/store_order_counts?select=store_id,order_cnt');
     if(r.ok){ const arr = await r.json(); orderCntMap = {}; arr.forEach(o=>{ orderCntMap[o.store_id] = Number(o.order_cnt)||0; }); }
   }catch(e){ /* RPC 未建时静默：大表订单数列显示 0，建好后自动出数 */ }
-  if($('viewStores') && !$('viewStores').classList.contains('hide')) $('stBody').innerHTML = renderStores();
+  if($('viewStores') && !$('viewStores').classList.contains('hide')){
+    $('stBody').innerHTML = renderStores();
+    applyColW(); initColResize();          // 列宽拖拽（须在 innerHTML 写入后）
+  }
 }
 // 状态灯判定（2026-09-21 拍板）：新店徽章=launch_date 起 30 天内自动；
 // 特殊营业琥珀灯已删（2026-09-28 拍板：特殊状态全站统一走「特殊门店填报」store_special_periods，主数据不再存状态标签）
@@ -606,6 +713,7 @@ async function loadKdtMap(){
   /* kdt 映射到位后重算：主数据橙点 + 待办角标（loadStores/loadKdtMap 并发，谁后到谁刷） */
   if(storeRows.length){
     $('stBody').innerHTML = renderStores();
+    applyColW(); initColResize();
     refreshTodo();
   }
   if($('viewYzmap') && !$('viewYzmap').classList.contains('hide')) renderYzMap();
@@ -912,6 +1020,7 @@ function switchView(v){
   if(v==='staff') renderOpsManager();
   if(v==='todo') renderTodoView();
   if(v==='yzmap') renderYzMap();
+  if(v==='stores'){ applyColW(); initColResize(); }   // 切回大表：恢复你调过的列宽
 }
 
 /* ---------------- 门店待办（2026-09-23 拍板：按门店聚合 / 必需清单 / 忽略落库） ----------------
