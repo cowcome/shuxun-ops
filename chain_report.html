@@ -388,7 +388,14 @@ function render(orders, stores, events){
   ev+='<li><b>登记入口</b>：书荀连锁页「特殊门店填报」或 数据导入页「特殊门店填报」——两处同一份数据（store_special_periods），实时同步。填门店 + 起止日期 + 类型，报告自动归因。</li>';
   const wkEvents=allStd.filter(s=>evInWeek(s).length);
   if(wkEvents.length){
-    ev+='<li><b>本期命中 '+wkEvents.length+' 家</b>：'+wkEvents.map(s=>esc(s)+'（'+evInWeek(s).map(e=>esc(e.special_type)).join('、')+'）').join('、')+'。已在预警区·有因停业单列可比日均，不计入涨跌/预警榜。</li>';
+    const fmtEv=e=>{
+      const d=(new Date(e.start_date)-new Date('1970-01-01'))/(864e5), ed=e.end_date||e.start_date;
+      const d2=(new Date(ed)-new Date('1970-01-01'))/(864e5);
+      const days=d2-d+1;
+      const md=d=>d.slice(5).replace('-','/');
+      return esc(e.special_type)+'（'+md(e.start_date)+(e.end_date?' ~ '+md(e.end_date):' 起')+' · '+days+'天）';
+    };
+    ev+='<li><b>本期命中 '+wkEvents.length+' 家</b>：'+wkEvents.map(s=>esc(s)+'：'+evInWeek(s).map(fmtEv).join('、')).join('；')+'。已在预警区·有因停业单列可比日均，不计入涨跌/预警榜。</li>';
   }else{
     ev+='<li><b>本期无命中</b>。复盘周内若有门店培训闭店/装修，记得补填报，下滑榜单会自动挂标签。</li>';
   }
