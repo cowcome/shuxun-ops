@@ -357,7 +357,8 @@ function render(orders, stores, events){
       const prevAmt=(stW[s][iso(PREV)]||[0,0])[0], prevBusy=businessDays(s,iso(PREV),iso(addD(PREV,6)));
       const lmAmt=(stMonth[s]||[0,0])[1], lmBusy=businessDays(s,PMS,PME);
       const curDay=curBusy>0?curAmt/curBusy:0, prevDay=prevBusy>0?prevAmt/prevBusy:0, lmDay=lmBusy>0?lmAmt/lmBusy:0;
-      let line=esc(s)+'：'+evs.map(e=>esc(e.special_type)+'（'+e.start_date+'起'+(e.end_date?(' 至 '+e.end_date):'')+'）').join('、');
+      const uniqEvs=[...new Map(evs.map(e=>[e.special_type+'|'+e.start_date+'|'+(e.end_date||''),e])).values()];
+      let line=esc(s)+'：'+uniqEvs.map(e=>esc(e.special_type)+'（'+e.start_date+'起'+(e.end_date?(' 至 '+e.end_date):'')+'）').join('、');
       if(curBusy===0) line+=' → 整周停业（无可比营业日）';
       else{
         line+=' → 本周营业'+curBusy+'天，日均'+money(curDay);
