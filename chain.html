@@ -1031,7 +1031,10 @@ async function saveSpecial(){
     renderSpList();
     renderStores();
   }catch(e){
-    $('spErr').innerHTML = '<div class="msg err">保存失败：'+esc(e.message)+'</div>';
+    const dup = (e && e.message && /23505|duplicate|unique/i.test(e.message));
+    $('spErr').innerHTML = '<div class="msg err">'+(dup
+      ? '该门店同周期（同类型 + 起止日期）已存在，请勿重复填报。如需修改请先删除原记录再重填。'
+      : ('保存失败：'+esc(e.message)))+'</div>';
   }
   $('spSaveBtn').disabled = false; $('spSaveBtn').textContent = '保 存';
 }
