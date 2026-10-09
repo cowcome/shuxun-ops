@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>书荀连锁 · 业绩查询</title>
+<title>书荀 · 业绩查询</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#f5f5f7;color:#1d1d1f;font-family:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -35,8 +35,9 @@ h2{font-size:18px;font-weight:700;margin-bottom:10px;letter-spacing:-.2px}
 #runBtn{font-size:13px;padding:9px 18px;border-radius:10px;border:none;background:#0a84ff;color:#fff;font-weight:700;cursor:pointer;margin-left:auto}
 #runBtn:active{transform:scale(.97)}
 /* KPI */
-.kgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-@media (max-width:680px){.kgrid{grid-template-columns:1fr}}
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (min-width:680px){.kgrid{grid-template-columns:1fr 1fr 1fr}}
+@media (min-width:1024px){.kgrid{grid-template-columns:repeat(4,1fr)}}
 .kpi{background:#fff;border-radius:16px;padding:14px 16px}
 .kpi-l{font-size:12px;color:#6e6e73}
 .kpi-v{font-size:22px;font-weight:700;margin-top:2px;letter-spacing:-.4px}
@@ -76,8 +77,8 @@ td:first-child{font-weight:600}
 <body>
 <div class="wrap">
   <div class="hero">
-    <h1>书荀连锁 · 业绩查询</h1>
-    <div class="sub">按时间段 / 运营人 / 平台 灵活筛选（业绩 = 核销 + 验券 + 记账核销，不含内购上翻）</div>
+    <h1>书荀 · 业绩查询</h1>
+    <div class="sub">按时间段 / 运营人 / 平台 / 类型 灵活筛选 · 连锁业绩=核销+验券+记账核销；直营=抖音/美团净核销（已扣内购）；均不含内购上翻</div>
   </div>
 
   <section class="filters">
@@ -98,6 +99,7 @@ td:first-child{font-weight:600}
       <div class="fitem"><label>结束日</label><input type="date" id="dEnd"></div>
       <div class="fitem"><label>运营人</label><select id="opSel"><option value="">全部运营人</option></select></div>
       <div class="fitem"><label>平台</label><select id="pfSel"><option value="">全部平台</option><option value="抖音">抖音</option><option value="美团">美团</option></select></div>
+      <div class="fitem"><label>门店类型</label><select id="typeSel"><option value="">全部</option><option value="连锁">连锁</option><option value="直营">直营</option></select></div>
       <div class="fitem"><label>门店范围</label><label class="switch"><input type="checkbox" id="activeOnly"><i></i>仅营业中</label></div>
       <button id="runBtn">查询</button>
     </div>
@@ -160,13 +162,32 @@ async function loadData(start,end){
     const r=await sb('/rest/v1/chain_verify_orders?select=store_id,platform,biz,amount,done_time&done_time=gte.'+start+'&done_time=lte.'+end+'&order=done_time.asc',{headers:{'Range':off+'-'+(off+999)}});
     if(!r.ok) throw new Error('订单拉取失败 HTTP '+r.status);
     const b=await r.json();
+    b.forEach(o=>o.type='连锁');
     ALL_ORDERS=ALL_ORDERS.concat(b);
     if(b.length<1000) break;
     off+=1000;
   }
+  // 佛山直营：daily_reports（按门店名+日期每日填报，金额已扣内购）
+  let doff=0, daily=[];
+  while(true){
+    const r=await sb('/rest/v1/daily_reports?select=store_name,form_date,meituan_verify_amount,douyin_verify_amount,meituan_visitors,douyin_visitors&form_date=gte.'+start+'&form_date=lte.'+end+'&order=form_date.asc',{headers:{'Range':doff+'-'+(doff+999)}});
+    if(!r.ok) throw new Error('直营日报拉取失败 HTTP '+r.status);
+    const b=await r.json();
+    daily=daily.concat(b);
+    if(b.length<1000) break;
+    doff+=1000;
+  }
   const rs=await sb('/rest/v1/stores?select=id,std_name,status,store_type,operator,city&order=id.asc');
   if(!rs.ok) throw new Error('门店表拉取失败 HTTP '+rs.status);
   ALL_STORES=await rs.json();
+  const nameMap={}; ALL_STORES.forEach(s=>{ nameMap[(s.std_name||'').trim()]=s; });
+  daily.forEach(r=>{
+    const st=nameMap[(r.store_name||'').trim()];
+    const sid=st?st.id:null;
+    const mt=Number(r.meituan_verify_amount)||0, dy=Number(r.douyin_verify_amount)||0;
+    if(mt>0) ALL_ORDERS.push({store_id:sid,platform:'美团',biz:'核销',amount:mt,done_time:r.form_date+'T00:00:00',type:'直营',visitors:Number(r.meituan_visitors)||0,_name:r.store_name});
+    if(dy>0) ALL_ORDERS.push({store_id:sid,platform:'抖音',biz:'核销',amount:dy,done_time:r.form_date+'T00:00:00',type:'直营',visitors:Number(r.douyin_visitors)||0,_name:r.store_name});
+  });
   OP_MAP={}; STATUS_MAP={};
   ALL_STORES.forEach(s=>{ OP_MAP[s.id]=(s.operator||'').trim(); STATUS_MAP[s.id]=(s.status||'').trim(); });
   const ops=[...new Set(ALL_STORES.map(s=>(s.operator||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh'));
@@ -176,37 +197,47 @@ async function loadData(start,end){
 
 const INACT=new Set(['待上线','闭店']);
 function applyFilter(){
-  const op=$('opSel').value, pf=$('pfSel').value, activeOnly=$('activeOnly').checked;
-  const byStore={}, byOp={}, byPf={抖音:{amt:0,cnt:0},美团:{amt:0,cnt:0}};
-  let totalAmt=0, totalCnt=0; const daySet=new Set();
+  const op=$('opSel').value, pf=$('pfSel').value, activeOnly=$('activeOnly').checked, tp=$('typeSel').value;
+  const byStore={}, byOp={}, byPf={抖音:{amt:0},美团:{amt:0}};
+  let totalAmt=0, totalCnt=0, totalVis=0, chainAmt=0, directAmt=0; const daySet=new Set();
   for(const o of ALL_ORDERS){
+    if(tp && o.type!==tp) continue;
     const opn=OP_MAP[o.store_id]||'';
     if(op && opn!==op) continue;
     if(pf && o.platform!==pf) continue;
     if(activeOnly && INACT.has(STATUS_MAP[o.store_id]||'')) continue;
     const amt=Number(o.amount)||0;
-    totalAmt+=amt; totalCnt++;
+    totalAmt+=amt;
+    if(o.type==='连锁'){ totalCnt++; chainAmt+=amt; }
+    else { totalVis+=(o.visitors||0); directAmt+=amt; }
     daySet.add(o.done_time.slice(0,10));
-    if(!byStore[o.store_id]) byStore[o.store_id]={amt:0,cnt:0};
-    byStore[o.store_id].amt+=amt; byStore[o.store_id].cnt++;
-    if(!byOp[opn]) byOp[opn]={amt:0,cnt:0,n:0};
-    byOp[opn].amt+=amt; byOp[opn].cnt++;
-    if(byPf[o.platform]){ byPf[o.platform].amt+=amt; byPf[o.platform].cnt++; }
+    if(!byStore[o.store_id]) byStore[o.store_id]={amt:0,cnt:0,vis:0,type:o.type,name:o._name||''};
+    byStore[o.store_id].amt+=amt;
+    if(o.type==='连锁') byStore[o.store_id].cnt++; else byStore[o.store_id].vis+=(o.visitors||0);
+    if(!byOp[opn]) byOp[opn]={amt:0,n:0};
+    byOp[opn].amt+=amt;
+    if(byPf[o.platform]){ byPf[o.platform].amt+=amt; }
   }
-  const storeSet=new Set(Object.keys(byStore));
+  const storeSet=new Set(Object.keys(byStore).filter(k=>k && k!=='null'));
   for(const s of ALL_STORES){ if(storeSet.has(String(s.id)) && OP_MAP[s.id]) byOp[OP_MAP[s.id]].n++; }
   const bDays=daySet.size||1;
-  return {op,pf,activeOnly,totalAmt,totalCnt,byStore,byOp,byPf,bDays};
+  const chainStores=Object.keys(byStore).filter(k=>k&&k!=='null'&&byStore[k].type==='连锁').length;
+  const directStores=Object.keys(byStore).filter(k=>byStore[k].type==='直营').length;
+  return {op,pf,activeOnly,tp,totalAmt,totalCnt,totalVis,chainAmt,directAmt,byStore,byOp,byPf,bDays,chainStores,directStores};
 }
 
 function render(d){
   const out=$('out');
   let H='';
+  const chainKPI = d.totalCnt? d.chainAmt/d.totalCnt : 0;
+  const directKPI = d.totalVis? d.directAmt/d.totalVis : 0;
+  const cN=d.chainStores, dN=d.directStores;
   /* KPI */
   H+='<section><div class="kgrid">'
     +'<div class="kpi"><div class="kpi-l">核销金额</div><div class="kpi-v">'+money(d.totalAmt)+'</div><div class="kpi-s">营业 '+d.bDays+' 天 · 日均 '+money(d.totalAmt/d.bDays)+'</div></div>'
-    +'<div class="kpi"><div class="kpi-l">核销单数</div><div class="kpi-v">'+d.totalCnt+' 单</div><div class="kpi-s">客单 '+money(d.totalCnt?d.totalAmt/d.totalCnt:0)+'</div></div>'
-    +'<div class="kpi"><div class="kpi-l">覆盖门店</div><div class="kpi-v">'+Object.keys(d.byStore).length+' 家</div><div class="kpi-s">'+ (d.op||'全部运营人')+(d.pf?(' · '+d.pf):'')+(d.activeOnly?' · 仅营业中':'')+'</div></div>'
+    +'<div class="kpi"><div class="kpi-l">连锁核销单数</div><div class="kpi-v">'+d.totalCnt+' 单</div><div class="kpi-s">连锁客单 '+money(chainKPI)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-l">直营到店客数</div><div class="kpi-v">'+d.totalVis+' 人</div><div class="kpi-s">直营客单 '+money(directKPI)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-l">覆盖门店</div><div class="kpi-v">'+(cN+dN)+' 家</div><div class="kpi-s">连锁 '+cN+' · 直营 '+dN+(d.op?' · '+d.op:'')+(d.pf?' · '+d.pf:'')+(d.activeOnly?' · 仅营业中':'')+(d.tp&&d.tp!=='全部'?' · '+d.tp:'')+'</div></div>'
     +'</div></section>';
 
   /* 平台结构 */
@@ -225,7 +256,7 @@ function render(d){
     if(ops.length){
       ops.forEach(k=>{
         const v=d.byOp[k];
-        H+='<div class="oprow"><div class="nm" title="'+esc(k)+'">'+esc(k)+'</div><div class="opbar"><i style="width:'+(v.amt/maxA*100).toFixed(1)+'%"></i></div><div class="val">'+money(v.amt)+'</div><div class="sub">'+v.n+'店 · '+v.cnt+'单 · 客单'+money(v.amt/v.cnt)+'</div></div>';
+        H+='<div class="oprow"><div class="nm" title="'+esc(k)+'">'+esc(k)+'</div><div class="opbar"><i style="width:'+(v.amt/maxA*100).toFixed(1)+'%"></i></div><div class="val">'+money(v.amt)+'</div><div class="sub">'+v.n+' 家店</div></div>';
       });
     }else{
       H+='<div class="empty">该区间暂无业绩数据</div>';
@@ -234,12 +265,19 @@ function render(d){
   }
 
   /* 门店排名 */
-  const stores=Object.keys(d.byStore).map(id=>({id,std:(ALL_STORES.find(s=>String(s.id)===String(id))||{}).std_name||('门店'+id),op:OP_MAP[id]||'',amt:d.byStore[id].amt,cnt:d.byStore[id].cnt})).sort((a,b)=>b.amt-a.amt);
+  const stores=Object.keys(d.byStore).map(id=>{
+    const rec=d.byStore[id];
+    const st = (id && id!=='null') ? (ALL_STORES.find(s=>String(s.id)===String(id))||{}) : {};
+    return {id, std:(st.std_name||rec.name||('门店'+id)), op:OP_MAP[id]||'', type:rec.type, amt:rec.amt, cnt:rec.cnt, vis:rec.vis};
+  }).sort((a,b)=>b.amt-a.amt);
   H+='<section><h2>门店业绩排名<span class="badge">'+stores.length+' 家</span></h2>';
   if(stores.length){
-    H+='<table><thead><tr><th>门店</th><th>运营人</th><th>核销金额</th><th>单数</th><th>客单</th><th>日均</th></tr></thead><tbody>';
+    H+='<table><thead><tr><th>门店</th><th>类型</th><th>运营人</th><th>核销金额</th><th>单数/客数</th><th>客单</th><th>日均</th></tr></thead><tbody>';
     stores.forEach(s=>{
-      H+='<tr><td>'+esc(s.std)+'</td><td>'+esc(s.op)+'</td><td>'+money(s.amt)+'</td><td>'+s.cnt+'</td><td>'+money(s.amt/s.cnt)+'</td><td>'+money(s.amt/d.bDays)+'</td></tr>';
+      const isChain=s.type==='连锁';
+      const unit=isChain?s.cnt+' 单':s.vis+' 人';
+      const kpiAmt=isChain?(s.cnt? s.amt/s.cnt:0):(s.vis? s.amt/s.vis:0);
+      H+='<tr><td>'+esc(s.std)+'</td><td>'+(isChain?'连锁':'直营')+'</td><td>'+esc(s.op)+'</td><td>'+money(s.amt)+'</td><td>'+unit+'</td><td>'+money(kpiAmt)+'</td><td>'+money(s.amt/d.bDays)+'</td></tr>';
     });
     H+='</tbody></table>';
   }else{
@@ -247,7 +285,7 @@ function render(d){
   }
   H+='</section>';
 
-  H+='<div class="note">数据来源：chain_verify_orders（每周账单导入）· 业绩 = 核销 + 验券 + 记账核销，不含抖音线上买单（内购上翻）。查询时间：'+iso(new Date())+'</div>';
+  H+='<div class="note">数据来源：连锁 chain_verify_orders（每周账单导入）+ 佛山直营 daily_reports（每日填报，金额已扣内购）· 连锁业绩=核销+验券+记账核销；直营=抖音/美团净核销；均不含内购上翻。查询时间：'+iso(new Date())+'</div>';
   out.innerHTML=H;
 }
 
@@ -278,6 +316,7 @@ function setRange(q){
   $('runBtn').addEventListener('click',()=>run(true));
   $('opSel').addEventListener('change',()=>run(false));
   $('pfSel').addEventListener('change',()=>run(false));
+  $('typeSel').addEventListener('change',()=>run(false));
   $('activeOnly').addEventListener('change',()=>run(false));
   try{
     await loadData($('dStart').value,$('dEnd').value);
