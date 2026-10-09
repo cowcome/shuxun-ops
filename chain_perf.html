@@ -40,13 +40,17 @@ h2{font-size:18px;font-weight:700;margin-bottom:10px;letter-spacing:-.2px}
 .kpi-l{font-size:12px;color:#6e6e73}
 .kpi-v{font-size:22px;font-weight:700;margin-top:2px;letter-spacing:-.4px}
 .kpi-s{font-size:12px;margin-top:3px;color:#6e6e73}
-/* 平台结构 */
-.pfcard{background:#fff;border-radius:16px;padding:16px 18px}
-.pfrow{display:flex;align-items:center;gap:12px;margin:8px 0}
-.pfrow .nm{width:48px;font-size:13px;font-weight:600}
-.pfbar{flex:1;height:14px;border-radius:8px;background:#eef0f4;overflow:hidden}
-.pfbar > i{display:block;height:100%;border-radius:8px}
-.pfrow .val{flex:0 0 auto;text-align:right;font-size:13px;font-weight:600}
+/* 平台结构：分段占比药丸 */
+.pfcard{background:#fff;border-radius:16px;padding:18px 20px}
+.pfpill{display:flex;height:24px;border-radius:999px;overflow:hidden;background:#eef0f4}
+.pfpill > i{display:block;height:100%}
+.pfpill .dy{background:#7c5cff}
+.pfpill .mt{background:#f97316}
+.pflegend{display:flex;gap:22px;margin-top:14px;flex-wrap:wrap}
+.pflegend .lg{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.pflegend .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.pflegend .amt{color:#1d1d1f}
+.pflegend .pct{color:#6e6e73;font-weight:700}
 /* 运营人条形 */
 .opcard{background:#fff;border-radius:16px;padding:16px 18px}
 .oprow{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:13px}
@@ -260,9 +264,12 @@ function render(d){
   H+='<section><div class="two">';
   const dyA=d.byPf['抖音'].amt, mtA=d.byPf['美团'].amt, pfTot=dyA+mtA||1;
   H+='<div><h2>平台结构<span class="badge">抖音 / 美团</span></h2><div class="pfcard">';
-  [['抖音',dyA,'#7c5cff'],['美团',mtA,'#f97316']].forEach(([nm,a,col])=>{
-    H+='<div class="pfrow"><div class="nm" style="color:'+col+'">'+nm+'</div><div class="pfbar"><i style="width:'+(a/pfTot*100).toFixed(1)+'%;background:'+col+'"></i></div><div class="val">'+money(a)+' · '+Math.round(a/pfTot*100)+'%</div></div>';
-  });
+  const dyPct=dyA/pfTot*100, mtPct=mtA/pfTot*100;
+  H+='<div class="pfpill"><i class="dy" style="width:'+dyPct.toFixed(1)+'%"></i><i class="mt" style="width:'+mtPct.toFixed(1)+'%"></i></div>';
+  H+='<div class="pflegend">'
+    +'<span class="lg"><i class="dot" style="background:#7c5cff"></i><span>抖音</span><span class="amt">'+money(dyA)+'</span><span class="pct">'+Math.round(dyPct)+'%</span></span>'
+    +'<span class="lg"><i class="dot" style="background:#f97316"></i><span>美团</span><span class="amt">'+money(mtA)+'</span><span class="pct">'+Math.round(mtPct)+'%</span></span>'
+    +'</div>';
   H+='</div></div>';
 
   /* 运营人对比（仅全部时显示） */
