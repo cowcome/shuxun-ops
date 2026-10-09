@@ -7,15 +7,15 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#f5f5f7;color:#1d1d1f;font-family:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
-.wrap{padding:0 28px 56px}
-.hero{padding:20px 0 8px}
+.wrap{padding:0 40px 64px}
+.hero{padding:24px 0 10px}
 .hero h1{font-size:24px;font-weight:700;letter-spacing:-.3px}
 .hero .sub{color:#6e6e73;font-size:13px;margin-top:6px}
 section{margin-top:22px}
 h2{font-size:18px;font-weight:700;margin-bottom:10px;letter-spacing:-.2px}
 .badge{font-size:11px;font-weight:600;color:#0a84ff;background:rgba(10,132,255,.1);border-radius:20px;padding:3px 10px;margin-left:8px;vertical-align:2px}
 /* 筛选区：吸顶单行 */
-.filters{position:sticky;top:0;z-index:20;background:rgba(245,245,247,.92);backdrop-filter:blur(12px);border-bottom:1px solid #e5e5ea;padding:12px 28px;margin:14px -28px 0}
+.filters{position:sticky;top:0;z-index:20;background:rgba(245,245,247,.92);backdrop-filter:blur(12px);border-bottom:1px solid #e5e5ea;padding:12px 40px;margin:14px -40px 0}
 .filters .frow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;row-gap:10px}
 .fitem{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .fitem label{font-size:11px;color:#6e6e73;font-weight:600;white-space:nowrap}
@@ -293,11 +293,11 @@ function render(d){
   }).sort((a,b)=>b.amt-a.amt);
   const spStores=stores.filter(s=>s.sp&&s.sp.length);
   if(spStores.length){
-    H+='<div class="banner">⚠ 本区间有 '+spStores.length+' 家门店存在特殊营业（停业 / 培训 / 新店未满月等），其「日均」按各自实际营业天数计算，已在门店表标注。</div>';
+    H+='<div class="banner">⚠ 本区间有 '+spStores.length+' 家门店存在特殊营业（停业 / 培训 / 新店未满月等），其「日均」按各自营业天计算，已在门店表标注。</div>';
   }
   H+='<section><h2>门店业绩排名<span class="badge">'+stores.length+' 家</span></h2>';
   if(stores.length){
-    H+='<table><thead><tr><th>门店</th><th>类型</th><th>运营人</th><th>核销金额</th><th>单数/客数</th><th>客单</th><th>实际营业天数</th><th>日均（按实际天数）</th><th>特殊营业</th></tr></thead><tbody>';
+    H+='<table><thead><tr><th>门店</th><th>类型</th><th>运营人</th><th>核销金额</th><th>单数/客数</th><th>客单</th><th>营业天</th><th>日均</th><th>特殊营业</th></tr></thead><tbody>';
     stores.forEach(s=>{
       const isChain=s.type==='连锁';
       const unit=isChain?s.cnt+' 单':s.vis+' 人';
