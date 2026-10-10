@@ -162,8 +162,6 @@
         自动按支付方式分拣——只取 抖音核销 / 抖音记账核销 / 美团点评验券 / 美团记账核销 四类业绩，
         收银、充值、售卡、储值消费等非业绩行自动排除并显示排除数。
         「有效单数」列会显示这份文件的<b>数据日期范围</b>，导入前先核对是不是你要的那几天。<br>
-        <b>兼容旧方式</b>：抖音来客 / 美团开店宝分渠道导出也可以（文件名开头：1抖音核销 / 2抖音记账核销 /
-        4美团点评验券 / 5美团记账核销；3抖音线上买单是内购上翻，不用导入）。<br>
         <b>重复导入安全</b>：按订单号自动去重，只补新单，不会重复计数。
       </div>
     </div>
@@ -271,15 +269,10 @@ $('lgPwd').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); }
 })();
 
 /* ---------------- 文件分类 ---------------- */
+/* 🔴 10-10 精简：只保留一种导入方式（有赞账单全渠道自动分拣）。
+   旧的分渠道导出（1抖音核销/2抖音记账核销/4美团验券/5美团记账）与简化4列账单制式退役 */
 const BIZ_LIST = [
-  { key:'yz_all',  label:'有赞连锁总部账单（全渠道自动分拣）', platform:'yz_all', biz:'' },
-  { key:'xz_sum',  label:'有赞简化账单（日期/支付方式/所属门店/账单金额）', platform:'yz_all', biz:'' },
-  { key:'dy_hx',   label:'抖音核销',      platform:'抖音', biz:'核销' },
-  { key:'dy_jz',   label:'抖音记账核销',  platform:'抖音', biz:'记账核销' },
-  { key:'dy_md',   label:'抖音线上买单（不导入）', platform:'', biz:'' },
-  { key:'mt_yq',   label:'美团点评验券',  platform:'美团', biz:'验券' },
-  { key:'mt_jz',   label:'美团记账核销',  platform:'美团', biz:'记账核销' },
-  { key:'none',    label:'— 请选择 / 不导入 —', platform:'', biz:'' },
+  { key:'yz_all',  label:'有赞账单（全渠道自动分拣）', platform:'yz_all', biz:'' },
 ];
 /* 有赞单文件：支付方式 → (平台, 业务) 映射，不在表内 = 非业绩行（收银/充值/售卡/兑付） */
 const YZ_PAY_MAP = {
@@ -300,14 +293,9 @@ function dateSpan(list){
   return ds.length ? [ds[0], ds[ds.length-1]] : ['',''];
 }
 function detectBiz(fileName){
-  const n = fileName.replace(/\.(xlsx?|XLSX?)$/,'');
-  if(isYzAllFile(fileName)) return 'yz_all';
-  if(n.indexOf('1抖音核销') === 0)     return 'dy_hx';
-  if(n.indexOf('2抖音记账核销') === 0) return 'dy_jz';
-  if(n.indexOf('3抖音线上买单') === 0) return 'dy_md';
-  if(n.indexOf('4美团点评验券') === 0) return 'mt_yq';
-  if(n.indexOf('5美团记账核销') === 0) return 'mt_jz';
-  return 'none';
+  /* 10-10 精简：一律按全渠道自动分拣处理（支付方式不在 YZ_PAY_MAP 的行自动排除，
+     误传的线上买单/收银/充值等也不会进库），不再按文件名区分制式 */
+  return 'yz_all';
 }
 
 /* ---------------- 解析工具 ---------------- */
@@ -496,8 +484,7 @@ function renderFiles(){
     if(j.error){
       bizCell = '<span class="badge b-err">'+esc(j.error)+'</span>';
     }else{
-      const opts = BIZ_LIST.map(b=>'<option value="'+b.key+'"'+(b.key===j.bizKey?' selected':'')+'>'+b.label+'</option>').join('');
-      bizCell = '<select data-idx="'+idx+'" class="bizSel">'+opts+'</select>';
+      bizCell = '<span class="badge b-ok">有赞账单 · 全渠道自动分拣</span>';
     }
     let sumCell='—', chkCell='—', stCell;
     if(j.parsed){
@@ -509,7 +496,7 @@ function renderFiles(){
         chkCell = off <= 1 ? '<span class="badge b-ok">通过</span>'
                            : '<span class="badge b-err">差 ¥'+Math.abs(p.mismatch).toFixed(2)+'</span>';
       }
-      const biz = BIZ_LIST.find(b=>b.key===j.bizKey) || BIZ_LIST[5];
+      const biz = BIZ_LIST[0];   // 10-10 精简：只有全渠道一种
       const canImport = biz.platform && (p.mismatch === null || Math.abs(p.mismatch) <= 1 || j.force);
       if(canImport) importable++;
       stCell = !biz.platform ? '<span class="badge b-skip">不导入</span>'
@@ -536,14 +523,10 @@ function renderFiles(){
     tb.appendChild(tr);
   });
   $('fileCard').classList.toggle('hide', !fileJobs.length);
-  const bizSel = document.querySelectorAll('.bizSel');
-  bizSel.forEach(s => s.addEventListener('change', function(){
-    fileJobs[Number(this.dataset.idx)].bizKey = this.value; renderFiles();
-  }));
   document.querySelectorAll('.forceChk').forEach(c => c.addEventListener('change', function(){
     fileJobs[Number(this.dataset.idx)].force = this.checked; renderFiles();
   }));
-  const biz = (key) => BIZ_LIST.find(b=>b.key===key) || BIZ_LIST[5];
+  const biz = (key) => BIZ_LIST[0];
   const okJobs = fileJobs.filter(j => j.parsed && biz(j.bizKey).platform && (j.parsed.mismatch === null || Math.abs(j.parsed.mismatch) <= 1 || j.force));
   const total = okJobs.reduce((a,j)=>a+j.parsed.rows.length,0);
   $('importBtn').disabled = !okJobs.length;
@@ -675,7 +658,7 @@ async function postBatch(batch, biz){
 
 $('importBtn').addEventListener('click', async () => {
   if(importing) return;
-  const biz = (key) => BIZ_LIST.find(b=>b.key===key) || BIZ_LIST[5];
+  const biz = (key) => BIZ_LIST[0];
   const jobs = fileJobs.filter(j => j.parsed && biz(j.bizKey).platform
     && (j.parsed.mismatch === null || Math.abs(j.parsed.mismatch) <= 1 || j.force));
   if(!jobs.length) return;
