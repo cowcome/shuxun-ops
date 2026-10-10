@@ -148,6 +148,11 @@ async function sb(path,opts){
 }
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function addD(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+/* 🔴 结束日必须「小于 次日」而不是「小于等于 结束日」：
+   库里 done_time 是 text 且带时分秒（如 2026-10-09 23:30:00），
+   用 lte.'2026-10-09' 走的是文本比较 → '2026-10-09 23:30:00' > '2026-10-09'
+   → 结束日当天整批被排除（10-10 修复：当天导入的数据查不到） */
+function endNextDay(end){ return iso(addD(new Date(end+'T00:00:00'),1)); }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function money(x){
   if(x==null||isNaN(x)) return '¥0';
@@ -159,9 +164,10 @@ const $=(id)=>document.getElementById(id);
 let ALL_ORDERS=[], ALL_STORES=[], OP_MAP={}, SPECIAL=[], pctCell=(a,b)=> b?Math.round(a/b*100):0;
 
 async function loadData(start,end){
+  const endX=endNextDay(end);   // 结束日+1 天，用 lt 比较（见 endNextDay 注释）
   ALL_ORDERS=[]; let off=0;
   while(true){
-    const r=await sb('/rest/v1/chain_verify_orders?select=store_id,platform,biz,amount,done_time&done_time=gte.'+start+'&done_time=lte.'+end+'&order=done_time.asc',{headers:{'Range':off+'-'+(off+999)}});
+    const r=await sb('/rest/v1/chain_verify_orders?select=store_id,platform,biz,amount,done_time&done_time=gte.'+start+'&done_time=lt.'+endX+'&order=done_time.asc',{headers:{'Range':off+'-'+(off+999)}});
     if(!r.ok) throw new Error('订单拉取失败 HTTP '+r.status);
     const b=await r.json();
     b.forEach(o=>o.type='连锁');
@@ -172,7 +178,7 @@ async function loadData(start,end){
   // 佛山直营：daily_reports（按门店名+日期每日填报，金额已扣内购）
   let doff=0, daily=[];
   while(true){
-    const r=await sb('/rest/v1/daily_reports?select=store_name,form_date,meituan_verify_amount,douyin_verify_amount,meituan_visitors,douyin_visitors&form_date=gte.'+start+'&form_date=lte.'+end+'&order=form_date.asc',{headers:{'Range':doff+'-'+(doff+999)}});
+    const r=await sb('/rest/v1/daily_reports?select=store_name,form_date,meituan_verify_amount,douyin_verify_amount,meituan_visitors,douyin_visitors&form_date=gte.'+start+'&form_date=lt.'+endX+'&order=form_date.asc',{headers:{'Range':doff+'-'+(doff+999)}});
     if(!r.ok) throw new Error('直营日报拉取失败 HTTP '+r.status);
     const b=await r.json();
     daily=daily.concat(b);
