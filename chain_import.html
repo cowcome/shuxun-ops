@@ -389,7 +389,9 @@ function parseWorkbook(buf, fileName){
       store = '';
       for(const c of cs){ const s=String(c==null?'':c).trim(); if(s.indexOf('書荀')>=0 || s.indexOf('书荀')>=0){ store=s; break; } }
     }
-    if(!orderNo || !store || isNaN(amt) || amt <= 0){ badRows++; continue; }
+    if(!orderNo || !store || isNaN(amt) || amt === 0){ badRows++; continue; }
+    /* ⚠️ 负数金额（amt<0）必须保留：记账核销的退款冲销单是有赞账单里的负数行，
+       9月定案「美团已消费退负数→纳入」；此前 amt<=0 一刀切把负数全丢了（10-10 修复） */
     // 状态
     const st = ci['状态']>=0 ? String(cs[ci['状态']]==null?'':cs[ci['状态']]).trim() : '';
     if(st && st !== '已完成'){ skipStatus++; continue; }
@@ -424,7 +426,14 @@ function pay_type_sanitize(s){ return s; }
 /* ---------------- 简化日汇总制式（日期/支付方式/所属门店/账单金额，无订单号） ----------------
    每行 = 某店某平台某日的聚合；用「日期+门店+平台」哈希生成确定性合成单号 → 天然幂等，
    同一份文件重复导、或重新导出同一天的数据，都按 on_conflict=order_no 自动跳过不会重复计数 */
-const XZ_PAY_MAP = { '抖音': ['抖音','核销'], '美团': ['美团','验券'] };
+const XZ_PAY_MAP = {
+  '抖音':       ['抖音', '核销'],
+  '美团':       ['美团', '验券'],
+  /* 🔴 10-10 补：合并表里若出现「记账核销」字样此前整类被 skipPay 丢弃
+     （崔姐发现抖音记账核销只有 3 单入库），补上映射；没有该字样也无害 */
+  '抖音记账核销': ['抖音', '记账核销'],
+  '美团记账核销': ['美团', '记账核销'],
+};
 function xzOrderNo(d, store, pay){
   let h = 5381; const s = d + '|' + store + '|' + pay;
   for(let i=0;i<s.length;i++){ h = ((h<<5) + h + s.charCodeAt(i)) >>> 0; }
@@ -447,7 +456,8 @@ function parseXzSum(aoa, hi, fileName){
     let d = fmtDate(cs[cD]).slice(0,10);
     const mm = d.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
     if(mm) d = mm[1]+'-'+pad2(+mm[2])+'-'+pad2(+mm[3]);
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(d) || !store || isNaN(amt) || amt <= 0){ badRows++; continue; }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d) || !store || isNaN(amt) || amt === 0){ badRows++; continue; }
+    /* ⚠️ 同上：负数（净退款日）也要入库，不能一刀切丢弃 */
     rows.push({
       order_no: xzOrderNo(d, store, payType), store_name: store, form_date: d,
       order_time:'', done_time:'', product_name:'', member_no:'',
