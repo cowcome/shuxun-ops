@@ -617,7 +617,9 @@ async function postBatch(batch, biz){
     biz:      m ? m[1] : biz.biz,
     store_id: r._sid || null,
     store_name: r.store_name, form_date: r.form_date,
-    order_time: r.order_time, done_time: r.done_time,
+    /* 合并表（xz_sum）没有「完成时间」列，只有账单日期 → done_time 兜底取 form_date，
+       否则业绩查询页 / 周报页按 done_time 过滤会整批查不到（10-10 修复） */
+    order_time: r.order_time, done_time: r.done_time || r.form_date || '',
     product_name: r.product_name, member_no: r.member_no, pay_type: r.pay_type,
     amount: r.amount, status: '已完成', src_file: r.src_file
   };});
