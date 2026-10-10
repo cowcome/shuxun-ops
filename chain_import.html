@@ -146,7 +146,7 @@
   <!-- 主界面 -->
   <div id="appView" class="hide">
     <h1>数据导入 <span style="font-size:13px;font-weight:500;color:#8a8f9e">· 连锁核销订单</span></h1>
-    <div class="sub">推荐：有赞后台导一份「连锁总部-交易账单明细」即可，全渠道自动分拣 · 自动去重；门店业绩归属按「下单门店」列判定（兼容旧版「所属门店」）。简化 4 列账单（日期 / 支付方式 / 所属门店 / 账单金额）同样支持</div>
+    <div class="sub">有赞后台导出的账单文件<b>原样上传即可，不用改名</b>（支持「有赞过滤_2026-10-09」单日 / 「有赞过滤_2026-10-01至2026-10-09」区间 / 「连锁总部-交易账单明细…」三种命名），全渠道自动分拣 · 自动去重；门店业绩归属按「下单门店」列判定（兼容旧版「所属门店」）。简化 4 列账单（日期 / 支付方式 / 所属门店 / 账单金额）同样支持</div>
 
     <div id="globalMsg"></div>
 
@@ -158,9 +158,10 @@
         <input type="file" id="fileInput" accept=".xls,.xlsx" multiple />
       </div>
       <div class="hint" style="margin-top:10px">
-        <b>推荐（一步到位）</b>：有赞后台导出 <b>连锁总部-交易账单明细</b>，上传后自动按支付方式分拣——
-        只取 抖音核销 / 抖音记账核销 / 美团点评验券 / 美团记账核销 四类业绩，
-        收银、充值、售卡、储值消费等非业绩行自动排除并显示排除数。<br>
+        <b>推荐（一步到位）</b>：有赞后台导出的账单文件直接上传（文件名含「有赞过滤」或「连锁总部-交易账单明细」都认），
+        自动按支付方式分拣——只取 抖音核销 / 抖音记账核销 / 美团点评验券 / 美团记账核销 四类业绩，
+        收银、充值、售卡、储值消费等非业绩行自动排除并显示排除数。
+        「有效单数」列会显示这份文件的<b>数据日期范围</b>，导入前先核对是不是你要的那几天。<br>
         <b>兼容旧方式</b>：抖音来客 / 美团开店宝分渠道导出也可以（文件名开头：1抖音核销 / 2抖音记账核销 /
         4美团点评验券 / 5美团记账核销；3抖音线上买单是内购上翻，不用导入）。<br>
         <b>重复导入安全</b>：按订单号自动去重，只补新单，不会重复计数。
@@ -287,9 +288,20 @@ const YZ_PAY_MAP = {
   '美团点评验券': ['美团', '验券'],
   '美团记账核销': ['美团', '记账核销'],
 };
+/* 🔴 10-10 改：全渠道单文件不再只认「连锁总部-交易账单明细」前缀。
+   崔姐日常从有赞导出的文件名是「有赞过滤_2026-10-09」/「有赞过滤_2026-10-01至2026-10-09」，
+   以后原样上传即可，不用每天改名。两种命名都走全渠道自动分拣 */
+function isYzAllFile(fileName){
+  const n = String(fileName||'').replace(/\.(xlsx?|XLSX?)$/i,'').trim();
+  return n.indexOf('连锁总部-交易账单明细') === 0 || n.indexOf('有赞过滤') >= 0;
+}
+function dateSpan(list){
+  const ds = list.map(r=>r.form_date).filter(Boolean).sort();
+  return ds.length ? [ds[0], ds[ds.length-1]] : ['',''];
+}
 function detectBiz(fileName){
   const n = fileName.replace(/\.(xlsx?|XLSX?)$/,'');
-  if(n.indexOf('连锁总部-交易账单明细') === 0) return 'yz_all';
+  if(isYzAllFile(fileName)) return 'yz_all';
   if(n.indexOf('1抖音核销') === 0)     return 'dy_hx';
   if(n.indexOf('2抖音记账核销') === 0) return 'dy_jz';
   if(n.indexOf('3抖音线上买单') === 0) return 'dy_md';
@@ -318,7 +330,7 @@ const IS_NAN_STR = (v) => v==='' || String(v).trim()==='NaN';
 
 /* ---------------- SheetJS 解析单文件 ---------------- */
 function parseWorkbook(buf, fileName){
-  const yzAll = fileName.replace(/\.(xlsx?|XLSX?)$/,'').indexOf('连锁总部-交易账单明细') === 0;
+  const yzAll = isYzAllFile(fileName);   // 认「连锁总部-交易账单明细…」和「有赞过滤_日期…」两种命名
   const wb = XLSX.read(new Uint8Array(buf), { type:'array', cellDates:true });
   const ws = wb.Sheets[wb.SheetNames[0]];
   const aoa = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
@@ -419,7 +431,8 @@ function parseWorkbook(buf, fileName){
   const sum = list.reduce((a,r)=>a+r.amount,0);
   // 有赞单文件的合计行是全渠道总额，与业绩行不可比 → 不做对账
   const mismatch = (yzAll || totalAmt == null || !list.length) ? null : (sum - totalAmt);
-  return { rows:list, totalAmt, badRows, skipStatus, skipPay: skipPay||0, sum, mismatch, yzAll, mode: yzAll ? 'yz_all' : 'classic' };
+  const ds = dateSpan(list);
+  return { rows:list, totalAmt, badRows, skipStatus, skipPay: skipPay||0, sum, mismatch, yzAll, mode: yzAll ? 'yz_all' : 'classic', dateMin:ds[0], dateMax:ds[1] };
 }
 function pay_type_sanitize(s){ return s; }
 
@@ -468,7 +481,8 @@ function parseXzSum(aoa, hi, fileName){
   const uniq = {}; rows.forEach(r=>{ uniq[r.order_no] = r; });
   const list = Object.values(uniq);
   const sum = list.reduce((a,r)=>a+r.amount,0);
-  return { rows:list, totalAmt, badRows, skipStatus:0, skipPay, sum, mismatch:null, yzAll:false, mode:'xz_sum' };
+  const ds2 = dateSpan(list);
+  return { rows:list, totalAmt, badRows, skipStatus:0, skipPay, sum, mismatch:null, yzAll:false, mode:'xz_sum', dateMin:ds2[0], dateMax:ds2[1] };
 }
 
 /* ---------------- 文件列表状态 ---------------- */
@@ -510,7 +524,12 @@ function renderFiles(){
     }
     tr.innerHTML = '<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis" title="'+esc(j.name)+'">'+esc(j.name)+'</td>'
       + '<td>'+bizCell+'</td>'
-      + '<td>'+(j.parsed ? j.parsed.rows.length : '—')+'</td>'
+      + '<td>'+(j.parsed
+          ? (j.parsed.rows.length
+              + (j.parsed.dateMin
+                  ? ' <span style="color:#8a8f9e;font-size:12px;white-space:nowrap">'+esc(j.parsed.dateMin)+(j.parsed.dateMax!==j.parsed.dateMin?('~'+esc(j.parsed.dateMax)):'')+'</span>'
+                  : ''))
+          : '—')+'</td>'
       + '<td>'+sumCell+'</td>'
       + '<td>'+chkCell+'</td>'
       + '<td>'+stCell+'</td>';
