@@ -316,13 +316,85 @@ function toNum(v){
 }
 const IS_NAN_STR = (v) => v==='' || String(v).trim()==='NaN';
 
+/* ==== REFUND-BEGIN ==== */
+/* 退款明细表（10-14 新增）
+   🔴 识别不看文件名，只看表头：必须同时命中崔姐指定的四个列
+      「订单完成时间 / 退款状态 / 退款方式 / 退款门店」
+      四个都对上才走退款解析（她会删掉无关分表，文件名天天变，靠文件名识别不稳）
+   口径：
+     · 只有「退款状态」含「退款成功」的行才算数
+     · 「退款方式」必须在 YZ_PAY_MAP 四类业绩内 → 自动排除售卡/充值/权益等非业绩退款
+       （贵份样例里那笔 ¥15000 定制卡权益就是「退款方式=-」，被这条规则挡掉）
+     · 扣减归属日 = 「订单完成时间」的日期部分（回溯扣到业绩当初计入的那天） */
+const REFUND_ANCHOR = ['订单完成时间','退款状态','退款方式','退款门店'];
+function isRefundHeader(row){
+  return REFUND_ANCHOR.every(n => row.indexOf(n) >= 0);
+}
+function rfKey(s){
+  let h = 5381;
+  for(let i=0;i<s.length;i++){ h = ((h<<5) + h + s.charCodeAt(i)) >>> 0; }
+  return 'RF' + h.toString(36).toUpperCase();
+}
+function parseRefund(aoa, hi, fileName){
+  const head = aoa[hi].map(c=>String(c).trim());
+  const C = {};
+  ['退款编号','关联订单编号','订单完成时间','退款完成时间','退款状态','订单状态','退款方式',
+   '退款金额','合计退款','退款门店','所属门店','退款商品','商品类型','订单备注']
+    .forEach(n => { C[n] = head.indexOf(n); });
+  const val = (cs, n) => (C[n] >= 0 && cs[C[n]] != null) ? String(cs[C[n]]).trim() : '';
+  const rows = []; let totalAmt = null, badRows = 0, skipStatus = 0, skipPay = 0;
+  for(let i=hi+1;i<aoa.length;i++){
+    const cs = aoa[i];
+    if(!cs || !cs.length) continue;
+    const status = val(cs,'退款状态');
+    const pay    = val(cs,'退款方式');
+    const store  = val(cs,'退款门店') || val(cs,'所属门店');   // 退款门店优先，空则退回所属门店
+    let amt = C['退款金额'] >= 0 ? toNum(cs[C['退款金额']]) : NaN;
+    if(isNaN(amt)) amt = C['合计退款'] >= 0 ? toNum(cs[C['合计退款']]) : NaN;
+    if(!status && !pay && !store){ if(!isNaN(amt)) totalAmt = amt; continue; }   // 表尾合计行
+    if(status.indexOf('退款成功') < 0){ skipStatus++; continue; }                // 退款中/失败不计
+    const m = YZ_PAY_MAP[pay];
+    if(!m){ skipPay++; continue; }                                               // 非业绩类退款排除
+    const doneT = fmtDate(C['订单完成时间'] >= 0 ? cs[C['订单完成时间']] : '');
+    const d = doneT.slice(0,10);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d) || isNaN(amt) || amt === 0){ badRows++; continue; }
+    const orderNo = val(cs,'关联订单编号');
+    const rno     = val(cs,'退款编号');
+    rows.push({
+      refund_no: rno || rfKey(orderNo + '|' + d + '|' + amt),
+      order_no: orderNo,
+      store_name: store,
+      done_date: d, done_time: RE_TIME.test(doneT) ? doneT : '',
+      refund_time: fmtDate(C['退款完成时间'] >= 0 ? cs[C['退款完成时间']] : ''),
+      _pf: m[0], _biz: m[1],
+      pay_type: pay, amount: Math.round(amt*100)/100,
+      order_status: val(cs,'订单状态'), product_type: val(cs,'商品类型'),
+      reason: val(cs,'订单备注'),
+      src_file: fileName
+    });
+  }
+  // 幂等：退款编号去重（后到覆盖先到）
+  const uniq = {}; rows.forEach(r => { uniq[r.refund_no] = r; });
+  const list = Object.values(uniq);
+  const sum = list.reduce((a,r)=>a+r.amount,0);
+  const ds = dateSpan(list.map(r=>({form_date:r.done_date})));
+  return { rows:list, totalAmt, badRows, skipStatus, skipPay, sum, mismatch:null,
+           yzAll:false, mode:'refund', dateMin:ds[0], dateMax:ds[1] };
+}
+/* ==== REFUND-END ==== */
+
 /* ---------------- SheetJS 解析单文件 ---------------- */
 function parseWorkbook(buf, fileName){
-  const yzAll = isYzAllFile(fileName);   // 认「连锁总部-交易账单明细…」和「有赞过滤_日期…」两种命名
   const wb = XLSX.read(new Uint8Array(buf), { type:'array', cellDates:true });
   const ws = wb.Sheets[wb.SheetNames[0]];
   const aoa = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
   if(!aoa.length) throw new Error('文件为空');
+
+  // 🔴 先认退款明细表（按四个指定表头命中；10-14 新增，放在最前面优先于账单识别）
+  for(let i=0;i<Math.min(aoa.length,20);i++){
+    const row = aoa[i].map(c=>String(c).trim());
+    if(isRefundHeader(row)) return parseRefund(aoa, i, fileName);
+  }
 
   // 门店归属列：优先「下单门店」（订单真实发生门店，避免误判核销业绩），无该列时退回「所属门店」（兼容旧文件）
   const pickStoreCol = (h) => (h.indexOf('下单门店') >= 0 ? '下单门店' : (h.indexOf('所属门店') >= 0 ? '所属门店' : null));
@@ -339,6 +411,7 @@ function parseWorkbook(buf, fileName){
   if(isXz) return parseXzSum(aoa, hi, fileName);
   const sCol = pickStoreCol(head);
   if(!sCol) throw new Error('表头缺少门店归属列（下单门店 或 所属门店）');
+  const yzAll = isYzAllFile(fileName);   // 认「连锁总部-交易账单明细…」和「有赞过滤_日期…」两种命名
   const ci = {};
   ['订单号','下单时间','完成时间','商品名称','会员编号','支付方式','账单金额','状态'].forEach(name=>{
     ci[name] = head.indexOf(name);
@@ -483,6 +556,8 @@ function renderFiles(){
     let bizCell;
     if(j.error){
       bizCell = '<span class="badge b-err">'+esc(j.error)+'</span>';
+    }else if(j.parsed && j.parsed.mode === 'refund'){
+      bizCell = '<span class="badge b-ok" style="background:#fff1f2;color:#be123c;border-color:#fecdd3">退款明细 · 四表头命中</span>';
     }else{
       bizCell = '<span class="badge b-ok">有赞账单 · 全渠道自动分拣</span>';
     }
@@ -656,6 +731,68 @@ async function postBatch(batch, biz){
   return { ok:false, error:lastErr };
 }
 
+/* ---------------- 退款明细写入（10-14 新增） ----------------
+   幂等键 = refund_no（退款编号 T…，缺号时用 单号+日期+金额 哈希）
+   门店归属：优先按「关联订单编号」回溯原订单在 chain_verify_orders 里实际挂的门店
+             ——钱当初算在谁头上就扣谁；订单号查不到时兜底用「退款门店」列匹配主数据 */
+async function lookupOrigOrders(nos){
+  const map = {};
+  for(let i=0;i<nos.length;i+=80){
+    const q = nos.slice(i,i+80).map(n=>String(n).replace(/[(),]/g,'')).join(',');
+    if(!q) continue;
+    try{
+      const resp = await sb('/rest/v1/chain_verify_orders?select=order_no,store_id,done_time,form_date&order_no=in.('+q+')');
+      if(resp.ok) (await resp.json()).forEach(r => { map[r.order_no] = r; });
+    }catch(e){}
+  }
+  return map;
+}
+async function importRefundJobs(jobs, smap){
+  const rows = [];
+  jobs.forEach(j => j.parsed.rows.forEach(r => rows.push(r)));
+  if(!rows.length) return { inserted:0, unmatched:0, backtracked:0, origHit:0 };
+  const nos = [...new Set(rows.map(r=>r.order_no).filter(Boolean))];
+  const orig = await lookupOrigOrders(nos);
+  let unmatched = 0, backtracked = 0, origHit = 0;
+  rows.forEach(r => {
+    const o = orig[r.order_no];
+    if(o){
+      origHit++;
+      if(o.store_id){ r._sid = o.store_id; backtracked++; }
+      if(o.done_time){ r.done_time = String(o.done_time); r.done_date = String(o.done_time).slice(0,10); }
+    }
+    if(!r._sid) r._sid = resolveSid(r.store_name, smap);
+    if(!r._sid) unmatched++;
+  });
+  let inserted = 0; const fails = [];
+  for(let i=0;i<rows.length;i+=400){
+    const part = rows.slice(i,i+400).map(r => ({
+      refund_no: r.refund_no, order_no: r.order_no, store_id: r._sid || null, store_name: r.store_name,
+      platform: r._pf, biz: r._biz, pay_type: r.pay_type,
+      done_date: r.done_date, done_time: r.done_time || '', refund_time: r.refund_time || '',
+      amount: r.amount, reason: r.reason || '', order_status: r.order_status || '',
+      product_type: r.product_type || '', src_file: r.src_file
+    }));
+    let lastErr = '', ok = false;
+    for(let a=0;a<3;a++){
+      try{
+        const resp = await sb('/rest/v1/chain_refund_orders?on_conflict=refund_no&select=refund_no', {
+          method:'POST',
+          headers:{ 'Prefer':'resolution=merge-duplicates,return=representation' },
+          body: JSON.stringify(part)
+        });
+        if(resp.ok){ const arr = await resp.json().catch(()=>[]); inserted += Array.isArray(arr)?arr.length:0; ok = true; break; }
+        const d = await resp.json().catch(()=>({}));
+        lastErr = d.message || d.error_description || ('HTTP '+resp.status);
+        if(resp.status < 500 && resp.status !== 429) break;
+      }catch(e){ lastErr = String(e.message||e).slice(0,100); }
+      await new Promise(res => setTimeout(res, 2000 + a*5000));
+    }
+    if(!ok) fails.push(lastErr);
+  }
+  return { inserted, unmatched, backtracked, origHit, fails, rows };
+}
+
 $('importBtn').addEventListener('click', async () => {
   if(importing) return;
   const biz = (key) => BIZ_LIST[0];
@@ -668,15 +805,38 @@ $('importBtn').addEventListener('click', async () => {
   msg('正在建立门店挂接映射…', 'info');
   await loadStoreAlias();
   const smap = await buildStoreMap();
+  const refundJobs = jobs.filter(j => j.parsed.mode === 'refund');
+  const billJobs   = jobs.filter(j => j.parsed.mode !== 'refund');
+  const totalRows  = billJobs.reduce((a,j)=>a+j.parsed.rows.length,0);
+
+  /* 退款明细单独走一路：写 chain_refund_orders（不影响业绩表） */
+  if(refundJobs.length){
+    msg('正在写入退款明细（并按订单号回溯原订单门店）…', 'info');
+    const rr = await importRefundJobs(refundJobs, smap);
+    const pendNone = billJobs.length === 0;
+    $('resultBody').innerHTML =
+      '<b style="color:#15803d">退款明细导入完成</b>：成功 <b>'+rr.rows.length+'</b> 笔 · 金额 ¥'+rr.rows.reduce((a,r)=>a+r.amount,0).toFixed(2)
+      + ' · 按订单号回溯到原订单门店 '+rr.backtracked+' 笔（共命中原订单 '+rr.origHit+' 笔）'
+      + (rr.unmatched ? '<br><span style="color:#b45309">注意：'+rr.unmatched+' 笔没匹配到门店，去门店管理补「有赞账单名」后重导即可。</span>' : '')
+      + (rr.fails && rr.fails.length ? '<br><span style="color:#b91c1c">失败：'+rr.fails.map(esc).join(' / ')+'</span>' : '');
+    $('resultCard').classList.remove('hide');
+    if(pendNone){
+      fileJobs = []; renderFiles();
+      $('progInner').style.width = '100%';
+      msg('退款明细导入完成','ok');
+      importing = false; $('importBtn').disabled = false;
+      return;
+    }
+  }
+
   let unmatchedRows = 0;
-  jobs.forEach(j => j.parsed.rows.forEach(r => {
+  billJobs.forEach(j => j.parsed.rows.forEach(r => {
     r._sid = resolveSid(r.store_name, smap);
     if(!r._sid) unmatchedRows++;
   }));
-  const totalRows = jobs.reduce((a,j)=>a+j.parsed.rows.length,0);
   let doneRows = 0, inserted = 0, skippedPay = 0; const fails = [];
   try{
-    for(let ji=0; ji<jobs.length; ji++){
+    for(let ji=0; ji<billJobs.length; ji++){
       const j = jobs[ji], b = biz(j.bizKey), rows = j.parsed.rows;
       const B = 400;
       let jInserted = 0;
