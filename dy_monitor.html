@@ -51,6 +51,11 @@
   .msg.err { background:#FEF2F2; border:1px solid #fecaca; color:#b91c1c; }
   .msg.ok { background:#F0FDF4; border:1px solid #bbf7d0; color:#15803d; }
   .msg.info { background:#EFF6FF; border:1px solid #bfdbfe; color:#1d4ed8; }
+  .dy-status{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:10px 14px;border-radius:12px;margin-bottom:12px}
+  .dy-status .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:0 0 auto}
+  .dy-status.on{background:#F0FDF4;border:1px solid #bbf7d0;color:#15803d}
+  .dy-status.off{background:#FEF2F2;border:1px solid #fecaca;color:#b91c1c}
+  .dy-status.unknown{background:#FFF7ED;border:1px solid #fed7aa;color:#9a3412}
   .mask { position:fixed; inset:0; background:rgba(31,35,48,.45); display:flex; align-items:center; justify-content:center; z-index:50; padding:16px; }
   .modal { background:#fff; border-radius:16px; padding:18px; width:min(760px, 96vw); max-height:88vh; overflow:auto; box-shadow:0 20px 50px rgba(31,35,48,.25); }
   .modal h3 { margin:0 0 14px; font-size:16px; }
@@ -154,6 +159,7 @@
     <div class="sub">全品牌抖音账号监控（数据源 = stores 表抖音账号清单），原属「佛山直营 · 抖音监控」，2026-09-22 拆分为品牌级独立页；所有人登录后可查看，触发 / 定时配置类按钮仅主账号</div>
 
     <div id="globalMsg"></div>
+    <div id="dyCollectorStatus" class="dy-status unknown"><span class="dot" style="background:#9a3412"></span>采集器状态：检测中…</div>
 
 <div class="card">
         <div class="card-title">抖音账号监控 · 概况</div>
@@ -416,10 +422,36 @@ async function triggerDyRun(mode){
     ? '发「全量更新」指令？\n每个账号抓最多 20 条历史视频建档，耗时 1 小时以上（109 个账号）。\n仅首次建档或校准历史数据时使用，日常请用「增量更新」。'
     : '给采集器发「增量更新」指令？\n采集器约 1~2 分钟内开跑，全部账号跑完约 20~40 分钟。\n跑完后回到本页点「刷新」即可看到新报告。')) return;
   try{
-    const r = await sb('/rest/v1/dy_monitor_commands',{method:'POST',body:JSON.stringify({command:isFull?'run_full':'run',note:(isFull?'全量':'增量')+'手动触发 '+(userEmail||'')})});
-    if(r.ok) msg('指令已发出：采集器 1~2 分钟内开跑（'+(isFull?'全量，耗时 1 小时+':'增量，约 20~40 分钟')+'）。跑完回本页刷新，报告出现在「运行历史与报告」。','ok');
-    else msg('发送失败（HTTP '+r.status+'）','err');
+    const r = await sb('/rest/v1/dy_monitor_commands',
+      {method:'POST', headers:{'Prefer':'return=representation'},
+       body:JSON.stringify({command:isFull?'run_full':'run',note:(isFull?'全量':'增量')+'手动触发 '+(userEmail||'')})});
+    if(!r.ok){ msg('发送失败（HTTP '+r.status+'）','err'); return; }
+    const rows = await r.json();
+    const cid = rows && rows[0] && rows[0].id;
+    msg('指令已发出：采集器 1~2 分钟内开跑（'+(isFull?'全量，耗时 1 小时+':'增量，约 20~40 分钟')+'）。跑完回本页刷新，报告出现在「运行历史与报告」。','ok');
+    if(cid) watchCommand(cid);
   }catch(e){ msg('发送失败：'+e.message,'err'); }
+}
+// 发完指令后盯它的领取状态：长时间未领取 => 采集器离线/连不上 Supabase，主动提示
+async function watchCommand(cid){
+  const deadline = Date.now() + 120000;
+  const t = setInterval(async ()=>{
+    try{
+      const r = await sb('/rest/v1/dy_monitor_commands?select=id,status&id=eq.'+cid);
+      const rows = r.ok ? await r.json() : [];
+      const st = rows && rows[0] && rows[0].status;
+      if(st==='taken' || st==='done'){
+        clearInterval(t);
+        msg('✅ 采集器已接收指令并开跑，留意本机黑窗口进度；跑完回本页点「刷新」。','ok');
+      } else if(st==='error'){
+        clearInterval(t);
+        msg('⚠️ 指令被采集器标记为失败，请查看本机采集器日志。','err');
+      } else if(Date.now() > deadline){
+        clearInterval(t);
+        msg('⏳ 指令发出已超过 2 分钟仍未被采集器领取 —— 采集器可能未启动或连不上 Supabase（你办公网络对 Supabase 有 SNI 封锁）。请确认本机「启动采集器.bat」黑窗口在跑，或把电脑切到手机热点后重新点一次。','err');
+      }
+    }catch(e){ /* 轮询失败忽略，等下次 */ }
+  }, 15000);
 }
 async function stopDyCollector(){
   if(!confirm('发「停止采集器」指令？\n采集器会在 1 分钟内收到指令并退出。\n停止后定时任务和手动指令都不会再执行，需重新启动采集器（双击启动脚本或重启电脑）。')) return;
@@ -441,6 +473,29 @@ async function saveDyCfg(){
   }catch(e){ msg('保存失败：'+e.message,'err'); }
 }
 
+/* ---------------- 采集器在线状态（心跳） ---------------- */
+async function loadCollectorStatus(){
+  const el = $('dyCollectorStatus'); if(!el) return;
+  try{
+    const r = await sb('/rest/v1/dy_monitor_heartbeat?select=last_seen,status&id=eq.1');
+    if(!r.ok){ el.className='dy-status unknown'; el.innerHTML='<span class="dot" style="background:#9a3412"></span>采集器状态：心跳未启用（联系技术初始化）'; return; }
+    const rows = await r.json();
+    const row = rows && rows[0];
+    if(!row || !row.last_seen){ el.className='dy-status unknown'; el.innerHTML='<span class="dot" style="background:#9a3412"></span>采集器状态：尚未通讯（指令可能无法被接收）'; return; }
+    const sec = Math.floor((Date.now() - new Date(row.last_seen).getTime())/1000);
+    if(sec > 180){
+      el.className='dy-status off';
+      el.innerHTML='<span class="dot" style="background:#dc2626"></span>● 采集器失联 · 约 '+Math.round(sec/60)+' 分钟未通讯，可能未启动或连不上 Supabase（指令将不会被接收，请检查本机采集器黑窗口 / 切换手机热点）';
+    } else {
+      el.className='dy-status on';
+      el.innerHTML='<span class="dot" style="background:#16a34a"></span>● 采集器在线 · 最后通讯 '+sec+' 秒前';
+    }
+  }catch(e){
+    el.className='dy-status unknown';
+    el.innerHTML='<span class="dot" style="background:#9a3412"></span>采集器状态读取失败：'+esc(e.message);
+  }
+}
+
 /* ---------------- 主流程 ---------------- */
 async function enterApp(){
   $('loginView').classList.add('hide');
@@ -451,6 +506,8 @@ async function enterApp(){
     const el = $(id2); if(el) el.classList.toggle('hide', !isAdmin);
   });
   loadDy();
+  loadCollectorStatus();
+  setInterval(loadCollectorStatus, 60000);  // 每分钟刷新采集器在线状态
 }
 (async function init(){
   if(!session){ $('loginView').classList.remove('hide'); return; }
