@@ -1267,11 +1267,12 @@ async function loadOperators(){
 /* ============================================================================
    数据核对：导入平台明细 → 算真值 → 比对门店填报 → 标出差异
    ---------------------------------------------------------------------------
-   口径（已用 2026-09-06 真实数据验证，10/10 门店全部吻合）：
-     美团真值金额 = Σ(结算价 − 平台技术服务费) − 该店「美团」内购消费金额
-     美团真值人数 = Σ(双人套餐2人 / 其余1人) − 该店「美团」内购券张数
-     抖音真值金额 = Σ(订单实收)，剔除内购券（按 app_config 配置的商品ID清单识别）
-     抖音真值人数 = 剔除内购券后 Σ(双人套餐2人 / 其余1人)
+   口径（已用 2026-09-06 真实数据验证，10/10 门店全部吻合；2026-10-15 增加次卡规则）：
+     次卡整组属内购，不计入真实业绩与人数（明细与内购减数两端均剔除，不依赖券码是否填全）
+     美团真值金额 = (非次卡)Σ(结算价 − 平台技术服务费) − 该店「美团」非次卡内购消费金额
+     美团真值人数 = (非次卡)Σ(双人套餐2人 / 其余1人) − 该店「美团」非次卡内购券张数
+     抖音真值金额 = (非次卡)Σ(订单实收)，剔除内购券（按 app_config 配置的商品ID清单识别）
+     抖音真值人数 = (非次卡)剔除内购券后 Σ(双人套餐2人 / 其余1人)
      内购金额口径 = 内购登记表「报销金额」（门店实际填的是报销额，不是消费额）
      双人套餐ID：美团 1131977141；抖音 1806531014302739
    ========================================================================== */
@@ -1434,6 +1435,7 @@ function parseInner(aoa, date){
   const iPlat = colIdx(hd, ['平台']), iStore = colIdx(hd, ['门店']);
   const iUse  = colIdx(hd, ['消费金额']), iReb = colIdx(hd, ['报销金额']);
   const iDate = colIdx(hd, ['核销日期']);
+  const iName = colIdx(hd, ['套餐名称','套餐名','套餐分类']);
   const codeIdx = [];
   for(let i=0;i<hd.length;i++){ if(String(hd[i]==null?'':hd[i]).indexOf('券码')>=0) codeIdx.push(i); }
   const out = {}, codes = {};
@@ -1444,6 +1446,8 @@ function parseInner(aoa, date){
     if(!std) continue;
     if(iDate >= 0 && !sameInnerDay(row[iDate], date)){ skipped++; continue; }
     const plat = String(row[iPlat]==null?'':row[iPlat]).indexOf('美团')>=0 ? '美团' : '抖音';
+    // 2026-10-15 修改：次卡整组属内购，不计入真实业绩/人数，故不参与内购减数（券码/金额均剔除）
+    if(iName>=0 && String(row[iName]==null?'':row[iName]).indexOf('次')>=0) continue;
     if(!out[std]) out[std] = { '美团':{amt:0,cnt:0,rebate:0}, '抖音':{amt:0,cnt:0,rebate:0} };
     out[std][plat].amt += toNum(row[iUse]);
     out[std][plat].rebate += toNum(row[iReb]);
@@ -1466,6 +1470,7 @@ function parseMt(aoa){
   const hd = aoa[hr];
   const iType = colIdx(hd, ['收益类型']), iStore = colIdx(hd, ['消费门店']);
   const iGid  = colIdx(hd, ['团购ID','通兑券ID']);
+  const iName = colIdx(hd, ['套餐名','套餐名称']);
   let iSettle = -1, iFee = -1;
   for(let i=0;i<hd.length;i++){
     const t = String(hd[i]==null?'':hd[i]).replace(/\s/g,'');
@@ -1486,6 +1491,8 @@ function parseMt(aoa){
     if(!isVerify && !isRefund) continue;
     const std = matchStore(row[iStore]);
     if(!std){ unmatched[String(row[iStore])] = (unmatched[String(row[iStore])]||0)+1; continue; }
+    // 2026-10-15 修改：次卡整组属内购，不计入真实业绩/人数（剔除整行，不依赖券码是否填全）
+    if(iName>=0 && String(row[iName]==null?'':row[iName]).indexOf('次')>=0) continue;
     if(!out[std]) out[std] = { amt:0, ppl:0, cnt:0 };
     // 退款行金额自带负号，直接累加即可冲抵；人数/笔数需反向扣减
     const sgn = isRefund ? -1 : 1;
@@ -1506,6 +1513,7 @@ function parseDy(aoa){
   const iStore = colIdx(hd, ['核销门店']), iStatus = colIdx(hd, ['核销状态']);
   const iGid = colIdx(hd, ['商品ID']), iRecv = colIdx(hd, ['订单实收']);
   const iCode = colIdx(hd, ['券码']);
+  const iName = colIdx(hd, ['套餐名','套餐名称','商品名称','商品名']);
   if(iRecv < 0) throw new Error('抖音表缺少「订单实收」列');
   const innerIdSet = getInnerIdSet();
   const out = {}, unmatched = {}, innerCodes = [];
@@ -1518,6 +1526,8 @@ function parseDy(aoa){
     // 太脆弱（万一抖音改成「已核销（已撤销）」就会多算），改为显式排除。
     if(stt.indexOf('撤销') >= 0 || stt.indexOf('退') >= 0) continue;
     const std = matchStore(row[iStore]);
+    // 2026-10-15 修改：次卡整组属内购，不计入真实业绩/人数（抖音暂时无次卡内购，口径对齐）
+    if(iName>=0 && String(row[iName]==null?'':row[iName]).indexOf('次')>=0) continue;
     const gid = String(row[iGid]==null?'':row[iGid]).trim();
     if(gid && innerIdSet.has(gid)){
       // 内购券：不计核销，记下券码用于「内购漏登记」检测
