@@ -82,17 +82,19 @@ td.ref{color:#dc2626;font-weight:700}
 .warn:last-child{border:none}
 .empty{color:#8a8a8e;font-size:13px;background:#fff;border-radius:14px;padding:14px 16px}
 /* 业绩日历 */
-.cal-month{background:#fff;border-radius:16px;padding:14px 16px;margin-bottom:14px}
+.cal-months{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;overflow-x:auto;padding:2px 0 6px}
+.cal-month{flex:0 0 auto;width:320px;max-width:100%;box-sizing:border-box;background:#fff;border-radius:16px;padding:14px 16px}
 .cal-title{font-size:14px;font-weight:700;margin-bottom:10px;color:#1d1d1f}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
 .cal-grid.cal-head span{font-size:11px;color:#8a8f9e;text-align:center;padding:2px 0}
-.cal-cell{aspect-ratio:1/.9;border-radius:10px;background:#f4f5f8;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#1d1d1f;position:relative;overflow:hidden}
-.cal-cell b{font-weight:700;font-size:13px}
-.cal-cell i{font-style:normal;font-size:10px;margin-top:1px;opacity:.9;white-space:nowrap}
+.cal-cell{border-radius:9px;background:#f4f5f8;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#1d1d1f;position:relative;overflow:hidden;min-height:52px;padding:2px;line-height:1.15}
+.cal-cell b{font-weight:700;font-size:13px;line-height:1.1}
+.cal-cell i{font-style:normal;font-size:10px;margin-top:1px;opacity:.92;white-space:nowrap}
+.cal-cell i.sub{font-size:9px;opacity:.7}
 .cal-cell.empty{background:transparent}
 .cal-cell.out{opacity:.32}
 .cal-cell.gap{border:2px solid #ef4444;color:#ef4444;background:#fff5f5}
-.cal-cell.gap i{color:#ef4444}
+.cal-cell.gap i{color:#ef4444;font-weight:600}
 .cal-cell.today{box-shadow:0 0 0 2px #0a84ff inset}
 .loadbox{text-align:center;padding:80px 20px;color:#6e6e73;font-size:14px}
 .loadbox .spin{display:inline-block;width:26px;height:26px;border:3px solid #e5e5ea;border-top-color:#0a84ff;border-radius:50%;animation:sp 1s linear infinite;margin-bottom:14px}
@@ -321,10 +323,12 @@ function renderCalendar(d){
   if(mx<mn){ mn=0; mx=1; }
   const start=new Date(d.start), end=new Date(d.end);
   const today=new Date(); today.setHours(0,0,0,0);
+  const chainInScope = d.tp !== '直营';
   const months=[]; let m=new Date(start.getFullYear(),start.getMonth(),1); const last=new Date(end.getFullYear(),end.getMonth(),1);
   while(m<=last){ months.push(new Date(m)); m=new Date(m.getFullYear(),m.getMonth()+1,1); }
   let H='<section><h2>业绩日历<span class="badge">按日业绩 · 悬停看详情</span></h2>';
-  H+='<div class="note" style="margin-bottom:12px">格子颜色：浅黄=业绩低 · 绿=居中 · 蓝=高（按当前周期分布）。<span style="color:#ef4444;font-weight:600">红框</span>=该日无业绩数据（疑似漏导入）。</div>';
+  H+='<div class="note" style="margin-bottom:12px">格子颜色：浅黄=业绩低 · 绿=居中 · 蓝=高（按当前周期分布）。每格小字「连X·直Y」= 当日连锁核销单数 · 直营到店客数。<span style="color:#ef4444;font-weight:600">红框「连锁漏」</span>= 该日连锁无导入数据（直营每日正常填报，整日缺数必为连锁漏导入）。</div>';
+  H+='<div class="cal-months">';
   months.forEach(mo=>{
     const y=mo.getFullYear(), mm=mo.getMonth();
     const first=new Date(y,mm,1), daysInMo=new Date(y,mm+1,0).getDate();
@@ -338,22 +342,36 @@ function renderCalendar(d){
       const inRange = dt>=start && dt<=end;
       const isPast = dt<today;
       const isToday = dt.getTime()===today.getTime();
-      const hasData = daily[dk] && daily[dk].amt>0;
+      const rec=daily[dk];
+      const chainGross = rec ? (rec.cnt||0) : 0;
+      const directGross = rec ? (rec.vis||0) : 0;
+      const hasData = rec && ((rec.amt||0)>0 || chainGross>0 || directGross>0);
       let cls='cal-cell', bg='', tip='', txt='<b>'+day+'</b>';
       if(!inRange){ cls+=' out'; }
-      else if(hasData){
-        const netv=net[dk]; const t = mx>mn ? (netv-mn)/(mx-mn) : 0.5;
-        bg=dayColor(t);
-        const rec=daily[dk]; const cnt=(rec.cnt||0)-((dref[dk]&&dref[dk].cnt)||0); const vis=rec.vis||0;
-        tip=dk+' ｜ 净业绩 ¥'+money(netv)+' ｜ 连锁 '+cnt+' 单 · 直营 '+vis+' 人';
-        txt='<b>'+day+'</b><i>¥'+fmtWan(netv)+'</i>';
-      } else if(isPast){ cls+=' gap'; tip=dk+' ｜ 无业绩数据（疑似漏导入）'; txt='<b>'+day+'</b><i>?</i>'; }
+      else if(isPast){
+        if(chainInScope && chainGross===0){
+          cls+=' gap';
+          tip=dk+' ｜ 连锁无导入数据（疑似漏导入）｜ 直营当日 '+directGross+' 人';
+          txt='<b>'+day+'</b><i>连锁漏</i>';
+        } else if(!hasData){
+          cls+=' out';
+          tip=dk+' ｜ 区间内无业绩数据';
+          txt='<b>'+day+'</b><i>—</i>';
+        } else {
+          const netv=net[dk]; const t = mx>mn ? (netv-mn)/(mx-mn) : 0.5;
+          bg=dayColor(t);
+          const cnt=(rec.cnt||0)-((dref[dk]&&dref[dk].cnt)||0);
+          const vis=(rec.vis||0);
+          tip=dk+' ｜ 净业绩 ¥'+money(netv)+' ｜ 连锁 '+cnt+' 单 · 直营 '+vis+' 人';
+          txt='<b>'+day+'</b><i>¥'+fmtWan(netv)+'</i><i class="sub">连'+cnt+'·直'+vis+'</i>';
+        }
+      } else { cls+=' out'; }
       if(isToday) cls+=' today';
       H+='<span class="'+cls+'" '+(bg?'style="background:'+bg+'" ':'')+(tip?'title="'+tip.replace(/"/g,'&quot;')+'" ':'')+'>'+txt+'</span>';
     }
     H+='</div></div>';
   });
-  H+='</section>';
+  H+='</div></section>';
   return H;
 }
 function render(d){
