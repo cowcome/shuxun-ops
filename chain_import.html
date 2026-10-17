@@ -209,6 +209,10 @@
       </div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap">
         <button class="primary" id="importBtn">③ 开始导入</button>
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#334155;background:#f1f5f9;padding:8px 12px;border-radius:10px;cursor:pointer;user-select:none" title="默认按订单号跳过已存在记录（安全、不覆盖）。勾选后改为按文件内容覆盖更新已有订单，用于纠正已导入的数据。">
+          <input type="checkbox" id="correctChk" style="width:16px;height:16px;accent-color:#0a84ff;cursor:pointer" />
+          <span>纠正重导（覆盖已存在订单）</span>
+        </label>
         <span class="hint" id="importHint"></span>
       </div>
       <div class="prog hide" id="progBar"><div id="progInner" style="width:0%"></div></div>
@@ -225,7 +229,7 @@
 <script>
 /* ==========================================================================
    書荀 · 数据导入（chain_verify_orders）
-   平台导出 .xls → SheetJS 解析 → 按订单号 upsert（ignore-duplicates 只补新单）
+   平台导出 .xls → SheetJS 解析 → 按订单号去重（默认 ignore-duplicates 只补新单；勾选「纠正重导」则 merge 覆盖更新）
    ========================================================================== */
 const SB_URL = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
 const SB_KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
@@ -402,7 +406,7 @@ function parseRefund(aoa, hi, fileName){
       src_file: fileName
     });
   }
-  // 幂等：退款编号去重（后到覆盖先到）
+  // 幂等：退款编号去重（默认跳过已有；勾选「纠正重导」则覆盖更新）
   const uniq = {}; rows.forEach(r => { uniq[r.refund_no] = r; });
   const list = Object.values(uniq);
   const sum = list.reduce((a,r)=>a+r.amount,0);
@@ -522,7 +526,7 @@ function parseWorkbook(buf, fileName, mode){
       src_file: fileName
     });
   }
-  // 订单号去重（后到覆盖先到）
+  // 订单号去重（默认忽略已有=只补新单；勾选「纠正重导」则覆盖更新）
   const uniq = {}; rows.forEach(r=>{ uniq[r.order_no] = r; });
   const list = Object.values(uniq);
   const sum = list.reduce((a,r)=>a+r.amount,0);
@@ -671,6 +675,12 @@ dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over
 
 /* ---------------- 导入类型切换（2026-10-17：显式入口，不再扫表头猜） ---------------- */
 let IMPORT_MODE = 'bill';   // 'bill' = 业绩账单；'refund' = 退款明细
+let CORRECT_MODE = false;  // false=按订单号跳过已存在(安全)；true=纠正重导(覆盖更新已有)
+(function wireCorrect(){
+  const c = $('correctChk');
+  if(!c) return;
+  c.addEventListener('change', () => { CORRECT_MODE = c.checked; });
+})();
 (function wireModeSeg(){
   const seg = $('modeSeg'); if(!seg) return;
   const hint = $('modeHint');
@@ -770,7 +780,7 @@ async function postBatch(batch, biz){
     try{
       const resp = await sb('/rest/v1/chain_verify_orders?on_conflict=order_no&select=order_no', {
         method:'POST',
-        headers:{ 'Prefer':'resolution=merge-duplicates,return=representation' },
+        headers:{ 'Prefer': CORRECT_MODE ? 'resolution=merge-duplicates,return=representation' : 'resolution=ignore-duplicates,return=representation' },
         body: JSON.stringify(payload)
       });
       if(resp.ok){
@@ -833,7 +843,7 @@ async function importRefundJobs(jobs, smap){
       try{
         const resp = await sb('/rest/v1/chain_refund_orders?on_conflict=refund_no&select=refund_no', {
           method:'POST',
-          headers:{ 'Prefer':'resolution=merge-duplicates,return=representation' },
+          headers:{ 'Prefer': CORRECT_MODE ? 'resolution=merge-duplicates,return=representation' : 'resolution=ignore-duplicates,return=representation' },
           body: JSON.stringify(part)
         });
         if(resp.ok){ const arr = await resp.json().catch(()=>[]); inserted += Array.isArray(arr)?arr.length:0; ok = true; break; }
@@ -870,7 +880,7 @@ $('importBtn').addEventListener('click', async () => {
     const rr = await importRefundJobs(refundJobs, smap);
     const pendNone = billJobs.length === 0;
     $('resultBody').innerHTML =
-      '<b style="color:#15803d">退款明细导入完成</b>：成功 <b>'+rr.rows.length+'</b> 笔 · 金额 ¥'+rr.rows.reduce((a,r)=>a+r.amount,0).toFixed(2)
+      '<b style="color:#15803d">退款明细导入完成'+(CORRECT_MODE?'（纠正重导）':'')+'</b>：成功写入 <b>'+rr.inserted+'</b> 笔（共解析 '+rr.rows.length+' 笔'+(CORRECT_MODE?'，含覆盖更新已有':'，已存在跳过 '+(rr.rows.length-rr.inserted))+'） · 金额 ¥'+rr.rows.reduce((a,r)=>a+r.amount,0).toFixed(2)
       + ' · 按订单号回溯到原订单门店 '+rr.backtracked+' 笔（共命中原订单 '+rr.origHit+' 笔）'
       + (rr.unmatched ? '<br><span style="color:#b45309">注意：'+rr.unmatched+' 笔没匹配到门店，去门店管理补「有赞账单名」后重导即可。</span>' : '')
       + (rr.fails && rr.fails.length ? '<br><span style="color:#b91c1c">失败：'+rr.fails.map(esc).join(' / ')+'</span>' : '');
@@ -908,10 +918,17 @@ $('importBtn').addEventListener('click', async () => {
     $('progInner').style.width = '100%';
     let html = '';
     if(!fails.length){
-      html = '<b style="color:#15803d">全部完成</b>：解析 '+totalRows+' 单 · 写入/更新 <b>'+inserted+'</b> 单 · 已存在跳过 '+(totalRows-inserted)+' 单'
-           + (skippedPay ? ' · 排除非业绩 '+skippedPay+' 单' : '') + '。'
-           + (unmatchedRows ? '<br><span style="color:#b45309">注意：'+unmatchedRows+' 单未能自动识别门店（不进门店统计），跑一次「挂接SQL」即可补上。</span>' : '')
-           + '<br>可在「书荀连锁」看板查看最新数据。';
+      if(CORRECT_MODE){
+        html = '<b style="color:#15803d">全部完成（纠正重导）</b>：解析 '+totalRows+' 单 · 写入/覆盖更新 <b>'+inserted+'</b> 单'
+             + (skippedPay ? ' · 排除非业绩 '+skippedPay+' 单' : '') + '。'
+             + (unmatchedRows ? '<br><span style="color:#b45309">注意：'+unmatchedRows+' 单未能自动识别门店（不进门店统计），跑一次「挂接SQL」即可补上。</span>' : '')
+             + '<br>已按文件内容覆盖更新已有订单。可在「书荀连锁」看板查看最新数据。';
+      } else {
+        html = '<b style="color:#15803d">全部完成</b>：解析 '+totalRows+' 单 · 新写入 <b>'+inserted+'</b> 单 · 已存在自动跳过 '+(totalRows-inserted)+' 单'
+             + (skippedPay ? ' · 排除非业绩 '+skippedPay+' 单' : '') + '。'
+             + (unmatchedRows ? '<br><span style="color:#b45309">注意：'+unmatchedRows+' 单未能自动识别门店（不进门店统计），跑一次「挂接SQL」即可补上。</span>' : '')
+             + '<br>可在「书荀连锁」看板查看最新数据。';
+      }
       fileJobs = []; renderFiles();
       msg('导入完成','ok');
     }else{
