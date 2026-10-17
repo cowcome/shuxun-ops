@@ -91,10 +91,9 @@ td.ref{color:#dc2626;font-weight:700}
 .cal-title{font-size:13px;font-weight:700;margin-bottom:8px;color:#1d1d1f}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
 .cal-grid.cal-head span{font-size:11px;color:#8a8f9e;text-align:center;padding:1px 0}
-.cal-cell{border-radius:8px;background:#f4f5f8;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#1d1d1f;position:relative;overflow:hidden;min-height:40px;padding:1px;line-height:1.1}
-.cal-cell b{font-weight:700;font-size:13px;line-height:1.05}
-.cal-cell i{font-style:normal;font-size:10px;opacity:.92;white-space:nowrap}
-.cal-cell i.sub{font-size:9px;opacity:.7}
+.cal-cell{border-radius:9px;background:#f4f5f8;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#1d1d1f;position:relative;overflow:hidden;min-height:46px;padding:3px 1px;line-height:1.15}
+.cal-cell b{font-weight:700;font-size:13px;line-height:1.1}
+.cal-cell i{font-style:normal;font-size:11px;opacity:.92;white-space:nowrap;margin-top:2px}
 .cal-cell.empty{background:transparent}
 .cal-cell.out{opacity:.32}
 .cal-cell.gap{border:2px solid #ef4444;color:#ef4444;background:#fff5f5}
@@ -346,7 +345,7 @@ function renderCalendar(d){
   let H='<section><div class="cal-hd"><h2>业绩日历<span class="badge">按日业绩 · 点某天看明细</span></h2>'
        +'<button class="cal-toggle" onclick="sxCalToggle()">'+(CAL_OPEN?'收起':'展开')+'</button></div>';
   H+='<div id="calBody" style="display:'+(CAL_OPEN?'block':'none')+'">';
-  H+='<div class="note" style="margin:10px 0 12px">格子颜色：浅黄=业绩低 · 绿=居中 · 蓝=高（按当前周期分布）。每格小字「连X·直Y」= 当日连锁核销单数 · 直营到店客数。<span style="color:#ef4444;font-weight:600">红框「连锁漏」</span>= 该日连锁无导入数据（直营每日正常填报，整日缺数必为连锁漏导入）。<b>点任意日期</b>可在下方看当天门店明细。</div>';
+  H+='<div class="note" style="margin:10px 0 12px">格子颜色：浅黄=低 · 绿=中 · 蓝=高（按当前周期分布）。<span style="color:#ef4444;font-weight:600">红框「连锁漏」</span>= 该日连锁无导入数据（直营每日正常填报，整日缺数即连锁漏导入）。<b>点任意日期</b>看当天门店明细。</div>';
   H+='<div class="cal-months">';
   months.forEach(mo=>{
     const y=mo.getFullYear(), mm=mo.getMonth();
@@ -379,7 +378,7 @@ function renderCalendar(d){
           bg=dayColor(t); clickable=true;
           const cnt=(rec.cnt||0)-((dref[dk]&&dref[dk].cnt)||0);
           const vis=(rec.vis||0);
-          txt='<b>'+day+'</b><i>¥'+fmtWan(netv)+'</i><i class="sub">连'+cnt+'·直'+vis+'</i>';
+          txt='<b>'+day+'</b><i>¥'+fmtWan(netv)+'</i>';
         }
       } else { cls+=' out'; }
       if(isToday) cls+=' today';
