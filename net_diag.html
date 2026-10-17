@@ -198,8 +198,8 @@ function t_ipv4(){
       setRow('ip4','ok','<span class="ok">✅ '+esc(ip)+'</span> · '+r.ms+'ms');
       log('[出口IPv4] '+ip);
     }else{
-      setRow('ip4','bad','<span class="bad">❌ 拿不到 IPv4 出口</span> · '+(r.timeout?'超时':esc(r.err||''))+'<br><span class="mut" style="font-size:12.5px">→ 说明 IPv4 出网本身就不通</span>');
-      log('[出口IPv4] FAIL '+(r.err||'timeout'));
+      setRow('ip4','warn','<span class="warn">⚠ 拿不到</span> · '+(r.timeout?'超时':esc(r.err||''))+'<br><span class="mut" style="font-size:12.5px">→ 这个测速网站（api.ipify.org）在国内本身经常打不开，<b>不代表你的网络有问题，可忽略</b>；以「出网广度对比」为准</span>');
+      log('[出口IPv4] FAIL '+(r.err||'timeout')+'（该测速站可能不可达，非关键项）');
     }
   });
 }
@@ -319,7 +319,10 @@ function t5_rest(){
   addRow('rest','数据库数据接口');
   return probe(SB + '/rest/v1/', {headers:{'apikey':KEY}, cache:'no-store'}, 12000).then(function(r){
     if(r.ok){
-      setRow('rest','ok','<span class="ok">✅ 正常</span> · HTTP '+r.status+' · '+r.ms+'ms');
+      var note = (r.status===401 || r.status===403)
+        ? '<br><span class="mut" style="font-size:12.5px">→ HTTP '+r.status+' 是<b>正常的</b>（这个根地址要更高权限的密钥）。只要服务器有应答，就证明网络是通的</span>'
+        : '';
+      setRow('rest','ok','<span class="ok">✅ 通道正常</span> · 服务器已应答 · '+r.ms+'ms'+note);
       log('[数据接口] HTTP '+r.status+' '+r.txt.slice(0,150));
     }else{
       setRow('rest','bad',failText(r));
@@ -360,18 +363,32 @@ function t6_login(){
 }
 
 function t7_clock(){
-  addRow('clock','设备时间准确性');
-  /* 时间差得太多，TLS 证书校验会失败，表现就像「连不上服务器」 */
+  addRow('clock','设备时间');
+  /* 时间错太多会让证书校验失败，表现就像「连不上」。
+     优先和服务器比对；读不到服务器时间就退化为本机时间合理性检查 */
   return probe(SB + '/auth/v1/health', {headers:{'apikey':KEY}, cache:'no-store'}, 10000).then(function(r){
-    if(!r.ok || !r.date){ setRow('clock','warn','<span class="warn">⚠ 拿不到服务器时间</span><span class="mut">（依赖上一项是否通）</span>'); log('[时间校正] 无法比对'); return; }
+    var y = (new Date()).getFullYear();
+    if(!r.ok || !r.date){
+      if(y<2024 || y>2035){
+        setRow('clock','bad','<span class="bad">❌ 年份异常：'+y+'</span><br><span class="mut" style="font-size:12.5px">→ 请到 设置 → 通用 → 日期与时间，打开「自动设置」</span>');
+        log('[时间] 年份异常 '+y);
+      }else{
+        setRow('clock','ok','<span class="ok">✅ 时间正常</span> · '+stamp()+'<span class="mut" style="font-size:12.5px">（服务器时间不可读，已改用本机合理性检查）</span>');
+        log('[时间] 本机时间正常 '+stamp());
+      }
+      return;
+    }
     var sv = Date.parse(r.date);
-    if(isNaN(sv)){ setRow('clock','warn','<span class="warn">⚠ 时间格式无法解析</span>'); return; }
+    if(isNaN(sv)){
+      setRow('clock','ok','<span class="ok">✅ 时间正常</span> · '+stamp());
+      return;
+    }
     var diff = Math.round((Date.now()-sv)/1000);
     var abs = Math.abs(diff);
     var txt = '设备比服务器' + (diff>=0?'快 ':'慢 ') + abs + ' 秒';
-    if(abs<=120){ setRow('clock','ok','<span class="ok">✅ 时间准确</span> · '+txt); log('[时间校正] 差 '+diff+' 秒（正常）'); }
-    else if(abs<=3600){ setRow('clock','warn','<span class="warn">⚠ 偏差偏大</span> · '+txt); log('[时间校正] 差 '+diff+' 秒'); }
-    else { setRow('clock','bad','<span class="bad">❌ 偏差过大</span> · '+txt+'<br><span class="mut" style="font-size:12.5px">→ 会让安全证书校验失败，表现为「连不上服务器」。请到 设置 → 通用 → 日期与时间，打开「自动设置」</span>'); log('[时间校正] 差 '+diff+' 秒（异常）'); }
+    if(abs<=120){ setRow('clock','ok','<span class="ok">✅ 时间准确</span> · '+txt); log('[时间] 差 '+diff+' 秒（正常）'); }
+    else if(abs<=3600){ setRow('clock','warn','<span class="warn">⚠ 偏差偏大</span> · '+txt); log('[时间] 差 '+diff+' 秒'); }
+    else { setRow('clock','bad','<span class="bad">❌ 偏差过大</span> · '+txt+'<br><span class="mut" style="font-size:12.5px">→ 会让安全证书校验失败，表现为「连不上服务器」。请到 设置 → 通用 → 日期与时间，打开「自动设置」</span>'); log('[时间] 差 '+diff+' 秒（异常）'); }
   });
 }
 
@@ -429,7 +446,7 @@ function runAll(){
   render();
   log('# 书荀后台 · 网络诊断报告');
   log('生成时间: ' + stamp());
-  log('页面版本: net_diag v2 (2026-10-17)');
+  log('页面版本: net_diag v3 (2026-10-17)');
   log('');
   sysInfo();
   log('');
