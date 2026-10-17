@@ -219,6 +219,7 @@ function overlapDays(r,start,end){
   return (rs<=re)? ((re-rs)/86400000+1) : 0;
 }
 function spTag(r,days){
+  if(days<=0) return '';
   const type=r.special_type||'';
   const cls=(type==='停业'||type==='闭店')?'tag-stop':(type==='新店'||type==='未足月')?'tag-new':'tag-train';
   const tip=esc(type)+(r.start_date?('：'+r.start_date+' ~ '+(r.end_date||'未填结束日')):'')+(days>0?('（'+days+'天）'):'');
@@ -333,7 +334,7 @@ function render(d){
     const st = (id && id!=='null') ? (ALL_STORES.find(s=>String(s.id)===String(id))||{}) : {};
     const isChain=rec.type==='连锁';
     const biz = isChain ? d.bizDaysOf(id) : (rec.days?rec.days.size:0);
-    const sp = (id && id!=='null') ? SPECIAL.filter(r=>String(r.store_id)===String(id)) : [];
+    const sp = (id && id!=='null') ? SPECIAL.filter(r=>String(r.store_id)===String(id) && overlapDays(r,d.start,d.end)>0) : [];
     const ref = (isChain && d.refunds && d.refunds.byStore[String(id)]) ? d.refunds.byStore[String(id)] : {amt:0,cnt:0};
     const netAmt=Math.max(0, rec.amt-ref.amt), netCnt=Math.max(0, rec.cnt-ref.cnt);
     return {id, std:(st.std_name||rec.name||('门店'+id)), op:OP_MAP[id]||'', type:rec.type, amt:netAmt, cnt:netCnt, vis:rec.vis, biz, sp, refAmt:ref.amt, refCnt:ref.cnt};
