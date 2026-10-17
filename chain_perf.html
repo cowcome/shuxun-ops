@@ -230,8 +230,16 @@ async function loadData(start,end){
   const sel=$('opSel');
   sel.innerHTML='<option value="">全部运营人</option>'+ops.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('');
   // 退款明细（按扣减日 done_date 区间过滤；仅影响连锁；store_id 为空表示未挂接门店）
-  const rf=await sb('/rest/v1/chain_refund_orders?select=store_id,platform,biz,amount,done_date&done_date=gte.'+start+'&done_date=lt.'+endX+'&order=done_date.asc');
-  ALL_REFUNDS = rf.ok ? await rf.json() : [];
+  // ⚠️ 必须分页：Supabase 单次默认最多返回 1000 行，退款超 1000 笔会被静默截断 → 少扣、业绩偏高（10-17 修）
+  ALL_REFUNDS=[]; let roff=0;
+  while(true){
+    const rf=await sb('/rest/v1/chain_refund_orders?select=store_id,platform,biz,amount,done_date&done_date=gte.'+start+'&done_date=lt.'+endX+'&order=done_date.asc',{headers:{'Range':roff+'-'+(roff+999)}});
+    if(!rf.ok) break;
+    const rb=await rf.json();
+    ALL_REFUNDS=ALL_REFUNDS.concat(rb);
+    if(rb.length<1000) break;
+    roff+=1000;
+  }
   // 特殊营业周期（用于实际营业天数 + 门店标记）
   const sp=await sb('/rest/v1/store_special_periods?select=store_id,special_type,start_date,end_date');
   SPECIAL = sp.ok ? await sp.json() : [];
