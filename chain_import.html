@@ -55,6 +55,12 @@
     border-radius:10px; padding:10px 20px; text-decoration:none; font-size:14px; letter-spacing:.01em; }
   .rp-btn:active { transform:scale(.97); }
   @media (hover:hover) and (pointer:fine) { .rp-btn:hover { background:var(--sx-accent-press); } }
+  /* ---- 导入类型分段控件（2026-10-17 新增：显式选择，不再扫表头猜）---- */
+  .seg { display:inline-flex; border:1px solid #d6d9e2; border-radius:10px; overflow:hidden; }
+  .seg button { border:none; border-radius:0; height:40px; background:#fff; color:#4b5563; padding:0 20px; }
+  .seg button + button { border-left:1px solid #d6d9e2; }
+  .seg button.on { background:var(--sx-accent); color:#fff; }
+  .seg button:not(.on):hover { background:#f4f5f9; }
 </style>
 <script src="theme.js"></script></head>
 <body>
@@ -149,6 +155,15 @@
     <div class="sub">有赞后台导出的账单文件<b>原样上传即可，不用改名</b>（支持「有赞过滤_2026-10-09」单日 / 「有赞过滤_2026-10-01至2026-10-09」区间 / 「连锁总部-交易账单明细…」三种命名），全渠道自动分拣 · 自动去重；门店业绩归属按「下单门店」列判定（兼容旧版「所属门店」）。简化 4 列账单（日期 / 支付方式 / 所属门店 / 账单金额）同样支持</div>
 
     <div id="globalMsg"></div>
+
+    <div class="card">
+      <div class="card-title">导入类型（先选类型，再上传文件）</div>
+      <div class="seg" id="modeSeg">
+        <button type="button" data-mode="bill" class="on">业绩账单导入</button>
+        <button type="button" data-mode="refund">退款明细导入</button>
+      </div>
+      <div class="hint" id="modeHint" style="margin-top:10px"></div>
+    </div>
 
 
     <div class="card">
@@ -317,19 +332,15 @@ function toNum(v){
 const IS_NAN_STR = (v) => v==='' || String(v).trim()==='NaN';
 
 /* ==== REFUND-BEGIN ==== */
-/* 退款明细表（10-14 新增）
-   🔴 识别不看文件名，只看表头：必须同时命中崔姐指定的四个列
-      「订单完成时间 / 退款状态 / 退款方式 / 退款门店」
-      四个都对上才走退款解析（她会删掉无关分表，文件名天天变，靠文件名识别不稳）
+/* 退款明细表（10-14 新增，10-17 改为「显式入口触发」：由页面顶部「退款明细导入」按钮选定，
+   不再扫描文件前 20 行表头猜测。
+   表头要求（崔姐指定的四个列，缺一不可）：
+     订单完成时间 / 退款状态 / 退款方式 / 退款门店
    口径：
      · 只有「退款状态」含「退款成功」的行才算数
      · 「退款方式」必须在 YZ_PAY_MAP 四类业绩内 → 自动排除售卡/充值/权益等非业绩退款
        （贵份样例里那笔 ¥15000 定制卡权益就是「退款方式=-」，被这条规则挡掉）
      · 扣减归属日 = 「订单完成时间」的日期部分（回溯扣到业绩当初计入的那天） */
-const REFUND_ANCHOR = ['订单完成时间','退款状态','退款方式','退款门店'];
-function isRefundHeader(row){
-  return REFUND_ANCHOR.every(n => row.indexOf(n) >= 0);
-}
 function rfKey(s){
   let h = 5381;
   for(let i=0;i<s.length;i++){ h = ((h<<5) + h + s.charCodeAt(i)) >>> 0; }
@@ -384,16 +395,23 @@ function parseRefund(aoa, hi, fileName){
 /* ==== REFUND-END ==== */
 
 /* ---------------- SheetJS 解析单文件 ---------------- */
-function parseWorkbook(buf, fileName){
+/* mode: 'bill' = 业绩账单（全渠道自动分拣）；'refund' = 退款明细。
+   由页面顶部「导入类型」分段控件显式选定，不再扫描表头猜测 */
+function parseWorkbook(buf, fileName, mode){
   const wb = XLSX.read(new Uint8Array(buf), { type:'array', cellDates:true });
   const ws = wb.Sheets[wb.SheetNames[0]];
   const aoa = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
   if(!aoa.length) throw new Error('文件为空');
 
-  // 🔴 先认退款明细表（按四个指定表头命中；10-14 新增，放在最前面优先于账单识别）
-  for(let i=0;i<Math.min(aoa.length,20);i++){
-    const row = aoa[i].map(c=>String(c).trim());
-    if(isRefundHeader(row)) return parseRefund(aoa, i, fileName);
+  if(mode === 'refund'){
+    // 定位退款表头行（四个指定列同时出现），找不到则报错提示用户
+    let hi = -1;
+    for(let i=0;i<Math.min(aoa.length,40);i++){
+      const row = aoa[i].map(c=>String(c).trim());
+      if(['订单完成时间','退款状态','退款方式','退款门店'].every(n=>row.indexOf(n)>=0)){ hi = i; break; }
+    }
+    if(hi < 0) throw new Error('未识别到退款表头（需含：订单完成时间 / 退款状态 / 退款方式 / 退款门店）');
+    return parseRefund(aoa, hi, fileName);
   }
 
   // 门店归属列：优先「下单门店」（订单真实发生门店，避免误判核销业绩），无该列时退回「所属门店」（兼容旧文件）
@@ -556,8 +574,8 @@ function renderFiles(){
     let bizCell;
     if(j.error){
       bizCell = '<span class="badge b-err">'+esc(j.error)+'</span>';
-    }else if(j.parsed && j.parsed.mode === 'refund'){
-      bizCell = '<span class="badge b-ok" style="background:#fff1f2;color:#be123c;border-color:#fecdd3">退款明细 · 四表头命中</span>';
+    }else if(j.mode === 'refund'){
+      bizCell = '<span class="badge b-ok" style="background:#fff1f2;color:#be123c;border-color:#fecdd3">退款明细 · 手动选择</span>';
     }else{
       bizCell = '<span class="badge b-ok">有赞账单 · 全渠道自动分拣</span>';
     }
@@ -613,12 +631,10 @@ async function handleFiles(fileList){
   if(!files.length) return;
   msg('解析中…', 'info');
   for(const f of files){
-    const job = { name:f.name, buf:null, bizKey:detectBiz(f.name), parsed:null, error:'', force:false };
+    const job = { name:f.name, buf:null, mode:IMPORT_MODE, bizKey:detectBiz(f.name), parsed:null, error:'', force:false };
     try{
       job.buf = await f.arrayBuffer();
-      job.parsed = parseWorkbook(job.buf, f.name);
-      if(job.parsed && job.parsed.mode === 'xz_sum' && (job.bizKey === 'none' || !job.bizKey)) job.bizKey = 'xz_sum';
-      if(job.bizKey === 'none') job.error = '';
+      job.parsed = parseWorkbook(job.buf, f.name, job.mode);
     }catch(e){
       job.error = String(e.message || e).slice(0,60);
     }
@@ -634,6 +650,21 @@ dz.addEventListener('click', () => $('fileInput').click());
 dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
 dz.addEventListener('dragleave', () => dz.classList.remove('over'));
 dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); handleFiles(e.dataTransfer.files); });
+
+/* ---------------- 导入类型切换（2026-10-17：显式入口，不再扫表头猜） ---------------- */
+let IMPORT_MODE = 'bill';   // 'bill' = 业绩账单；'refund' = 退款明细
+(function wireModeSeg(){
+  const seg = $('modeSeg'); if(!seg) return;
+  const hint = $('modeHint');
+  function update(){
+    seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.mode === IMPORT_MODE));
+    if(hint) hint.innerHTML = IMPORT_MODE === 'refund'
+      ? '上传你导出的<b>退款明细</b>文件（需含表头：订单完成时间 / 退款状态 / 退款方式 / 退款门店）。退款将按「原订单完成日」回溯，扣减对应门店的业绩，单数与金额同步扣除。'
+      : '有赞后台导出的账单文件原样上传即可（文件名含「有赞过滤」或「连锁总部-交易账单明细」都认），全渠道自动分拣，收银/充值/售卡等非业绩行自动排除。';
+  }
+  seg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { IMPORT_MODE = b.dataset.mode; update(); }));
+  update();
+})();
 
 /* ---------------- 门店挂接：导入时自动解析 store_id ----------------
    病根（9-28 定案）：本页此前只写 store_name，store_id 全靠 9-27 事后 SQL 回填，
@@ -805,8 +836,8 @@ $('importBtn').addEventListener('click', async () => {
   msg('正在建立门店挂接映射…', 'info');
   await loadStoreAlias();
   const smap = await buildStoreMap();
-  const refundJobs = jobs.filter(j => j.parsed.mode === 'refund');
-  const billJobs   = jobs.filter(j => j.parsed.mode !== 'refund');
+  const refundJobs = jobs.filter(j => j.mode === 'refund');
+  const billJobs   = jobs.filter(j => j.mode !== 'refund');
   const totalRows  = billJobs.reduce((a,j)=>a+j.parsed.rows.length,0);
 
   /* 退款明细单独走一路：写 chain_refund_orders（不影响业绩表） */
