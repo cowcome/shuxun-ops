@@ -894,11 +894,12 @@ $('importBtn').addEventListener('click', async () => {
     }
   }
 
-  let unmatchedRows = 0;
+  let unmatchedRows = 0; const unmatched = [];
   billJobs.forEach(j => j.parsed.rows.forEach(r => {
     r._sid = resolveSid(r.store_name, smap);
-    if(!r._sid) unmatchedRows++;
+    if(!r._sid){ unmatchedRows++; unmatched.push({ store_name:r.store_name, order_no:r.order_no, amount:r.amount, form_date:r.form_date, pay_type:r.pay_type }); }
   }));
+  const unmatchedHtml = unmatchedRows ? ('<br><span style="color:#b45309">注意：'+unmatchedRows+' 单未能自动识别门店（不进门店统计），请去「门店管理」核对/补全以下「有赞账单名」后重新导入：</span><ul style="margin:6px 0 0 18px;font-size:13px;color:#92400e">'+unmatched.slice(0,20).map(u=>'<li>门店名「'+esc(u.store_name||'（空）')+'」'+(u.order_no?' · 订单号 '+esc(u.order_no):'')+(u.amount?' · 金额 ¥'+Number(u.amount||0).toFixed(2):'')+(u.form_date?' · 日期 '+esc(u.form_date):'')+(u.pay_type?' · 支付方式 '+esc(u.pay_type):'')+'</li>').join('')+(unmatched.length>20?'<li>… 等 '+unmatched.length+' 条</li>':'')+'</ul>') : '';
   let doneRows = 0, inserted = 0, skippedPay = 0; const fails = [];
   try{
     for(let ji=0; ji<billJobs.length; ji++){
@@ -921,12 +922,12 @@ $('importBtn').addEventListener('click', async () => {
       if(CORRECT_MODE){
         html = '<b style="color:#15803d">全部完成（纠正重导）</b>：解析 '+totalRows+' 单 · 写入/覆盖更新 <b>'+inserted+'</b> 单'
              + (skippedPay ? ' · 排除非业绩 '+skippedPay+' 单' : '') + '。'
-             + (unmatchedRows ? '<br><span style="color:#b45309">注意：'+unmatchedRows+' 单未能自动识别门店（不进门店统计），跑一次「挂接SQL」即可补上。</span>' : '')
+             + unmatchedHtml
              + '<br>已按文件内容覆盖更新已有订单。可在「书荀连锁」看板查看最新数据。';
       } else {
         html = '<b style="color:#15803d">全部完成</b>：解析 '+totalRows+' 单 · 新写入 <b>'+inserted+'</b> 单 · 已存在自动跳过 '+(totalRows-inserted)+' 单'
              + (skippedPay ? ' · 排除非业绩 '+skippedPay+' 单' : '') + '。'
-             + (unmatchedRows ? '<br><span style="color:#b45309">注意：'+unmatchedRows+' 单未能自动识别门店（不进门店统计），跑一次「挂接SQL」即可补上。</span>' : '')
+             + unmatchedHtml
              + '<br>可在「书荀连锁」看板查看最新数据。';
       }
       fileJobs = []; renderFiles();
