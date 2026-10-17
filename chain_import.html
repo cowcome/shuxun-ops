@@ -706,26 +706,8 @@ let CORRECT_MODE = false;  // false=按订单号跳过已存在(安全)；true=�
    方案：①自学习——从已挂接行拉「有赞门店名→store_id」映射（同一有赞源，名字全一致）
         ②兜底——取括号内「-」后的店名，与主数据 std_name/short_name/aliases 比对 */
 let storeNameMap = null, STORE_ALIAS = {}, YZ_BILL_LOOKUP = {};
-/* C：自学习映射（扫订单总表的结果）本地缓存 1 小时，刷新页面也不用重扫。
-   注意：门店主数据（yz_bill_name/别名）不缓存，每次导入现拉，保证补完映射立刻生效 */
-const STORE_MAP_KEY = 'sx_storemap_v1', STORE_MAP_TTL = 60*60*1000;
-function readStoreMapCache(){
-  try{
-    const raw = localStorage.getItem(STORE_MAP_KEY);
-    if(!raw) return null;
-    const o = JSON.parse(raw);
-    if(!o || !o.t || !o.map || typeof o.map !== 'object') return null;
-    if(Date.now() - o.t > STORE_MAP_TTL) return null;
-    return o.map;
-  }catch(e){ return null; }
-}
-function writeStoreMapCache(map){
-  try{ localStorage.setItem(STORE_MAP_KEY, JSON.stringify({ t: Date.now(), map })); }catch(e){}
-}
 async function buildStoreMap(){
   if(storeNameMap) return storeNameMap;
-  const cached = readStoreMapCache();
-  if(cached){ storeNameMap = cached; return cached; }
   const map = {};
   try{
     let from = 0;
@@ -740,7 +722,6 @@ async function buildStoreMap(){
     }
   }catch(e){}
   storeNameMap = map;
-  if(Object.keys(map).length) writeStoreMapCache(map);
   return map;
 }
 async function loadStoreAlias(){
