@@ -765,6 +765,34 @@ async function loadYz(force){
       try{ localStorage.setItem(ck, JSON.stringify({ t: Date.now(), asOf, agg })); }catch(e){}
     }
 
+    // 退款扣减（仅连锁；按 done_date 对齐；金额+单数同步扣；每次加载在订单聚合之上扣一次，幂等）
+    try{
+      const rsel = 'store_id,platform,biz,amount,done_date';
+      const rraw = [];
+      let rfrom = 0;
+      while(true){
+        const rp = await sb('/rest/v1/chain_refund_orders?order=done_date.asc&select=' + rsel
+          + '&done_date=gte.' + start,
+          { headers: { Range: rfrom + '-' + (rfrom+999) } });
+        rraw.push(...rp);
+        if(rp.length < 1000 || rfrom > 150000) break;
+        rfrom += 1000;
+      }
+      rraw.forEach(r => {
+        if(r.platform!=='抖音' && r.platform!=='美团') return;
+        if(!(r.biz==='核销'||r.biz==='验券'||r.biz==='记账核销')) return;
+        const sid = r.store_id ? String(r.store_id) : null;
+        if(!sid) return;
+        const g = agg[sid];
+        if(!g) return;                 // 退款归属店不在本期订单聚合内 → 无法对齐扣减（按原订单完成日回溯）
+        const amt = Number(r.amount)||0; if(amt<=0) return;
+        if(r.platform==='美团'){ g.mtA-=amt; g.mtC-=1; }
+        else { g.dyA-=amt; g.dyC-=1; }
+        const D = (r.done_date||'').slice(0,10);
+        if(D){ const d = g.days[D] || (g.days[D]=[0,0]); d[0]-=amt; d[1]-=1; }
+      });
+    }catch(e){}
+
     // 映射到门店主表（store_id 由导入回填；未挂接的按店名进未匹配名单）
     // 🛡 防线：待上线门店数据一律拦截不计入；非连锁门店（陪跑/直营映射）也不计入连锁大盘
     const metrics = {};
@@ -825,7 +853,7 @@ async function loadYz(force){
     // 未匹配 / 拦截提示
     const un = yz.unmatched, bl = yz.blocked;
     const blPend = bl.filter(x => x.why === '未上线'), blOther = bl.filter(x => x.why !== '未上线');
-    $('yzBanner').innerHTML = '数据源：抖音来客 / 美团开店宝平台导出 · 每周「数据导入」（2026-09-27 拍板，有赞通道已关停）。口径：业绩 = 核销 + 验券 + 记账核销；不含抖音线上买单（内购上翻）。门店归属按导入回填的 store_id 精确挂接。'
+    $('yzBanner').innerHTML = '数据源：抖音来客 / 美团开店宝平台导出 · 每周「数据导入」（2026-09-27 拍板，有赞通道已关停）。口径：业绩 = 核销 + 验券 + 记账核销；不含抖音线上买单（内购上翻）。门店归属按导入回填的 store_id 精确挂接。已扣除退款明细（chain_refund_orders，按原订单完成日回溯，金额与单数同步扣减）。'
       + (blPend.length ? '<br/>🛡 已拦截 ' + blPend.length + ' 家未上线门店的测试数据（合计 ' + fmtY(blPend.reduce((s,x)=>s+x.amt,0)) + '），不计入看板：'
         + esc(blPend.slice(0,8).map(x => x.name).join('、')) : '')
       + (blOther.length ? '<br/>ℹ️ ' + blOther.length + ' 家非连锁门店（陪跑/直营）数据不并入连锁大盘（合计 ' + fmtY(blOther.reduce((s,x)=>s+x.amt,0)) + '）' : '')
