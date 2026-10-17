@@ -189,18 +189,29 @@ async function fetchAll(){
     const re = await sb('/rest/v1/store_special_periods?select=*&order=start_date.desc');
     if(re.ok) events = await re.json();
   }catch(e){}
-  return {orders:out, stores, events};
+  let refunds=[], roff=0;
+  while(true){
+    try{
+      const rr = await sb('/rest/v1/chain_refund_orders?select=store_id,platform,biz,amount,done_date&done_date=gte.'+needStart+'&order=done_date.asc', {headers:{'Range':roff+'-'+(roff+999)}});
+      if(!rr.ok) break;
+      const rb = await rr.json();
+      refunds = refunds.concat(rb);
+      if(rb.length < 1000) break;
+      roff += 1000;
+    }catch(e){ break; }
+  }
+  return {orders:out, stores, events, refunds};
 }
 
 /* ---------- 主流程 ---------- */
 let DATA = null;
 (async function main(){
   try{
-    const {orders, stores, events} = await fetchAll();
-    DATA = {orders, stores, events};
+    const {orders, stores, events, refunds} = await fetchAll();
+    DATA = {orders, stores, events, refunds};
     $id('loading').style.display='none';
     $id('app').style.display='';
-    render(orders, stores, events);
+    render(orders, stores, events, refunds);
   }catch(e){
     $id('loading').style.display='none';
     const eb = $id('errbox');
@@ -209,7 +220,7 @@ let DATA = null;
   }
 })();
 
-function render(orders, stores, events){
+function render(orders, stores, events, refunds){
   const stMap = {}; stores.forEach(s=>stMap[s.id]=s);
   const operators = [...new Set(stores.map(s=>(s.operator||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh'));
   /* 周期文案（随模式切换） */
@@ -257,6 +268,39 @@ function render(orders, stores, events){
     stDaily[s]=stDaily[s]||{cur:[0,0,0,0,0,0,0],prev:[0,0,0,0,0,0,0]};
     if(pi===0) stDaily[s].cur[Math.round((new Date(d+'T00:00:00')-P0.start)/86400000)]+=Number(o.amount)||0;
     else if(pi===1) stDaily[s].prev[Math.round((new Date(d+'T00:00:00')-P1.start)/86400000)]+=Number(o.amount)||0;
+  }
+
+  /* 退款扣减（仅连锁；按 done_date 对齐；金额+单数同步扣；镜像订单聚合，保证客单不被压扁） */
+  let refAmt=0, refCnt=0;
+  for(const rf of (refunds||[])){
+    if(rf.platform!=='抖音'&&rf.platform!=='美团') continue;
+    if(!(rf.biz==='核销'||rf.biz==='验券'||rf.biz==='记账核销')) continue;
+    const d=(rf.done_date||'').slice(0,10); if(!d) continue;
+    const st=stMap[rf.store_id]; if(!st) continue;
+    const amt=Number(rf.amount)||0; if(amt<=0) continue;
+    const pi=pIdx(d);
+    if(pi===0){ refAmt+=amt; refCnt++; }   // 仅统计复盘周期退款，与「核销金额」KPI 口径一致
+    if(pi>=0){
+      const m=PERIODS[pi].key;
+      wk[m]=wk[m]||{amt:0,cnt:0,pf:{}};
+      wk[m].amt-=amt; wk[m].cnt-=1;
+      wk[m].pf[rf.platform]=(wk[m].pf[rf.platform]||0)-amt;
+      if(rf.biz==='记账核销'){ wk[m].bk=(wk[m].bk||0)-amt; wk[m].pfBk=wk[m].pfBk||{}; wk[m].pfBk[rf.platform]=(wk[m].pfBk[rf.platform]||0)-amt; }
+    }
+    if(EXCL.includes(st.status)) continue;
+    const s=st.std_name;
+    if(pi>=0){
+      const m=PERIODS[pi].key;
+      stW[s]=stW[s]||{}; stW[s][m]=stW[s][m]||[0,0];
+      stW[s][m][0]-=amt; stW[s][m][1]-=1;
+      stPf[s]=stPf[s]||{}; stPf[s][m]=stPf[s][m]||{};
+      stPf[s][m][rf.platform]=(stPf[s][m][rf.platform]||0)-amt;
+    }
+    if(d>=MS&&d<=P0E){ (stMonth[s]=stMonth[s]||[0,0])[0]-=amt; }
+    else if(d>=PMS&&d<=PME){ (stMonth[s]=stMonth[s]||[0,0])[1]-=amt; }
+    stDaily[s]=stDaily[s]||{cur:[0,0,0,0,0,0,0],prev:[0,0,0,0,0,0,0]};
+    if(pi===0) stDaily[s].cur[Math.round((new Date(d+'T00:00:00')-P0.start)/86400000)]-=amt;
+    else if(pi===1) stDaily[s].prev[Math.round((new Date(d+'T00:00:00')-P1.start)/86400000)]-=amt;
   }
 
   const pct=(a,b)=> b? (a/b-1)*100 : 0;
@@ -360,7 +404,7 @@ function render(orders, stores, events){
   const aov=(x)=>x.cnt?x.amt/x.cnt:0;
   const actStores=allStd.filter(s=>(stW[s][PERIODS[0].key]||[0,0])[0]>0).length;
   H+='<section><h2>大盘速览<span class="badge" style="margin-left:8px;font-weight:400">核销口径 '+RANGE+'</span></h2><div class="kgrid">'
-    +'<div class="kpi"><div class="kpi-l">核销金额 <span class="tag" style="background:#e8f0ff;color:#0a84ff">账单导入·真实业绩</span></div><div class="kpi-v">'+money(cw.amt)+'</div><div class="kpi-s">环比 '+delta(dWow)+' · 对比上月同期 '+delta(d4w)+'</div><div class="kpi-s" style="color:#8a6d00">后台记账 '+money(cwBk)+'（占 '+(cwBk*100/Math.max(cw.amt,1)).toFixed(0)+'%）· 其余为券核销自动回传</div></div>'
+    +'<div class="kpi"><div class="kpi-l">核销金额 <span class="tag" style="background:#e8f0ff;color:#0a84ff">账单导入·真实业绩</span></div><div class="kpi-v">'+money(cw.amt)+'</div><div class="kpi-s">环比 '+delta(dWow)+' · 对比上月同期 '+delta(d4w)+'</div><div class="kpi-s" style="color:#8a6d00">后台记账 '+money(cwBk)+'（占 '+(cwBk*100/Math.max(cw.amt,1)).toFixed(0)+'%）· 其余为券核销自动回传</div>'+(refAmt?'<div class="kpi-s" style="color:#c0392b">已扣退款 '+refCnt+' 笔 -'+money(refAmt)+'（按原订单完成日回溯）</div>':'')+'</div>'
     +'<div class="kpi"><div class="kpi-l">核销单数</div><div class="kpi-v">'+cw.cnt+' 单</div><div class="kpi-s">环比 '+delta(pct(cw.cnt,pw.cnt||1))+'</div></div>'
     +'<div class="kpi"><div class="kpi-l">客单</div><div class="kpi-v">'+money(aov(cw))+'</div><div class="kpi-s">环比 '+(pw.cnt?delta(pct(aov(cw),aov(pw))):'<span style="color:'+MUT+'">—</span>')+'</div></div>'
     +'<div class="kpi"><div class="kpi-l">有业绩门店</div><div class="kpi-v">'+actStores+' 家</div><div class="kpi-s">对比'+PPREV+' '+delta(pct(actStores, allStd.filter(s=>(stW[s][PERIODS[1].key]||[0,0])[0]>0).length||1))+'</div></div>'
@@ -490,7 +534,7 @@ function render(orders, stores, events){
     +'复盘周期：'+(MODE==='roll'?('「近7天」= 过去 7 个完整日（'+P0S+' ~ '+P0E+'，不含今天，避免当日未回传导致虚低）'):('「自然周」= 上一个完整自然周（周一 '+P0S+' ~ 周日 '+P0E+'）'))+'，环比 = 对上一个同长度周期；'
     +'「对比上月同期」= 往前 28 天的同长度窗口；本月累计='+MS+'~'+P0E+'，上月同期='+PMS+'~'+PME+'。'
     +'预警阈值按各店近 8 个周期自身水平自适应（裸奔/下滑/连降/平台结构），停业店单列可比日均、不计入预警榜。'
-    +'数据源：chain_verify_orders（每周账单导入）· 生成于 '+TODAY+'</div>';
+    +'数据源：chain_verify_orders（每周账单导入）· 已扣除 chain_refund_orders 退款明细（按原订单完成日回溯，金额与单数同步扣减）· 生成于 '+TODAY+'</div>';
 
   $id('app').innerHTML=H;
 
@@ -538,7 +582,7 @@ function render(orders, stores, events){
     b.addEventListener('click',()=>{
       if(b.dataset.m===MODE || !DATA) return;
       applyMode(b.dataset.m);
-      render(DATA.orders, DATA.stores, DATA.events);
+      render(DATA.orders, DATA.stores, DATA.events, DATA.refunds);
     });
   });
   document.querySelectorAll('#allTbl th').forEach(th=>{
