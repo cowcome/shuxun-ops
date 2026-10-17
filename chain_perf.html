@@ -32,8 +32,7 @@ h2{font-size:18px;font-weight:700;margin-bottom:10px;letter-spacing:-.2px}
 .switch i::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s}
 .switch input:checked+i{background:#0a84ff}
 .switch input:checked+i::after{left:20px}
-#runBtn{font-size:13px;padding:9px 18px;border-radius:10px;border:none;background:#0a84ff;color:#fff;font-weight:700;cursor:pointer;margin-left:auto}
-#runBtn:active{transform:scale(.97)}
+/* 查询按钮已移除（改选择即刷新） */
 /* KPI */
 .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 .kpi{background:#fff;border-radius:16px;padding:14px 16px}
@@ -65,10 +64,15 @@ th{font-size:13px;color:#1d1d1f;font-weight:700;text-align:left;padding:11px 14p
 td{padding:11px 14px;border-bottom:1px solid #f2f2f4;white-space:nowrap}
 tr:last-child td{border-bottom:none}
 td:first-child{font-weight:600}
-.tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:6px;vertical-align:1px}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:6px;vertical-align:1px;cursor:pointer}
 .tag-stop{background:#fff0e6;color:#e8730a}      /* 停业 */
 .tag-train{background:#ede7ff;color:#6d3bdb}     /* 培训/装修 */
 .tag-new{background:#e7f7ec;color:#1a9e4b}       /* 新店未足月 */
+.plabel{display:inline-block;margin-left:auto;font-size:13px;font-weight:700;color:#1d4ed8;white-space:nowrap;align-self:center}
+.refmini{display:block;font-size:11px;color:#dc2626;font-weight:600;margin-top:2px}
+td.ref{color:#dc2626;font-weight:700}
+.sptip{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(20px);background:#1f2330;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.sptip.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .banner{margin:14px 0 0;background:#fff8e6;border:1px solid #ffe2a8;color:#9a6b00;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:600}
 .note{font-size:12px;color:#6e6e73;margin-top:8px;padding:0}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -103,7 +107,7 @@ td:first-child{font-weight:600}
       <div class="fitem"><select id="opSel"><option value="">全部运营人</option></select></div>
       <div class="fitem"><select id="pfSel"><option value="">全部平台</option><option value="抖音">抖音</option><option value="美团">美团</option></select></div>
       <div class="fitem"><select id="typeSel"><option value="">全部类型</option><option value="连锁">连锁</option><option value="直营">直营</option></select></div>
-      <button id="runBtn">查询</button>
+      <span id="periodLabel" class="plabel"></span>
     </div>
   </section>
 
@@ -161,7 +165,7 @@ function money(x){
 }
 const $=(id)=>document.getElementById(id);
 
-let ALL_ORDERS=[], ALL_STORES=[], OP_MAP={}, SPECIAL=[], pctCell=(a,b)=> b?Math.round(a/b*100):0;
+let ALL_ORDERS=[], ALL_STORES=[], OP_MAP={}, SPECIAL=[], ALL_REFUNDS=[], pctCell=(a,b)=> b?Math.round(a/b*100):0;
 
 async function loadData(start,end){
   const endX=endNextDay(end);   // 结束日+1 天，用 lt 比较（见 endNextDay 注释）
@@ -201,6 +205,9 @@ async function loadData(start,end){
   const ops=[...new Set(ALL_STORES.map(s=>(s.operator||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh'));
   const sel=$('opSel');
   sel.innerHTML='<option value="">全部运营人</option>'+ops.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('');
+  // 退款明细（按扣减日 done_date 区间过滤；仅影响连锁；store_id 为空表示未挂接门店）
+  const rf=await sb('/rest/v1/chain_refund_orders?select=store_id,platform,biz,amount,done_date&done_date=gte.'+start+'&done_date=lt.'+endX+'&order=done_date.asc');
+  ALL_REFUNDS = rf.ok ? await rf.json() : [];
   // 特殊营业周期（用于实际营业天数 + 门店标记）
   const sp=await sb('/rest/v1/store_special_periods?select=store_id,special_type,start_date,end_date');
   SPECIAL = sp.ok ? await sp.json() : [];
@@ -211,9 +218,19 @@ function overlapDays(r,start,end){
   const re=new Date(Math.min(new Date(r.end_date||end),new Date(end)));
   return (rs<=re)? ((re-rs)/86400000+1) : 0;
 }
-function spTag(type,days){
+function spTag(r,days){
+  const type=r.special_type||'';
   const cls=(type==='停业'||type==='闭店')?'tag-stop':(type==='新店'||type==='未足月')?'tag-new':'tag-train';
-  return '<span class="tag '+cls+'">'+type+(days>0?days+'天':'')+'</span>';
+  const tip=esc(type)+(r.start_date?('：'+r.start_date+' ~ '+(r.end_date||'未填结束日')):'')+(days>0?('（'+days+'天）'):'');
+  return '<span class="tag '+cls+'" data-tip="'+tip+'" onclick="sxSpTip(this)">'+esc(type)+(days>0?days+'天':'')+'</span>';
+}
+function sxSpTip(el){
+  let t=$('sptip');
+  if(!t){ t=document.createElement('div'); t.id='sptip'; t.className='sptip'; document.body.appendChild(t); }
+  t.textContent=el.getAttribute('data-tip')||'';
+  t.classList.add('show');
+  clearTimeout(t._tm);
+  t._tm=setTimeout(function(){ t.classList.remove('show'); }, 3000);
 }
 function applyFilter(start,end){
   const op=$('opSel').value, pf=$('pfSel').value, tp=$('typeSel').value;
@@ -249,7 +266,21 @@ function applyFilter(start,end){
   const bDays=allDays.size||1;
   const chainStores=Object.keys(byStore).filter(k=>k&&k!=='null'&&byStore[k].type==='连锁').length;
   const directStores=Object.keys(byStore).filter(k=>byStore[k].type==='直营').length;
-  return {op,pf,tp,start,end,totalAmt,totalCnt,totalVis,chainAmt,directAmt,byStore,byOp,byPf,bDays,chainStores,directStores,bizDaysOf};
+  // 退款扣减聚合（仅连锁；按 store_id + platform 对齐扣；金额与单数同步扣）
+  const R={byStore:{}, byPf:{抖音:{amt:0,cnt:0},美团:{amt:0,cnt:0}}, amt:0, cnt:0};
+  ALL_REFUNDS.forEach(r=>{
+    const amt=Number(r.amount)||0;
+    if(r.platform!=='抖音' && r.platform!=='美团') return;
+    R.amt+=amt; R.cnt++;
+    if(R.byPf[r.platform]){ R.byPf[r.platform].amt+=amt; R.byPf[r.platform].cnt++; }
+    const sid=String(r.store_id==null?'':r.store_id);
+    if(sid && sid!=='null'){ if(!R.byStore[sid]) R.byStore[sid]={amt:0,cnt:0}; R.byStore[sid].amt+=amt; R.byStore[sid].cnt++; }
+  });
+  totalAmt-=R.amt; totalCnt-=R.cnt; chainAmt-=R.amt;
+  byPf['抖音'].amt-=R.byPf['抖音'].amt; byPf['美团'].amt-=R.byPf['美团'].amt;
+  totalAmt=Math.max(0,totalAmt); totalCnt=Math.max(0,totalCnt); chainAmt=Math.max(0,chainAmt);
+  byPf['抖音'].amt=Math.max(0,byPf['抖音'].amt); byPf['美团'].amt=Math.max(0,byPf['美团'].amt);
+  return {op,pf,tp,start,end,totalAmt,totalCnt,totalVis,chainAmt,directAmt,byStore,byOp,byPf,bDays,chainStores,directStores,bizDaysOf,refunds:R};
 }
 
 function render(d){
@@ -260,7 +291,7 @@ function render(d){
   const cN=d.chainStores, dN=d.directStores;
   /* KPI */
   H+='<section><div class="kgrid">'
-    +'<div class="kpi"><div class="kpi-l">核销金额</div><div class="kpi-v">'+money(d.totalAmt)+'</div><div class="kpi-s">营业 '+d.bDays+' 天 · 日均 '+money(d.totalAmt/d.bDays)+'</div></div>'
+    +'<div class="kpi"><div class="kpi-l">核销金额（净）</div><div class="kpi-v">'+money(d.totalAmt)+'</div><div class="kpi-s">营业 '+d.bDays+' 天 · 日均 '+money(d.totalAmt/d.bDays)+(d.refunds&&d.refunds.amt?' · 退款 '+d.refunds.cnt+' 笔 -'+money(d.refunds.amt):'')+'</div></div>'
     +'<div class="kpi"><div class="kpi-l">连锁核销单数</div><div class="kpi-v">'+d.totalCnt+' 单</div><div class="kpi-s">连锁客单 '+money(chainKPI)+'</div></div>'
     +'<div class="kpi"><div class="kpi-l">直营到店客数</div><div class="kpi-v">'+d.totalVis+' 人</div><div class="kpi-s">直营客单 '+money(directKPI)+'</div></div>'
     +'<div class="kpi"><div class="kpi-l">覆盖门店</div><div class="kpi-v">'+(cN+dN)+' 家</div><div class="kpi-s">连锁 '+cN+' · 直营 '+dN+(d.op?' · '+d.op:'')+(d.pf?' · '+d.pf:'')+(d.tp?' · '+d.tp:'')+'</div></div>'
@@ -276,6 +307,7 @@ function render(d){
     +'<span class="lg"><i class="dot" style="background:#7c5cff"></i><span>抖音</span><span class="amt">'+money(dyA)+'</span><span class="pct">'+Math.round(dyPct)+'%</span></span>'
     +'<span class="lg"><i class="dot" style="background:#f97316"></i><span>美团</span><span class="amt">'+money(mtA)+'</span><span class="pct">'+Math.round(mtPct)+'%</span></span>'
     +'</div>';
+  if(d.refunds && d.refunds.amt){ H+='<div class="refmini" style="margin-top:10px">已扣退款 '+d.refunds.cnt+' 笔 -'+money(d.refunds.amt)+'（按原订单完成日回溯）</div>'; }
   H+='</div></div>';
 
   /* 运营人对比（仅全部时显示） */
@@ -302,7 +334,9 @@ function render(d){
     const isChain=rec.type==='连锁';
     const biz = isChain ? d.bizDaysOf(id) : (rec.days?rec.days.size:0);
     const sp = (id && id!=='null') ? SPECIAL.filter(r=>String(r.store_id)===String(id)) : [];
-    return {id, std:(st.std_name||rec.name||('门店'+id)), op:OP_MAP[id]||'', type:rec.type, amt:rec.amt, cnt:rec.cnt, vis:rec.vis, biz, sp};
+    const ref = (isChain && d.refunds && d.refunds.byStore[String(id)]) ? d.refunds.byStore[String(id)] : {amt:0,cnt:0};
+    const netAmt=Math.max(0, rec.amt-ref.amt), netCnt=Math.max(0, rec.cnt-ref.cnt);
+    return {id, std:(st.std_name||rec.name||('门店'+id)), op:OP_MAP[id]||'', type:rec.type, amt:netAmt, cnt:netCnt, vis:rec.vis, biz, sp, refAmt:ref.amt, refCnt:ref.cnt};
   }).sort((a,b)=>b.amt-a.amt);
   const spStores=stores.filter(s=>s.sp&&s.sp.length);
   if(spStores.length){
@@ -316,14 +350,28 @@ function render(d){
       const unit=isChain?s.cnt+' 单':s.vis+' 人';
       const kpiAmt=isChain?(s.cnt? s.amt/s.cnt:0):(s.vis? s.amt/s.vis:0);
       const bz=(s.biz==null)?1:(s.biz||1);
-      const spHtml=(s.sp&&s.sp.length)? s.sp.map(r=>spTag(r.special_type, overlapDays(r,d.start,d.end))).join('') : '—';
-      H+='<tr><td>'+esc(s.std)+'</td><td>'+(isChain?'连锁':'直营')+'</td><td>'+esc(s.op)+'</td><td>'+money(s.amt)+'</td><td>'+unit+'</td><td>'+money(kpiAmt)+'</td><td>'+(s.biz==null?'—':bz+' 天')+'</td><td>'+money(s.amt/bz)+'</td><td>'+spHtml+'</td></tr>';
+      const spHtml=(s.sp&&s.sp.length)? s.sp.map(r=>spTag(r, overlapDays(r,d.start,d.end))).join('') : '—';
+      H+='<tr><td>'+esc(s.std)+'</td><td>'+(isChain?'连锁':'直营')+'</td><td>'+esc(s.op)+'</td><td>'+money(s.amt)+(s.type==='连锁'&&s.refAmt?'<span class="refmini">退'+s.refCnt+'笔 -'+money(s.refAmt)+'</span>':'')+'</td><td>'+unit+'</td><td>'+money(kpiAmt)+'</td><td>'+(s.biz==null?'—':bz+' 天')+'</td><td>'+money(s.amt/bz)+'</td><td>'+spHtml+'</td></tr>';
     });
     H+='</tbody></table>';
   }else{
     H+='<div class="empty">该筛选条件下暂无业绩数据</div>';
   }
   H+='</section>';
+
+  /* 退款明细板块 */
+  if(d.refunds && d.refunds.amt>0){
+    const rfs=ALL_REFUNDS.filter(r=>r.platform==='抖音'||r.platform==='美团').slice().sort((a,b)=> (a.done_date<b.done_date?1:-1));
+    H+='<section><h2>退款明细<span class="badge">'+rfs.length+' 笔 · 已扣业绩</span></h2>';
+    H+='<div class="note" style="margin-bottom:10px">以下退款已从对应门店 / 平台业绩中扣除（金额与单数同步扣），归属日按原订单完成日回溯。</div>';
+    H+='<table><thead><tr><th>原订单完成日</th><th>门店</th><th>平台</th><th>退款金额</th><th>原因</th></tr></thead><tbody>';
+    rfs.forEach(r=>{
+      const st=ALL_STORES.find(s=>String(s.id)===String(r.store_id))||{};
+      const nm=st.std_name||r.store_name||'未挂接门店';
+      H+='<tr><td>'+esc(r.done_date)+'</td><td>'+esc(nm)+'</td><td>'+esc(r.platform)+'</td><td class="ref">-'+money(r.amount)+'</td><td>'+(esc(r.reason||'—'))+'</td></tr>';
+    });
+    H+='</tbody></table></section>';
+  }
 
   H+='<div class="note">数据来源：连锁 chain_verify_orders（每周账单导入）+ 佛山直营 daily_reports（每日填报，金额已扣内购）· 连锁业绩=核销+验券+记账核销；直营=抖音/美团净核销；均不含内购上翻。查询时间：'+iso(new Date())+'</div>';
   out.innerHTML=H;
@@ -333,6 +381,7 @@ async function run(reload){
   const start=$('dStart').value, end=$('dEnd').value;
   if(!start||!end){ $('out').innerHTML='<div class="errbox">请先选择起始日和结束日</div>'; return; }
   if(start>end){ $('out').innerHTML='<div class="errbox">起始日不能晚于结束日</div>'; return; }
+  const pl=$('periodLabel'); if(pl) pl.textContent='当前周期：'+start+' ~ '+end;
   if(reload){
     $('out').innerHTML='<div class="loadbox"><div class="spin"></div><br>正在加载数据…</div>';
     try{ await loadData(start,end); }catch(e){ $('out').innerHTML='<div class="errbox">'+esc(e.message)+'</div>'; return; }
@@ -352,8 +401,9 @@ function setRange(q){
 
 (async function init(){
   setRange('30');
-  document.querySelectorAll('#quick button').forEach(b=>b.addEventListener('click',()=>setRange(b.dataset.q)));
-  $('runBtn').addEventListener('click',()=>run(true));
+  document.querySelectorAll('#quick button').forEach(b=>b.addEventListener('click',()=>{ setRange(b.dataset.q); run(true); }));
+  $('dStart').addEventListener('change',()=>run(true));
+  $('dEnd').addEventListener('change',()=>run(true));
   $('opSel').addEventListener('change',()=>run(false));
   $('pfSel').addEventListener('change',()=>run(false));
   $('typeSel').addEventListener('change',()=>run(false));
