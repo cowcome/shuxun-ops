@@ -82,20 +82,30 @@ td.ref{color:#dc2626;font-weight:700}
 .warn:last-child{border:none}
 .empty{color:#8a8a8e;font-size:13px;background:#fff;border-radius:14px;padding:14px 16px}
 /* 业绩日历 */
-.cal-months{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;overflow-x:auto;padding:2px 0 6px}
-.cal-month{flex:1 1 0;min-width:320px;max-width:100%;box-sizing:border-box;background:#fff;border-radius:16px;padding:14px 16px}
-.cal-title{font-size:14px;font-weight:700;margin-bottom:10px;color:#1d1d1f}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.cal-grid.cal-head span{font-size:11px;color:#8a8f9e;text-align:center;padding:2px 0}
-.cal-cell{border-radius:10px;background:#f4f5f8;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;color:#1d1d1f;position:relative;overflow:hidden;aspect-ratio:1/.75;min-height:56px;padding:3px;line-height:1.15}
-.cal-cell b{font-weight:700;font-size:15px;line-height:1.1}
-.cal-cell i{font-style:normal;font-size:11px;margin-top:1px;opacity:.92;white-space:nowrap}
-.cal-cell i.sub{font-size:10px;opacity:.7}
+.cal-hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.cal-hd h2{margin:0}
+.cal-toggle{margin-left:auto;border:1px solid #dbe3ef;background:#fff;color:#0a84ff;font-size:12.5px;font-weight:600;padding:4px 14px;border-radius:999px;cursor:pointer;line-height:1.6;transition:background .15s,border-color .15s}
+.cal-toggle:hover{background:#f0f7ff;border-color:#b9d8ff}
+.cal-months{display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-start;padding:2px 0 6px}
+.cal-month{flex:0 1 380px;max-width:380px;min-width:280px;box-sizing:border-box;background:#fff;border-radius:14px;padding:12px 14px}
+.cal-title{font-size:13px;font-weight:700;margin-bottom:8px;color:#1d1d1f}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal-grid.cal-head span{font-size:11px;color:#8a8f9e;text-align:center;padding:1px 0}
+.cal-cell{border-radius:8px;background:#f4f5f8;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#1d1d1f;position:relative;overflow:hidden;min-height:40px;padding:1px;line-height:1.1}
+.cal-cell b{font-weight:700;font-size:13px;line-height:1.05}
+.cal-cell i{font-style:normal;font-size:10px;opacity:.92;white-space:nowrap}
+.cal-cell i.sub{font-size:9px;opacity:.7}
 .cal-cell.empty{background:transparent}
 .cal-cell.out{opacity:.32}
 .cal-cell.gap{border:2px solid #ef4444;color:#ef4444;background:#fff5f5}
 .cal-cell.gap i{color:#ef4444;font-weight:600}
 .cal-cell.today{box-shadow:0 0 0 2px #0a84ff inset}
+.cal-cell.can-click{cursor:pointer;transition:filter .12s}
+.cal-cell.can-click:hover{filter:brightness(.95);box-shadow:0 0 0 2px #0a84ff inset}
+.cal-cell.sel{box-shadow:0 0 0 2px #0a84ff inset,0 0 0 4px rgba(10,132,255,.18)}
+.cal-detail{margin-top:16px}
+.cal-detail h3{font-size:14px;font-weight:700;margin:0 0 8px}
+.cal-detail .dhint{font-size:12.5px;color:#6e6e73;margin-bottom:10px}
 .loadbox{text-align:center;padding:80px 20px;color:#6e6e73;font-size:14px}
 .loadbox .spin{display:inline-block;width:26px;height:26px;border:3px solid #e5e5ea;border-top-color:#0a84ff;border-radius:50%;animation:sp 1s linear infinite;margin-bottom:14px}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -316,7 +326,14 @@ function fmtWan(v){
   if(v>=10000) return (v/10000).toFixed(1)+'万';
   return Math.round(v).toString();
 }
+let CAL_OPEN=false, CAL_D=null, CAL_SEL=null;
+function sxCalToggle(){
+  CAL_OPEN=!CAL_OPEN;
+  const b=document.getElementById('calBody'); if(b) b.style.display=CAL_OPEN?'block':'none';
+  const btn=document.querySelector('.cal-toggle'); if(btn) btn.textContent=CAL_OPEN?'收起':'展开';
+}
 function renderCalendar(d){
+  CAL_D=d; CAL_SEL=null;
   const daily=d.daily||{}, dref=d.dailyRef||{};
   const net={}; let mn=Infinity, mx=-Infinity;
   Object.keys(daily).forEach(k=>{ const a=(daily[k].amt||0)-((dref[k]&&dref[k].amt)||0); net[k]=a; if(a>0){ if(a<mn)mn=a; if(a>mx)mx=a; } });
@@ -326,8 +343,10 @@ function renderCalendar(d){
   const chainInScope = d.tp !== '直营';
   const months=[]; let m=new Date(start.getFullYear(),start.getMonth(),1); const last=new Date(end.getFullYear(),end.getMonth(),1);
   while(m<=last){ months.push(new Date(m)); m=new Date(m.getFullYear(),m.getMonth()+1,1); }
-  let H='<section><h2>业绩日历<span class="badge">按日业绩 · 悬停看详情</span></h2>';
-  H+='<div class="note" style="margin-bottom:12px">格子颜色：浅黄=业绩低 · 绿=居中 · 蓝=高（按当前周期分布）。每格小字「连X·直Y」= 当日连锁核销单数 · 直营到店客数。<span style="color:#ef4444;font-weight:600">红框「连锁漏」</span>= 该日连锁无导入数据（直营每日正常填报，整日缺数必为连锁漏导入）。</div>';
+  let H='<section><div class="cal-hd"><h2>业绩日历<span class="badge">按日业绩 · 点某天看明细</span></h2>'
+       +'<button class="cal-toggle" onclick="sxCalToggle()">'+(CAL_OPEN?'收起':'展开')+'</button></div>';
+  H+='<div id="calBody" style="display:'+(CAL_OPEN?'block':'none')+'">';
+  H+='<div class="note" style="margin:10px 0 12px">格子颜色：浅黄=业绩低 · 绿=居中 · 蓝=高（按当前周期分布）。每格小字「连X·直Y」= 当日连锁核销单数 · 直营到店客数。<span style="color:#ef4444;font-weight:600">红框「连锁漏」</span>= 该日连锁无导入数据（直营每日正常填报，整日缺数必为连锁漏导入）。<b>点任意日期</b>可在下方看当天门店明细。</div>';
   H+='<div class="cal-months">';
   months.forEach(mo=>{
     const y=mo.getFullYear(), mm=mo.getMonth();
@@ -346,33 +365,91 @@ function renderCalendar(d){
       const chainGross = rec ? (rec.cnt||0) : 0;
       const directGross = rec ? (rec.vis||0) : 0;
       const hasData = rec && ((rec.amt||0)>0 || chainGross>0 || directGross>0);
-      let cls='cal-cell', bg='', tip='', txt='<b>'+day+'</b>';
+      let cls='cal-cell', bg='', txt='<b>'+day+'</b>', clickable=false;
       if(!inRange){ cls+=' out'; }
       else if(isPast){
         if(chainInScope && chainGross===0){
-          cls+=' gap';
-          tip=dk+' ｜ 连锁无导入数据（疑似漏导入）｜ 直营当日 '+directGross+' 人';
+          cls+=' gap'; clickable=true;
           txt='<b>'+day+'</b><i>连锁漏</i>';
         } else if(!hasData){
           cls+=' out';
-          tip=dk+' ｜ 区间内无业绩数据';
           txt='<b>'+day+'</b><i>—</i>';
         } else {
           const netv=net[dk]; const t = mx>mn ? (netv-mn)/(mx-mn) : 0.5;
-          bg=dayColor(t);
+          bg=dayColor(t); clickable=true;
           const cnt=(rec.cnt||0)-((dref[dk]&&dref[dk].cnt)||0);
           const vis=(rec.vis||0);
-          tip=dk+' ｜ 净业绩 ¥'+money(netv)+' ｜ 连锁 '+cnt+' 单 · 直营 '+vis+' 人';
           txt='<b>'+day+'</b><i>¥'+fmtWan(netv)+'</i><i class="sub">连'+cnt+'·直'+vis+'</i>';
         }
       } else { cls+=' out'; }
       if(isToday) cls+=' today';
-      H+='<span class="'+cls+'" '+(bg?'style="background:'+bg+'" ':'')+(tip?'title="'+tip.replace(/"/g,'&quot;')+'" ':'')+'>'+txt+'</span>';
+      if(clickable) cls+=' can-click';
+      H+='<span class="'+cls+'" data-day="'+dk+'" '+(bg?'style="background:'+bg+'" ':'')+(clickable?'onclick="sxCalDay(\''+dk+'\')"':'')+'>'+txt+'</span>';
     }
     H+='</div></div>';
   });
+  H+='</div>';
+  H+='<div id="calDayDetail" class="cal-detail"></div>';
   H+='</div></section>';
   return H;
+}
+/* 点击某天 → 下方展开当天门店明细（复用已加载的 ALL_ORDERS/ALL_REFUNDS，不再查库） */
+function sxCalDay(dk){
+  const box=document.getElementById('calDayDetail'); if(!box) return;
+  if(CAL_SEL===dk){
+    CAL_SEL=null; box.innerHTML='';
+    document.querySelectorAll('.cal-cell.sel').forEach(e=>e.classList.remove('sel'));
+    return;
+  }
+  CAL_SEL=dk;
+  document.querySelectorAll('.cal-cell.sel').forEach(e=>e.classList.remove('sel'));
+  const el=document.querySelector('.cal-cell[data-day="'+dk+'"]'); if(el) el.classList.add('sel');
+  const d=CAL_D||{}; const op=d.op||'', pf=d.pf||'', tp=d.tp||'';
+  const byStore={}; let tot=0, cnt=0, vis=0;
+  for(const o of ALL_ORDERS){
+    if(tp && o.type!==tp) continue;
+    if(op && (OP_MAP[o.store_id]||'')!==op) continue;
+    if(pf && o.platform!==pf) continue;
+    if(String(o.done_time||'').slice(0,10)!==dk) continue;
+    const amt=Number(o.amount)||0;
+    const sid=String(o.store_id==null?'':o.store_id);
+    if(!byStore[sid]) byStore[sid]={amt:0,cnt:0,vis:0,type:o.type,name:o._name||''};
+    byStore[sid].amt+=amt; tot+=amt;
+    if(o.type==='连锁'){ byStore[sid].cnt++; cnt++; }
+    else { byStore[sid].vis+=(o.visitors||0); vis+=(o.visitors||0); }
+  }
+  const rmap={}; let rAmt=0, rCnt=0;
+  (ALL_REFUNDS||[]).forEach(r=>{
+    if(r.platform!=='抖音' && r.platform!=='美团') return;
+    if(String(r.done_date)!==dk) return;
+    const sid=String(r.store_id==null?'':r.store_id); const a=Number(r.amount)||0;
+    if(!rmap[sid]) rmap[sid]={amt:0,cnt:0};
+    rmap[sid].amt+=a; rmap[sid].cnt++; rAmt+=a; rCnt++;
+  });
+  const rows=Object.keys(byStore).map(sid=>{
+    const r=byStore[sid]; const rf=rmap[sid]||{amt:0,cnt:0};
+    const st=(sid&&sid!=='null')?(ALL_STORES.find(s=>String(s.id)===sid)||{}):{};
+    return {sid, std:st.std_name||r.name||('门店'+sid), op:OP_MAP[sid]||'', type:r.type,
+      amt:Math.max(0,r.amt-rf.amt), cnt:Math.max(0,r.cnt-rf.cnt), vis:r.vis, refAmt:rf.amt, refCnt:rf.cnt};
+  }).sort((a,b)=>b.amt-a.amt);
+  const netTot=Math.max(0,tot-rAmt), netCnt=Math.max(0,cnt-rCnt);
+  const wk=['日','一','二','三','四','五','六'][new Date(dk+'T00:00:00').getDay()];
+  let H='<h3>'+dk+'（周'+wk+'）当天明细</h3>';
+  H+='<div class="dhint">净业绩 <b>'+money(netTot)+'</b> · 连锁 '+netCnt+' 单 · 直营 '+vis+' 人'
+     +(rCnt?' · 退款 '+rCnt+' 笔 -'+money(rAmt):'')+' · 覆盖 '+rows.length+' 家</div>';
+  if(!rows.length){
+    H+='<div class="empty">该日暂无业绩数据（可能未导入）</div>';
+  }else{
+    H+='<table><thead><tr><th>门店</th><th>类型</th><th>运营人</th><th>金额</th><th>单数/客数</th><th>客单</th></tr></thead><tbody>';
+    rows.forEach(s=>{
+      const isChain=s.type==='连锁';
+      const unit=isChain?s.cnt+' 单':s.vis+' 人';
+      const k=isChain?(s.cnt?s.amt/s.cnt:0):(s.vis?s.amt/s.vis:0);
+      H+='<tr><td>'+esc(s.std)+'</td><td>'+(isChain?'连锁':'直营')+'</td><td>'+esc(s.op)+'</td><td>'+money(s.amt)+(isChain&&s.refAmt?'<span class="refmini">退'+s.refCnt+'笔 -'+money(s.refAmt)+'</span>':'')+'</td><td>'+unit+'</td><td>'+money(k)+'</td></tr>';
+    });
+    H+='</tbody></table>';
+  }
+  box.innerHTML=H;
 }
 function render(d){
   const out=$('out');
@@ -418,7 +495,7 @@ function render(d){
   }
   H+='</div></section>';
 
-  /* 业绩日历（本月视图：按总业绩着色 + 悬停看详情 + 漏导入红框） */
+  /* 业绩日历（按总业绩着色 + 漏导入红框 + 可折叠 + 点某天看当天明细；悬停已去掉避免与格子重复） */
   H+=renderCalendar(d);
 
   /* 门店排名（含实际营业天数 + 特殊营业标记） */
