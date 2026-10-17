@@ -43,7 +43,7 @@
   <div class="card">
     <button class="main" id="btn" onclick="runAll()">开 始 检 测</button>
     <div id="verdict"></div>
-    <div class="tip">如果结果里有一项是红色，把整页截图发我。若有同事的 iPad 能正常登录，请他也打开本页点一次，两边对比就能立刻看出差异。</div>
+    <div class="tip">建议<b>两台设备都跑一次对比</b>：先在一台「能正常登录」的电脑上跑一次，再在出问题的 iPad 上跑一次。两边一对比，哪一项不一样问题就在哪。<br>检测全程不输入任何账号密码，也不改任何数据。</div>
   </div>
 
   <div class="card">
@@ -179,6 +179,66 @@ function failText(r){
 }
 
 /* ---------- 各检测项 ---------- */
+/* 出网广度对比：同一台设备分别打 5 个不同目标，
+   用来区分「整体没网」和「只对某个域名不通」——这是最关键的分叉点 */
+var BREADTH = [
+  ['Apple', 'https://www.apple.com/library/test/success.html'],
+  ['百度', 'https://www.baidu.com/favicon.ico'],
+  ['Cloudflare', 'https://www.cloudflare.com/favicon.ico'],
+  ['本站 GitHub', SITE],
+  ['数据库 Supabase', SB + '/favicon.ico']
+];
+
+function t_ipv4(){
+  addRow('ip4','出口 IP（IPv4）');
+  return probe('https://api.ipify.org?format=json', {cache:'no-store'}, 10000).then(function(r){
+    if(r.ok && r.status===200){
+      var j={}; try{ j=JSON.parse(r.txt); }catch(e){}
+      var ip = j.ip || r.txt;
+      setRow('ip4','ok','<span class="ok">✅ '+esc(ip)+'</span> · '+r.ms+'ms');
+      log('[出口IPv4] '+ip);
+    }else{
+      setRow('ip4','bad','<span class="bad">❌ 拿不到 IPv4 出口</span> · '+(r.timeout?'超时':esc(r.err||''))+'<br><span class="mut" style="font-size:12.5px">→ 说明 IPv4 出网本身就不通</span>');
+      log('[出口IPv4] FAIL '+(r.err||'timeout'));
+    }
+  });
+}
+
+function t_ipv6(){
+  addRow('ip6','是否在用 IPv6');
+  return probe('https://api6.ipify.org?format=json', {cache:'no-store'}, 10000).then(function(r){
+    if(r.ok && r.status===200){
+      var j={}; try{ j=JSON.parse(r.txt); }catch(e){}
+      var ip = j.ip || r.txt;
+      setRow('ip6','warn','<span class="warn">⚠ 检测到 IPv6 出口：'+esc(ip)+'</span><br><span class="mut" style="font-size:12.5px">→ 这台设备正走 IPv6 出网。如果数据库那条路只通 IPv4，就会出现「电脑能上、iPad 不能上」</span>');
+      log('[IPv6] 存在 IPv6 出口: '+ip);
+    }else{
+      setRow('ip6','ok','<span class="ok">✅ 没有 IPv6 出口</span> · 走纯 IPv4<span class="mut">（正常，不是这个原因）</span>');
+      log('[IPv6] 无 IPv6 出口');
+    }
+  });
+}
+
+function t_breadth(){
+  addRow('breadth','出网广度对比');
+  var out = [];
+  var p = Promise.resolve();
+  BREADTH.forEach(function(item){
+    p = p.then(function(){
+      return probe(item[1], {mode:'no-cors', cache:'no-store'}, 9000).then(function(r){
+        if(r.ok){ out.push('<span class="ok">✅</span>'+esc(item[0])); log('[广度] '+item[0]+'：通 '+r.ms+'ms'); }
+        else { out.push('<span class="bad">❌</span>'+esc(item[0])); log('[广度] '+item[0]+'：不通 '+(r.err||'timeout')); }
+      });
+    });
+  });
+  return p.then(function(){
+    var badCount = 0, i;
+    for(i=0;i<out.length;i++){ if(out[i].indexOf('❌')>=0) badCount++; }
+    var state = badCount===0 ? 'ok' : (badCount===out.length ? 'bad' : 'warn');
+    setRow('breadth', state, out.join('&nbsp;｜&nbsp;') + (badCount>0&&badCount<out.length ? '<br><span class="mut" style="font-size:12.5px">→ 只有部分目标不通，说明是「对特定域名的拦截」，不是整体没网</span>' : ''));
+  });
+}
+
 function t1_localStorage(){
   addRow('ls','本地存储可用');
   try{
@@ -328,22 +388,36 @@ function t8_cookie(){
 
 /* ---------- 汇总判定 ---------- */
 function verdict(){
-  var bad = [], ok = [];
-  for(var k in RESULTS){ if(RESULTS[k]==='bad') bad.push(k); else if(RESULTS[k]==='ok') ok.push(k); }
   var el = $('verdict');
-  var loginOk = RESULTS.login==='ok';
-  var netOk = RESULTS.health==='ok' || RESULTS.rest==='ok';
+  var siteOk  = RESULTS.site === 'ok';
+  var sbOk    = (RESULTS.health === 'ok' || RESULTS.rest === 'ok');
+  var loginOk = RESULTS.login === 'ok';
+  var ip6     = (RESULTS.ip6 === 'warn');
+  var breadthBad = (RESULTS.breadth === 'bad');
+  var h = '';
   if(loginOk){
-    el.innerHTML = '<div class="verdict v-ok">结论：这台设备的网络完全正常，能连上数据库、登录通道也通。<br>如果页面里仍登录不上，那是别的原因（比如浏览器设置、旧缓存），把这个截图发我继续查。</div>';
-  }else if(!netOk){
-    el.innerHTML = '<div class="verdict v-bad">结论：这台设备<b>连不上数据库服务器</b>。和账号密码无关 —— 请求根本没到达服务器。<br>请把整页截图发我；若能顺便让一台「能正常登录」的设备也跑一次，对比差异最快。</div>';
+    h = '<div class="verdict v-ok">结论：这台设备网络完全正常 —— 数据库连得上、登录通道也通。<br>如果页面里仍然登录不上，那是浏览器缓存或设置的问题，把截图发我继续查。</div>';
+  }else if(!siteOk && !sbOk){
+    h = '<div class="verdict v-bad">结论：这台设备连「本系统网页」和「数据库」都打不开 → 是<b>这台设备的整体出网问题</b>（Wi-Fi / DNS / VPN 描述文件 / 系统时间），不是账号问题。'
+      + (breadthBad ? '<br>（广度对比也全红，进一步证实整体没网）' : '')
+      + '</div>';
+  }else if(siteOk && !sbOk){
+    h = '<div class="verdict v-bad">结论：**能打开本系统网页，但连不上数据库** → 这是「只对数据库这一个域名不通」，属于网络对该目标的拦截或路由问题。'
+      + (ip6 ? '<br>⚠️ 同时检测到这台设备有 <b>IPv6 出口</b> —— 高度怀疑是 IPv6 优先导致。这正好能解释「电脑能上、iPad 不能上」。请把这份结果发我，我给你对应的解决步骤。' : '')
+      + '</div>';
+  }else if(!loginOk){
+    h = '<div class="verdict v-warn">结论：网络能连上数据库，但「真实登录探测」没通过。可能是接口或账号策略问题，把截图发我。</div>';
   }else{
-    el.innerHTML = '<div class="verdict v-warn">结论：网络能连上数据库，但登录这一项没通过。可能是接口或账号策略问题，把截图发我。</div>';
+    h = '<div class="verdict v-warn">结论：检测已完成，请把整页截图发我。</div>';
   }
+  el.innerHTML = h;
   log('');
   log('=== 结论 ===');
-  el.textContent && log(el.textContent);
-  log(bad.length? ('不通过的项: '+bad.join(',')) : '全部通过');
+  var plain = h.replace(/<br>/g,' ').replace(/<[^>]+>/g,'');
+  log(plain);
+  var bad = [];
+  for(var k in RESULTS){ if(RESULTS[k]==='bad') bad.push(k); }
+  log(bad.length ? ('不通过的项: ' + bad.join(',')) : '全部通过');
 }
 
 /* ---------- 主流程 ---------- */
@@ -351,16 +425,17 @@ function runAll(){
   ROWS = []; RESULTS = {}; LINES = [];
   $('dump').textContent = '';
   $('verdict').innerHTML = '';
-  $('btn').disabled = true; $('btn').textContent = '检测中…请稍候';
+  $('btn').disabled = true; $('btn').textContent = '检测中…请稍候（约 40 秒）';
   render();
   log('# 书荀后台 · 网络诊断报告');
   log('生成时间: ' + stamp());
-  log('页面版本: net_diag v1 (2026-10-17)');
+  log('页面版本: net_diag v2 (2026-10-17)');
   log('');
   sysInfo();
   log('');
   log('=== 检测过程 ===');
   var chain = t1_localStorage()
+    .then(t_ipv4).then(t_ipv6).then(t_breadth)
     .then(t2_site).then(t3_dns).then(t4_health)
     .then(t5_rest).then(t6_login).then(t7_clock).then(t8_cookie);
   chain.then(function(){
