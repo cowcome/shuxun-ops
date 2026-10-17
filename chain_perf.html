@@ -87,9 +87,9 @@ td.ref{color:#dc2626;font-weight:700}
 .cal-toggle{margin-left:auto;border:1px solid #dbe3ef;background:#fff;color:#0a84ff;font-size:12.5px;font-weight:600;padding:4px 14px;border-radius:999px;cursor:pointer;line-height:1.6;transition:background .15s,border-color .15s}
 .cal-toggle:hover{background:#f0f7ff;border-color:#b9d8ff}
 .cal-wrap{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
-.cal-months{display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-start;padding:2px 0 6px;flex:0 1 auto}
-.cal-month{flex:0 1 400px;max-width:400px;min-width:280px;box-sizing:border-box;background:#fff;border-radius:14px;padding:12px 14px}
-.cal-side{flex:1 1 220px;min-width:200px;max-width:340px;background:#fff;border-radius:14px;padding:12px 14px;box-sizing:border-box}
+.cal-months{display:grid;gap:14px;flex:1 1 560px;min-width:520px;max-width:868px;padding:2px 0 6px}
+.cal-month{box-sizing:border-box;background:#fff;border-radius:14px;padding:12px 14px;min-width:0;width:100%;max-width:420px}
+.cal-side{flex:0 0 240px;max-width:240px;background:#fff;border-radius:14px;padding:12px 14px;box-sizing:border-box}
 .cal-side h4{margin:0 0 6px;font-size:13px;font-weight:700}
 .cal-side .sday{font-size:12.5px;color:#6e6e73;margin-bottom:6px;line-height:1.5}
 .cal-side .srow{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 0 3px;border-top:1px solid #f2f4f8}
@@ -361,11 +361,13 @@ function renderCalendar(d){
   const chainInScope = d.tp !== '直营';
   const months=[]; let m=new Date(start.getFullYear(),start.getMonth(),1); const last=new Date(end.getFullYear(),end.getMonth(),1);
   while(m<=last){ months.push(new Date(m)); m=new Date(m.getFullYear(),m.getMonth()+1,1); }
+  /* 月份固定横排：1个月=1列、2个月=两列并排（绝不竖排）、3个月以上才允许自动换行 */
+  const colCss = months.length<=1 ? '1fr' : (months.length===2 ? '1fr 1fr' : 'repeat(auto-fit,minmax(260px,1fr))');
   let H='<section><div class="cal-hd"><h2>业绩日历<span class="badge">按日业绩 · 点某天看明细</span></h2>'
        +'<button class="cal-toggle" onclick="sxCalToggle()">'+(CAL_OPEN?'收起':'展开')+'</button></div>';
   H+='<div id="calBody" style="display:'+(CAL_OPEN?'block':'none')+'">';
   H+='<div class="note" style="margin:10px 0 12px">格子颜色：浅黄=低 · 绿=中 · 蓝=高（按当前周期分布）。<span style="color:#ef4444;font-weight:600">红框「连锁漏」</span>= 该日连锁无导入数据（直营每日正常填报，整日缺数即连锁漏导入）。<b>点任意日期</b>看当天门店明细。</div>';
-  H+='<div class="cal-wrap"><div class="cal-months">';
+  H+='<div class="cal-wrap"><div class="cal-months" style="grid-template-columns:'+colCss+'">';
   months.forEach(mo=>{
     const y=mo.getFullYear(), mm=mo.getMonth();
     const first=new Date(y,mm,1), daysInMo=new Date(y,mm+1,0).getDate();
