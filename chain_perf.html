@@ -86,8 +86,19 @@ td.ref{color:#dc2626;font-weight:700}
 .cal-hd h2{margin:0}
 .cal-toggle{margin-left:auto;border:1px solid #dbe3ef;background:#fff;color:#0a84ff;font-size:12.5px;font-weight:600;padding:4px 14px;border-radius:999px;cursor:pointer;line-height:1.6;transition:background .15s,border-color .15s}
 .cal-toggle:hover{background:#f0f7ff;border-color:#b9d8ff}
-.cal-months{display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-start;padding:2px 0 6px}
-.cal-month{flex:0 1 380px;max-width:380px;min-width:280px;box-sizing:border-box;background:#fff;border-radius:14px;padding:12px 14px}
+.cal-wrap{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.cal-months{display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-start;padding:2px 0 6px;flex:0 1 auto}
+.cal-month{flex:0 1 400px;max-width:400px;min-width:280px;box-sizing:border-box;background:#fff;border-radius:14px;padding:12px 14px}
+.cal-side{flex:1 1 220px;min-width:200px;max-width:340px;background:#fff;border-radius:14px;padding:12px 14px;box-sizing:border-box}
+.cal-side h4{margin:0 0 6px;font-size:13px;font-weight:700}
+.cal-side .sday{font-size:12.5px;color:#6e6e73;margin-bottom:6px;line-height:1.5}
+.cal-side .srow{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 0 3px;border-top:1px solid #f2f4f8}
+.cal-side .srow:first-of-type{border-top:none}
+.cal-side .sname{color:#334155;font-weight:600}
+.cal-side .scnt{font-weight:700}
+.cal-side .slist{font-size:12px;color:#64748b;line-height:1.65;padding-bottom:6px;border-bottom:1px solid #f2f4f8}
+.cal-side .slist:last-child{border-bottom:none}
+.cal-side .sempty{font-size:12.5px;color:#8a8f9e;line-height:1.6}
 .cal-title{font-size:13px;font-weight:700;margin-bottom:8px;color:#1d1d1f}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
 .cal-grid.cal-head span{font-size:11px;color:#8a8f9e;text-align:center;padding:1px 0}
@@ -354,7 +365,7 @@ function renderCalendar(d){
        +'<button class="cal-toggle" onclick="sxCalToggle()">'+(CAL_OPEN?'收起':'展开')+'</button></div>';
   H+='<div id="calBody" style="display:'+(CAL_OPEN?'block':'none')+'">';
   H+='<div class="note" style="margin:10px 0 12px">格子颜色：浅黄=低 · 绿=中 · 蓝=高（按当前周期分布）。<span style="color:#ef4444;font-weight:600">红框「连锁漏」</span>= 该日连锁无导入数据（直营每日正常填报，整日缺数即连锁漏导入）。<b>点任意日期</b>看当天门店明细。</div>';
-  H+='<div class="cal-months">';
+  H+='<div class="cal-wrap"><div class="cal-months">';
   months.forEach(mo=>{
     const y=mo.getFullYear(), mm=mo.getMonth();
     const first=new Date(y,mm,1), daysInMo=new Date(y,mm+1,0).getDate();
@@ -396,15 +407,49 @@ function renderCalendar(d){
     H+='</div></div>';
   });
   H+='</div>';
+  H+='<div id="calSide" class="cal-side">'+CAL_SIDE_HINT+'</div>';
+  H+='</div>';
   H+='<div id="calDayDetail" class="cal-detail"></div>';
   H+='</div></section>';
   return H;
 }
-/* 点击某天 → 下方展开当天门店明细（复用已加载的 ALL_ORDERS/ALL_REFUNDS，不再查库） */
+/* 点击某天 → 下方展开当天门店明细 + 右侧显示当天特殊营业门店 */
+const CAL_SIDE_HINT='<h4>特殊营业门店</h4><div class="sempty">点日历中任一天，这里显示当天有多少门店特殊营业（停业 / 培训 / 新店等），用来判断业绩偏低是不是因为门店没营业。</div>';
+function calSideHtml(dk){
+  const day=String(dk);
+  const act=(SPECIAL||[]).filter(r=>{
+    const s=String(r.start_date||''); if(!s) return false;
+    const e=String(r.end_date||'9999-12-31');
+    return s<=day && day<=e;
+  });
+  const seen=new Set(), uniq=[];
+  act.forEach(r=>{ const k=String(r.store_id)+'|'+String(r.special_type||''); if(seen.has(k)) return; seen.add(k); uniq.push(r); });
+  const wk=['日','一','二','三','四','五','六'][new Date(day+'T00:00:00').getDay()];
+  let H='<h4>特殊营业门店</h4><div class="sday">'+day+'（周'+wk+'）</div>';
+  if(!uniq.length) return H+'<div class="sempty" style="color:#15803d">该日无特殊营业 —— 门店均正常营业。</div>';
+  const opStores=(ALL_STORES||[]).filter(s=>String(s.status||'').trim()==='在营').length;
+  H+='<div class="sday">共 <b style="color:#b45309">'+uniq.length+'</b> 家特殊营业'+(opStores?(' · 在营门店 '+opStores+' 家'):'')+'</div>';
+  const byType={};
+  uniq.forEach(r=>{
+    const t=String(r.special_type||'其他');
+    const st=(ALL_STORES||[]).find(s=>String(s.id)===String(r.store_id))||{};
+    const nm=st.std_name||('门店'+r.store_id);
+    (byType[t]=byType[t]||[]).push(nm);
+  });
+  Object.keys(byType).sort((a,b)=>byType[b].length-byType[a].length).forEach(t=>{
+    const arr=byType[t];
+    const isStop=(t.indexOf('停业')>=0||t.indexOf('闭店')>=0);
+    H+='<div class="srow"><span class="sname">'+esc(t)+'</span><span class="scnt" style="color:'+(isStop?'#dc2626':'#b45309')+'">'+arr.length+' 家</span></div>';
+    H+='<div class="slist">'+arr.map(esc).join('、')+'</div>';
+  });
+  return H;
+}
 function sxCalDay(dk){
   const box=document.getElementById('calDayDetail'); if(!box) return;
+  const side=document.getElementById('calSide');
   if(CAL_SEL===dk){
     CAL_SEL=null; box.innerHTML='';
+    if(side) side.innerHTML=CAL_SIDE_HINT;
     document.querySelectorAll('.cal-cell.sel').forEach(e=>e.classList.remove('sel'));
     return;
   }
@@ -457,6 +502,7 @@ function sxCalDay(dk){
     H+='</tbody></table>';
   }
   box.innerHTML=H;
+  if(side) side.innerHTML=calSideHtml(dk);
 }
 function render(d){
   const out=$('out');
