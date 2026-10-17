@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>网络诊断 · 书荀运营后台</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f7fa;margin:0;padding:20px 14px 60px;color:#14213d;font-size:15px;line-height:1.6}
+  .wrap{max-width:640px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 6px}
+  .sub{font-size:13px;color:#5b6b85;margin-bottom:18px;line-height:1.7}
+  .card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,33,61,.07)}
+  .card h3{font-size:14px;margin:0 0 10px;color:#334155;font-weight:700}
+  button.main{width:100%;padding:15px;border:none;border-radius:12px;font-size:16px;font-weight:700;background:#007aff;color:#fff;cursor:pointer;margin-bottom:10px}
+  button.main:active{transform:scale(.98);opacity:.9}
+  button.main:disabled{background:#9dc4f0}
+  button.ghost{width:100%;padding:13px;border:1px solid #dbe3ef;border-radius:12px;font-size:15px;font-weight:600;background:#fff;color:#007aff;cursor:pointer}
+  button.ghost:active{background:#f0f6ff}
+  .row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f0f2f6;font-size:14px}
+  .row:last-child{border-bottom:none}
+  .row .nm{flex:0 0 132px;color:#334155;font-weight:600;font-size:13px;line-height:1.5}
+  .row .vl{flex:1 1 auto;min-width:0;word-break:break-all;font-size:13px;line-height:1.5}
+  .ok{color:#0a8f3c;font-weight:700}
+  .bad{color:#dc2626;font-weight:700}
+  .warn{color:#b45309;font-weight:700}
+  .mut{color:#8a97ab}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .d-ok{background:#0a8f3c}.d-bad{background:#dc2626}.d-warn{background:#f59e0b}.d-run{background:#007aff}
+  .tip{font-size:12.5px;color:#5b6b85;line-height:1.7;background:#f1f7ff;border-left:3px solid #007aff;padding:9px 11px;border-radius:6px;margin-top:12px}
+  .verdict{font-size:14.5px;font-weight:700;line-height:1.75;padding:12px 14px;border-radius:10px;margin-top:4px}
+  .v-ok{background:#e8f7ee;color:#0a6b30;border:1px solid #b6e6c8}
+  .v-bad{background:#fdecec;color:#a01b1b;border:1px solid #f7c4c4}
+  .v-warn{background:#fff7e6;color:#8a5a00;border:1px solid #f5dfae}
+  pre#dump{white-space:pre-wrap;word-break:break-all;font-size:12px;line-height:1.7;background:#f6f8fb;border:1px solid #e3e9f2;border-radius:10px;padding:12px;margin:0;color:#334155;max-height:340px;overflow:auto;-webkit-user-select:all;user-select:all}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>网络诊断</h1>
+  <div class="sub">请在<b>登不上的那台设备</b>上打开本页（比如你的 iPad），点下面按钮。全程不需要输入任何账号密码，也不会改任何数据，只是向服务器发几次探测请求。</div>
+
+  <div class="card">
+    <button class="main" id="btn" onclick="runAll()">开 始 检 测</button>
+    <div id="verdict"></div>
+    <div class="tip">如果结果里有一项是红色，把整页截图发我。若有同事的 iPad 能正常登录，请他也打开本页点一次，两边对比就能立刻看出差异。</div>
+  </div>
+
+  <div class="card">
+    <h3>设备与系统信息</h3>
+    <div id="sys"><div class="mut">检测中…</div></div>
+  </div>
+
+  <div class="card">
+    <h3>检测项目</h3>
+    <div id="list"><div class="mut">点上面「开始检测」</div></div>
+  </div>
+
+  <div class="card">
+    <h3>完整结果（可复制）</h3>
+    <pre id="dump">—</pre>
+    <div style="height:10px"></div>
+    <button class="ghost" onclick="copyAll()">复制全部结果</button>
+  </div>
+</div>
+
+<script>
+var SB = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
+var KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
+var SITE = 'https://cowcome.github.io/shuxun-ops/version.json';
+var LINES = [];
+var RESULTS = {};
+
+function $(id){ return document.getElementById(id); }
+function pad(n){ return (n<10?'0':'')+n; }
+function stamp(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
+function nowMs(){ return (window.performance && performance.now) ? performance.now() : Date.now(); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+function log(s){ LINES.push(s); $('dump').textContent = LINES.join('\n'); }
+
+/* ---------- 渲染一行 ---------- */
+var ROWS = [];
+function addRow(id, name){
+  ROWS.push({id:id, name:name, html:'<span class="dot d-run"></span>检测中…', cls:''});
+  render();
+}
+function setRow(id, state, html){
+  for(var i=0;i<ROWS.length;i++){
+    if(ROWS[i].id===id){ ROWS[i].cls = state==='ok'?'':state; ROWS[i].html = html; }
+  }
+  RESULTS[id] = state;
+  render();
+}
+function render(){
+  var h='';
+  for(var i=0;i<ROWS.length;i++){
+    h += '<div class="row"><div class="nm">'+esc(ROWS[i].name)+'</div><div class="vl">'+ROWS[i].html+'</div></div>';
+  }
+  $('list').innerHTML = h || '<div class="mut">点上面「开始检测」</div>';
+}
+
+/* ---------- 设备信息 ---------- */
+function sysInfo(){
+  var ua = navigator.userAgent || '';
+  var ios = ua.match(/OS (\d+)[._](\d+)[._]?(\d+)?/);
+  var isIpad = /iPad/.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  var isIphone = /iPhone/.test(ua);
+  var br = '其他';
+  if(/CriOS/.test(ua)) br='Chrome (iOS)';
+  else if(/FxiOS/.test(ua)) br='Firefox (iOS)';
+  else if(/EdgiOS/.test(ua)) br='Edge (iOS)';
+  else if(/Safari/.test(ua) && /Version\//.test(ua)) br='Safari';
+  else if(/Chrome\//.test(ua)) br='Chrome (桌面)';
+  else if(/Firefox\//.test(ua)) br='Firefox (桌面)';
+  var dev = isIpad?'iPad' : isIphone?'iPhone' : (navigator.platform||'未知');
+  var rows = [
+    ['设备', dev],
+    ['浏览器', br],
+    ['系统版本', ios ? ('iOS/iPadOS '+ios[1]+'.'+ios[2]+(ios[3]?'.'+ios[3]:'')) : '未识别'],
+    ['网络状态', (navigator.onLine? '在线(onLine=true)' : '离线(onLine=false)')],
+    ['本机时间', stamp()],
+    ['时区', 'UTC'+(new Date().getTimezoneOffset()<=0?'+':'-')+pad(Math.floor(Math.abs(new Date().getTimezoneOffset())/60))+':'+pad(Math.abs(new Date().getTimezoneOffset())%60)],
+    ['屏幕', screen.width+'×'+screen.height+' @'+(window.devicePixelRatio||1)+'x'],
+    ['页面地址', location.href]
+  ];
+  var h='';
+  for(var i=0;i<rows.length;i++){
+    h += '<div class="row"><div class="nm">'+esc(rows[i][0])+'</div><div class="vl">'+esc(rows[i][1])+'</div></div>';
+  }
+  $('sys').innerHTML = h;
+  log('=== 设备信息 ===');
+  for(var j=0;j<rows.length;j++) log(rows[j][0]+': '+rows[j][1]);
+  log('UserAgent: '+ua);
+}
+
+/* ---------- 单项探测（带超时） ---------- */
+function probe(url, opts, timeoutMs){
+  opts = opts || {};
+  timeoutMs = timeoutMs || 12000;
+  var ctrl = null, timer = null;
+  var p = new Promise(function(resolve){
+    var done = false;
+    timer = setTimeout(function(){
+      if(done) return; done = true;
+      try{ if(ctrl) ctrl.abort(); }catch(e){}
+      resolve({ ok:false, timeout:true, err:'超时 '+Math.round(timeoutMs/1000)+' 秒无响应', ms:timeoutMs });
+    }, timeoutMs);
+    var t0 = nowMs();
+    var f;
+    try{ f = fetch(url, opts); }catch(e){
+      if(done) return; done=true; clearTimeout(timer);
+      resolve({ ok:false, timeout:false, err:(e&&e.message)||String(e), ms:0 }); return;
+    }
+    f.then(function(r){
+      if(done) return; done = true; clearTimeout(timer);
+      var dateHdr = '';
+      try{ dateHdr = r.headers.get('date')||''; }catch(e){}
+      r.text().then(function(txt){
+        resolve({ ok:true, status:r.status, txt:txt.slice(0,300), date:dateHdr, ms:Math.round(nowMs()-t0) });
+      }).catch(function(){
+        resolve({ ok:true, status:r.status, txt:'(响应体不可读)', date:dateHdr, ms:Math.round(nowMs()-t0) });
+      });
+    }).catch(function(e){
+      if(done) return; done = true; clearTimeout(timer);
+      resolve({ ok:false, timeout:false, err:(e&&e.message)||String(e), name:(e&&e.name)||'', ms:Math.round(nowMs()-t0) });
+    });
+  });
+  return p;
+}
+
+function failText(r){
+  if(r.timeout) return '❌ ' + esc(r.err);
+  var m = r.err || '';
+  var hint = '';
+  if(/Load failed|Failed to fetch|NetworkError|TypeError/i.test(m+r.name)){
+    hint = '<br><span class="mut" style="font-size:12.5px">→ 请求根本没连上服务器（不是密码错，也不是接口报错）</span>';
+  }
+  return '❌ ' + esc(m || '未知错误') + ' · ' + r.ms + 'ms' + hint;
+}
+
+/* ---------- 各检测项 ---------- */
+function t1_localStorage(){
+  addRow('ls','本地存储可用');
+  try{
+    localStorage.setItem('__sx_net_test','1');
+    var v = localStorage.getItem('__sx_net_test');
+    localStorage.removeItem('__sx_net_test');
+    if(v==='1'){ setRow('ls','ok','<span class="ok">✅ 正常</span> · 能存登录状态'); log('[本地存储] OK'); }
+    else { setRow('ls','bad','<span class="bad">❌ 能写但读不回</span>'); log('[本地存储] 读回失败'); }
+  }catch(e){
+    setRow('ls','bad','<span class="bad">❌ 被禁用</span> · '+esc(e.message)+'<br><span class="mut" style="font-size:12.5px">→ 若用了「无痕/隐私浏览」，登录状态无法保存</span>');
+    log('[本地存储] FAIL '+e.message);
+  }
+  return Promise.resolve();
+}
+
+function t2_site(){
+  addRow('site','打开本系统网站');
+  return probe(SITE, {cache:'no-store'}, 12000).then(function(r){
+    if(r.ok && r.status===200){
+      setRow('site','ok','<span class="ok">✅ 正常</span> · HTTP '+r.status+' · '+r.ms+'ms');
+      log('[本站] OK HTTP '+r.status+' '+r.ms+'ms');
+    }else if(r.ok){
+      setRow('site','warn','<span class="warn">⚠ HTTP '+r.status+'</span> · '+r.ms+'ms');
+      log('[本站] HTTP '+r.status);
+    }else{
+      setRow('site','bad',failText(r));
+      log('[本站] FAIL '+(r.err||'timeout'));
+    }
+  });
+}
+
+function t3_dns(){
+  addRow('dns','数据库域名解析');
+  /* 用 no-cors 图片探测：能区分「DNS 解析不出来」和「连上了但被拒」 */
+  return new Promise(function(resolve){
+    var t0 = nowMs();
+    var img = new Image();
+    var done = false;
+    var timer = setTimeout(function(){
+      if(done) return; done=true;
+      setRow('dns','warn','<span class="warn">⚠ 无响应（超时）</span>');
+      log('[域名探测] 超时'); resolve();
+    }, 8000);
+    img.onload = function(){
+      if(done) return; done=true; clearTimeout(timer);
+      setRow('dns','ok','<span class="ok">✅ 域名可达</span> · '+Math.round(nowMs()-t0)+'ms');
+      log('[域名探测] 可达'); resolve();
+    };
+    img.onerror = function(){
+      if(done) return; done=true; clearTimeout(timer);
+      /* 图片 onerror 不代表域名不可达：可能只是 404。所以标记为「有响应但需看下一项」 */
+      setRow('dns','ok','<span class="ok">✅ 有响应</span> · '+Math.round(nowMs()-t0)+'ms<span class="mut">（返回非图片，属正常，说明域名能解析）</span>');
+      log('[域名探测] 有响应(非图片)'); resolve();
+    };
+    img.src = SB + '/favicon.ico?cb=' + Date.now();
+  });
+}
+
+function t4_health(){
+  addRow('health','数据库认证服务');
+  return probe(SB + '/auth/v1/health', {headers:{'apikey':KEY}, cache:'no-store'}, 12000).then(function(r){
+    if(r.ok && r.status===200){
+      var jj = {};
+      try{ jj = JSON.parse(r.txt); }catch(e){}
+      setRow('health','ok','<span class="ok">✅ 正常</span> · HTTP 200 · '+(jj.version?('版本 '+esc(jj.version)+' · '):'')+r.ms+'ms');
+      log('[认证服务] OK '+r.txt);
+    }else if(r.ok){
+      setRow('health','warn','<span class="warn">⚠ HTTP '+r.status+'</span> · '+r.ms+'ms · '+esc(r.txt.slice(0,120)));
+      log('[认证服务] HTTP '+r.status+' '+r.txt);
+    }else{
+      setRow('health','bad',failText(r));
+      log('[认证服务] FAIL '+(r.err||'timeout'));
+    }
+  });
+}
+
+function t5_rest(){
+  addRow('rest','数据库数据接口');
+  return probe(SB + '/rest/v1/', {headers:{'apikey':KEY}, cache:'no-store'}, 12000).then(function(r){
+    if(r.ok){
+      setRow('rest','ok','<span class="ok">✅ 正常</span> · HTTP '+r.status+' · '+r.ms+'ms');
+      log('[数据接口] HTTP '+r.status+' '+r.txt.slice(0,150));
+    }else{
+      setRow('rest','bad',failText(r));
+      log('[数据接口] FAIL '+(r.err||'timeout'));
+    }
+  });
+}
+
+function t6_login(){
+  addRow('login','真实登录通道');
+  /* 用一个明显不存在的假账号去登录：
+     服务器回「密码/账号无效」= 通道完全正常（这是我们要的结论）
+     服务器没回、报网络错   = 通道不通（这才是真问题） */
+  var body = JSON.stringify({email:'nettest-not-a-real-user@example.com', password:'net-diag-not-real-password'});
+  return probe(SB + '/auth/v1/token?grant_type=password', {
+    method:'POST',
+    headers:{'apikey':KEY,'Content-Type':'application/json'},
+    body: body,
+    cache:'no-store'
+  }, 15000).then(function(r){
+    if(!r.ok){
+      setRow('login','bad',failText(r)+'<br><span class="mut" style="font-size:12.5px">→ 这一项是红的，就确认是网络通道问题，与账号密码无关</span>');
+      log('[登录通道] 网络失败 '+(r.err||'timeout'));
+      return;
+    }
+    var jj = {};
+    try{ jj = JSON.parse(r.txt); }catch(e){}
+    var msg = (jj.msg||jj.error_description||jj.message||'');
+    var code = jj.error_code||'';
+    if(r.status===400 && (/invalid/i.test(msg+code) || /credentials/i.test(msg+code))){
+      setRow('login','ok','<span class="ok">✅ 通道正常</span> · 服务器已应答「账号或密码无效」——这说明网络完全通，登录功能本身没问题 · '+r.ms+'ms');
+      log('[登录通道] OK 服务器应答: '+r.status+' '+msg+' ('+code+')');
+    }else{
+      setRow('login','warn','<span class="warn">⚠ 有应答但不是预期</span> · HTTP '+r.status+' · '+esc(msg.slice(0,120))+' · '+r.ms+'ms');
+      log('[登录通道] HTTP '+r.status+' '+r.txt);
+    }
+  });
+}
+
+function t7_clock(){
+  addRow('clock','设备时间准确性');
+  /* 时间差得太多，TLS 证书校验会失败，表现就像「连不上服务器」 */
+  return probe(SB + '/auth/v1/health', {headers:{'apikey':KEY}, cache:'no-store'}, 10000).then(function(r){
+    if(!r.ok || !r.date){ setRow('clock','warn','<span class="warn">⚠ 拿不到服务器时间</span><span class="mut">（依赖上一项是否通）</span>'); log('[时间校正] 无法比对'); return; }
+    var sv = Date.parse(r.date);
+    if(isNaN(sv)){ setRow('clock','warn','<span class="warn">⚠ 时间格式无法解析</span>'); return; }
+    var diff = Math.round((Date.now()-sv)/1000);
+    var abs = Math.abs(diff);
+    var txt = '设备比服务器' + (diff>=0?'快 ':'慢 ') + abs + ' 秒';
+    if(abs<=120){ setRow('clock','ok','<span class="ok">✅ 时间准确</span> · '+txt); log('[时间校正] 差 '+diff+' 秒（正常）'); }
+    else if(abs<=3600){ setRow('clock','warn','<span class="warn">⚠ 偏差偏大</span> · '+txt); log('[时间校正] 差 '+diff+' 秒'); }
+    else { setRow('clock','bad','<span class="bad">❌ 偏差过大</span> · '+txt+'<br><span class="mut" style="font-size:12.5px">→ 会让安全证书校验失败，表现为「连不上服务器」。请到 设置 → 通用 → 日期与时间，打开「自动设置」</span>'); log('[时间校正] 差 '+diff+' 秒（异常）'); }
+  });
+}
+
+function t8_cookie(){
+  addRow('cookie','Cookie 是否可用');
+  try{
+    document.cookie = '__sxc=1;path=/';
+    var has = document.cookie.indexOf('__sxc=1')>=0;
+    if(has){ setRow('cookie','ok','<span class="ok">✅ 正常</span>'); log('[Cookie] OK'); }
+    else { setRow('cookie','warn','<span class="warn">⚠ 不可用</span><span class="mut">（不影响登录，仅记录）</span>'); log('[Cookie] 不可用'); }
+  }catch(e){ setRow('cookie','warn','<span class="warn">⚠ '+esc(e.message)+'</span>'); log('[Cookie] '+e.message); }
+  return Promise.resolve();
+}
+
+/* ---------- 汇总判定 ---------- */
+function verdict(){
+  var bad = [], ok = [];
+  for(var k in RESULTS){ if(RESULTS[k]==='bad') bad.push(k); else if(RESULTS[k]==='ok') ok.push(k); }
+  var el = $('verdict');
+  var loginOk = RESULTS.login==='ok';
+  var netOk = RESULTS.health==='ok' || RESULTS.rest==='ok';
+  if(loginOk){
+    el.innerHTML = '<div class="verdict v-ok">结论：这台设备的网络完全正常，能连上数据库、登录通道也通。<br>如果页面里仍登录不上，那是别的原因（比如浏览器设置、旧缓存），把这个截图发我继续查。</div>';
+  }else if(!netOk){
+    el.innerHTML = '<div class="verdict v-bad">结论：这台设备<b>连不上数据库服务器</b>。和账号密码无关 —— 请求根本没到达服务器。<br>请把整页截图发我；若能顺便让一台「能正常登录」的设备也跑一次，对比差异最快。</div>';
+  }else{
+    el.innerHTML = '<div class="verdict v-warn">结论：网络能连上数据库，但登录这一项没通过。可能是接口或账号策略问题，把截图发我。</div>';
+  }
+  log('');
+  log('=== 结论 ===');
+  el.textContent && log(el.textContent);
+  log(bad.length? ('不通过的项: '+bad.join(',')) : '全部通过');
+}
+
+/* ---------- 主流程 ---------- */
+function runAll(){
+  ROWS = []; RESULTS = {}; LINES = [];
+  $('dump').textContent = '';
+  $('verdict').innerHTML = '';
+  $('btn').disabled = true; $('btn').textContent = '检测中…请稍候';
+  render();
+  log('# 书荀后台 · 网络诊断报告');
+  log('生成时间: ' + stamp());
+  log('页面版本: net_diag v1 (2026-10-17)');
+  log('');
+  sysInfo();
+  log('');
+  log('=== 检测过程 ===');
+  var chain = t1_localStorage()
+    .then(t2_site).then(t3_dns).then(t4_health)
+    .then(t5_rest).then(t6_login).then(t7_clock).then(t8_cookie);
+  chain.then(function(){
+    verdict();
+    $('btn').disabled = false; $('btn').textContent = '重 新 检 测';
+  }).catch(function(e){
+    log('流程异常: ' + (e && e.message));
+    $('btn').disabled = false; $('btn').textContent = '重 新 检 测';
+  });
+}
+
+function copyAll(){
+  var txt = LINES.join('\n');
+  var ta = document.createElement('textarea');
+  ta.value = txt;
+  ta.style.position='fixed'; ta.style.left='-9999px';
+  document.body.appendChild(ta);
+  ta.select(); ta.setSelectionRange(0, txt.length);
+  var ok = false;
+  try{ ok = document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+  if(ok){ alert('已复制，粘贴发我就行'); return; }
+  if(navigator.share){
+    navigator.share({title:'网络诊断结果', text:txt}).catch(function(){});
+    return;
+  }
+  alert('复制失败，请手动长按下方文字框全选复制');
+}
+</script>
+</body>
+</html>
