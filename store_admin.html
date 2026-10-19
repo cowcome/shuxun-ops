@@ -64,11 +64,16 @@
   .bg-st-pending { background:#FFF4E0; color:#8a5b00; }
   .login-box { max-width:380px; margin:12vh auto 0; }
   .login-box h1 { text-align:center; }
-  .err { color:#b91c1c; font-size:12px; margin-top:8px; }
-  /* ---- 门店主数据超级大表（2026-10-03）：所有平台字段摊开 + 行内可编辑 ---- */
+  .err { color:var(--sx-red); font-size:12px; margin-top:8px; }
+  /* ---- 门店主数据超级大表（2026-10-03）：所有平台字段摊开 ----
+     2026-10-19 深色适配 + 冻结：颜色改走 apple.css 主题令牌（data-theme=dark 自动切换）；
+     表头吸顶（组名行 top:0、列名行 top:var(--grpH)），左侧 门店ID+标准名称 两列横向冻结；
+     .bigtbl-wrap 自带双向滚动，滚动时表头和名称列始终可见。 */
+  .bigtbl-wrap { max-height:calc(100vh - 150px); overflow:auto; }
   .bigtbl { font-size:12px; min-width:2050px; }
   .bigtbl th, .bigtbl td { padding:6px 8px; vertical-align:middle; }
-  .bigtbl tr.grp th { text-align:center; font-size:12px; font-weight:700; padding:6px 4px; border-bottom:2px solid #e6e8ef; }
+  .bigtbl tr.grp th { text-align:center; font-size:12px; font-weight:700; padding:6px 4px;
+    border-bottom:2px solid var(--sx-separator); box-shadow:inset 0 -2px 0 var(--sx-separator); }
   .grp-标识 { background:#eef2ff; color:#3730a3; }
   .grp-有赞 { background:#ECFDF5; color:#065f46; }
   .grp-美团 { background:#FFF7ED; color:#9a3412; }
@@ -77,12 +82,25 @@
   .grp-统计 { background:#FEF9C3; color:#854d0e; }
   .grp-其他 { background:#F1F5F9; color:#475569; }
   .grp-操作 { background:#F1F5F9; color:#475569; }
-  .bigtbl .cell { width:100%; height:30px; font-size:12px; padding:0 6px; border-radius:7px; border:1px solid #e2e5ee; background:#fff; color:#1f2330; font-family:inherit; }
+  html[data-theme="dark"] .grp-标识 { background:rgba(99,102,241,.20); color:#c7d2fe; }
+  html[data-theme="dark"] .grp-有赞 { background:rgba(16,185,129,.16); color:#6ee7b7; }
+  html[data-theme="dark"] .grp-美团 { background:rgba(249,115,22,.16); color:#fdba74; }
+  html[data-theme="dark"] .grp-抖音 { background:rgba(139,92,246,.20); color:#c4b5fd; }
+  html[data-theme="dark"] .grp-归属 { background:rgba(148,163,184,.16); color:#e2e8f0; }
+  html[data-theme="dark"] .grp-统计 { background:rgba(234,179,8,.16);  color:#fde047; }
+  html[data-theme="dark"] .grp-其他, html[data-theme="dark"] .grp-操作 { background:rgba(148,163,184,.12); color:#cbd5e1; }
+  .bigtbl .cell { width:100%; height:30px; font-size:12px; padding:0 6px; border-radius:7px; border:1px solid var(--sx-separator); background:var(--sx-surface); color:var(--sx-text); font-family:inherit; }
   .bigtbl .cell:focus { border-color:var(--sx-accent); outline:none; }
-  .bigtbl td.sticky-col, .bigtbl th.sticky-col { position:sticky; left:0; z-index:3; background:#fff; border-right:1px solid #e6e8ef; }
-  .bigtbl tr.grp th.sticky-col { background:#eef2ff; }
-  .bigtbl tbody tr:hover td { background:#fafbff; }
-  .bigtbl tbody tr:hover td.sticky-col { background:#f3f5ff; }
+  /* 冻结表头：--grpH 由 applyColW 实测组名行高后写入，防两行错位 */
+  .bigtbl thead th { position:sticky; z-index:5; box-shadow:inset 0 -.5px 0 var(--sx-separator); }
+  .bigtbl thead tr.grp th { top:0; }
+  .bigtbl thead tr:not(.grp) th { top:var(--grpH,29px); }
+  /* 冻结左侧两列：门店ID（left:0）+ 标准名称（left:var(--idW) 实测门店ID列宽） */
+  .bigtbl td.sticky-col, .bigtbl th.sticky-col { position:sticky; left:0; z-index:3; background:var(--sx-surface); border-right:1px solid var(--sx-separator); }
+  .bigtbl td.std_name, .bigtbl th.col-std_name { position:sticky; left:var(--idW,64px); z-index:3; background:var(--sx-surface); border-right:1px solid var(--sx-separator); }
+  .bigtbl thead th.sticky-col, .bigtbl thead th.col-std_name { z-index:6; }  /* 左上角双层冻结，压过普通吸顶 */
+  .bigtbl tbody tr:hover td { background:var(--sx-fill); }
+  .bigtbl tbody tr:hover td.sticky-col, .bigtbl tbody tr:hover td.std_name { background:var(--sx-surface-2); }
   .gap-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#f59e0b; margin-right:5px; vertical-align:middle; }
   /* ---- 列宽（2026-10-03：BIG_COLS.w 之前是死配置，渲染未使用，这里用 CSS 落地）----
      三个平台门店名列加宽到能显示全部文字；有赞账单名最长（「書荀头疗养生（台州-温岭银泰店）」21字）。 */
@@ -93,12 +111,12 @@
   .bigtbl td.yz_bill_name .cell, .bigtbl td.meituan_name .cell,
   .bigtbl td.douyin_name .cell,  .bigtbl td.detail_address .cell { font-size:12px; }
   /* ---- 列宽拖拽（2026-10-07）：表头右缘可拖，宽度存 localStorage 跨会话保留 ---- */
-  .bigtbl thead th.col-resizable { position:relative; cursor:default; user-select:none; }
+  .bigtbl thead th.col-resizable { cursor:default; user-select:none; }  /* sticky 即定位上下文，不可改 relative，否则吸顶失效 */
   .bigtbl thead th.col-resizable::after {
     content:''; position:absolute; top:0; right:-3px; width:7px; height:100%;
     cursor:col-resize; z-index:4;
   }
-  .bigtbl thead th.col-resizable:hover::after { background:rgba(0,122,255,.18); }
+  .bigtbl thead th.col-resizable:hover::after { background:var(--sx-accent-ring); }
   .bigtbl thead th.col-dragging::after { background:var(--sx-accent); box-shadow:0 0 0 1px var(--sx-accent); }
   body.col-resizing { cursor:col-resize !important; user-select:none !important; }
   .bigtbl .cell { width:100%; }
@@ -315,7 +333,7 @@
 <div id="delMask" class="mask hide">
   <div class="modal">
     <h3 id="delTitle" style="color:#dc2626">删除确认</h3>
-    <div id="delInfo" style="margin-bottom:10px;font-size:13px;color:#4b5563"></div>
+    <div id="delInfo" style="margin-bottom:10px;font-size:13px;color:var(--sx-text-2)"></div>
     <div class="field">
       <label class="field-label" style="color:#dc2626">请输入「<b>确认删除</b>」四个字以继续</label>
       <input type="text" id="delInput" placeholder="输入：确认删除" autocomplete="off" onkeydown="if(event.key==='Enter')doDelete()" />
@@ -521,9 +539,9 @@ function renderStores(){
     (!kw || [x.std_name,x.short_name,x.aliases,x.meituan_name,x.douyin_name,x.meituan_id,x.douyin_id,x.operator,
              x.yz_bill_name, x.city, x.detail_address, String(orderCntMap[x.id]||'')]
       .some(v=>String(v==null?'':v).toLowerCase().indexOf(kw)>=0)));
-  let h = '<div class="tbl-wrap"><table class="bigtbl"><thead>';
+  let h = '<div class="tbl-wrap bigtbl-wrap"><table class="bigtbl"><thead>';
   h += '<tr class="grp">';
-  BIG_GROUPS.forEach(g=>{ h += '<th colspan="'+g.cols.length+'" class="grp-'+g.name+(g.cols[0]==='id'?' sticky-col':'')+'">'+g.name+'</th>'; });
+  BIG_GROUPS.forEach(g=>{ h += '<th colspan="'+g.cols.length+'" class="grp-'+g.name+'">'+g.name+'</th>'; });
   h += '</tr><tr>';
   BIG_GROUPS.forEach(g=>{ g.cols.forEach(k=>{ const c=BIG_COLS[k]; h += '<th class="col-'+k+(k==='id'?' sticky-col':'')+'">'+(c.req?'<span style="color:#dc2626">*</span>':'')+c.l+'</th>'; }); });
   h += '</tr></thead><tbody>';
@@ -534,7 +552,7 @@ function renderStores(){
   });
   h += '</tbody></table></div>';
   const activeCnt = storeRows.filter(x=>x.status==='在营').length;
-  h += '<div style="margin-top:8px;font-size:12px;color:#8a8f9e">在营门店 <b style="color:#0F6E56;font-size:15px">'+activeCnt+'</b> 家 ｜ 当前显示 '+list.length+' / '+storeRows.length+' 家 ｜ 点行尾「修改」（或点店名）在弹窗中编辑，保存后生效（写入操作日志）｜ 「有赞账单门店名」= 有赞账单「下单门店」列原值，一对一（重导/挂接据此归因）</div>';
+  h += '<div style="margin-top:8px;font-size:12px;color:var(--sx-text-3)">在营门店 <b style="color:var(--sx-green);font-size:15px">'+activeCnt+'</b> 家 ｜ 当前显示 '+list.length+' / '+storeRows.length+' 家 ｜ 点行尾「修改」（或点店名）在弹窗中编辑，保存后生效（写入操作日志）｜ 「有赞账单门店名」= 有赞账单「下单门店」列原值，一对一（重导/挂接据此归因）</div>';
   return h;
 }
 /* ================= 门店大表 · 列宽拖拽（2026-10-07） =================
@@ -545,10 +563,19 @@ const COLW_KEY = 'sx_bigcolw_v1';
 function getColW(){ try { return JSON.parse(localStorage.getItem(COLW_KEY)) || {}; } catch(e){ return {}; } }
 function setColW(o){ try { localStorage.setItem(COLW_KEY, JSON.stringify(o)); } catch(e){} }
 /* 把已存宽度套到当前已渲染的大表上（须在 innerHTML 写入后调用） */
+/* 门店ID列宽变化后，同步「标准名称」列的冻结偏移（--idW） */
+function syncIdW(tbl){
+  const idth = tbl.querySelector('thead tr:not(.grp) th.col-id');
+  if(idth) tbl.style.setProperty('--idW', Math.round(idth.getBoundingClientRect().width)+'px');
+}
 function applyColW(){
   const w = getColW();
   const tbl = document.querySelector('.bigtbl');
   if(!tbl) return;
+  /* 冻结所需实测尺寸：组名行高（吸顶第二行偏移）、门店ID列宽（标准名称列冻结偏移） */
+  const grpth = tbl.querySelector('thead tr.grp th');
+  if(grpth) tbl.style.setProperty('--grpH', grpth.offsetHeight+'px');
+  syncIdW(tbl);
   for(const k in w){
     if(!w[k]) continue;
     tbl.querySelectorAll('.col-'+k).forEach(el=>{ el.style.minWidth = w[k]+'px'; });
@@ -562,6 +589,7 @@ function resetColW(k){
   const d = (BIG_COLS[k] && BIG_COLS[k].w) || 120;
   tbl.querySelectorAll('.col-'+k).forEach(el=>{ el.style.minWidth = d+'px'; });
   tbl.querySelectorAll('td.'+k).forEach(el=>{ el.style.minWidth = d+'px'; });
+  if(k==='id') syncIdW(tbl);
 }
 /* 一键恢复全部默认列宽 */
 function resetAllColW(){
@@ -605,6 +633,7 @@ function initColResize(){
       w[key] = Math.round(nw); setColW(w);
       tbl.querySelectorAll('.col-'+key).forEach(el=>{ el.style.minWidth = nw+'px'; });
       tbl.querySelectorAll('td.'+key).forEach(el=>{ el.style.minWidth = nw+'px'; });
+      if(key==='id') syncIdW(tbl);           // 门店ID列拖宽时，标准名称冻结偏移跟动
       // 表格整体宽度跟随，避免右侧留白
       const tw = Array.from(tbl.querySelectorAll('thead tr:last-child th'))
                  .reduce((a,x)=>a+x.getBoundingClientRect().width,0);
@@ -837,7 +866,7 @@ function openStoreEdit(id, prefill){
   $('smBody').innerHTML = h;
   if(statusLocked()){
     ['sm_status','sm_closed_date','sm_operator'].forEach(id2=>{ const el=$(id2); if(el){ el.disabled=true; el.style.opacity=.5; el.title='该字段仅主账号可修改'; } });
-    $('smBody').insertAdjacentHTML('beforeend','<div style="margin-top:8px;font-size:12px;color:#8a5b00">⚠️ 状态 / 闭店日期 / 运营人 由主账号锁定，不可修改</div>');
+    $('smBody').insertAdjacentHTML('beforeend','<div style="margin-top:8px;font-size:12px;color:var(--sx-amber)">⚠️ 状态 / 闭店日期 / 运营人 由主账号锁定，不可修改</div>');
   }
   $('storeMask').classList.remove('hide');
 }
