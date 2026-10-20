@@ -341,7 +341,7 @@
         <div class="inline" data-page-node-id="Dop97x5RGK1YI7biMs1KHK">
           <div data-page-node-id="XSBsmaIP8nFhSm91ER3CrQ">
             <label class="field-label" data-page-node-id="2ojGhSIIdIBttrkpQ5A9mq">核对日期</label>
-            <input type="date" id="rDate" data-page-node-id="93q0tPv8PJzgBsn6zrxgW4" />
+            <input type="date" id="rDate" onchange="refreshConfirm()" data-page-node-id="93q0tPv8PJzgBsn6zrxgW4" />
           </div>
         </div>
       </div>
@@ -393,6 +393,7 @@
       <div class="card" data-page-node-id="fhaH0lkUgjqjM1ZBpFBqNC">
         <div class="card-title" data-page-node-id="nMbDvxH08jGSu9xHFihJsU">3 · 核对结果</div>
         <div id="rBody" data-page-node-id="HHCgN21mw68RnfypjkgIQh"><div class="empty" data-page-node-id="N5JAAonCyebQ2IpQCxSkU3">导入文件后点击「开始核对」</div></div>
+        <div id="confirmBox" style="margin-top:14px"></div>
       </div>
     </div>
 
@@ -1345,6 +1346,7 @@ async function saveInnerIds(){
 }
 
 let reconFiles = { mt:null, dy:null, ng:null, yz:null };
+let lastReconDate = '';   // 最近一次跑核对的日期（用于确认前校验）
 
 // 平台明细店名 → 标准名：★ 权威来源 = stores 主表的 aliases（逗号分隔）+ std_name + short_name
 // 匹配策略：所有候选别名里取「命中且最长」的，避免短别名抢先误配；主表未加载时退回 ALIAS 硬编码
@@ -1573,6 +1575,7 @@ function parseYz(aoa){
 async function runRecon(){
   clearMsg();
   const date = $('rDate').value;
+  lastReconDate = date;
   if(!date) return msg('请选择核对日期','err');
   if(!reconFiles.mt || !reconFiles.dy) return msg('美团收益明细和抖音核销明细均为必填：缺了哪一个都无法算出该平台的真值','err');
   const noInner = $('noInner') && $('noInner').checked;
@@ -1755,6 +1758,46 @@ async function runRecon(){
     msg('核对失败：'+esc(err.message),'err');
   }
   $('rBtn').disabled = false; $('rBtn').textContent = '开始核对';
+  refreshConfirm();
+}
+/* ---------------- 确认闸门（每日核对后点确认，该日直营数据才计入业绩查询） ---------------- */
+async function refreshConfirm(){
+  const box=$('confirmBox'); if(!box) return;
+  const date=$('rDate').value;
+  if(!date){ box.innerHTML='<div class="msg info">请先选择核对日期，再查看确认状态</div>'; return; }
+  box.innerHTML='<div class="msg info">载入确认状态…</div>';
+  try{
+    const r=await sb('/rest/v1/daily_confirm?select=confirmed_by,confirmed_at&form_date=eq.'+date);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json(); const rec=d&&d[0];
+    if(rec){
+      const t=new Date(rec.confirmed_at);
+      box.innerHTML='<div class="msg ok">✅ <b>'+esc(date)+'</b> 直营数据已于 '+t.toLocaleString('zh-CN')+' 由 <b>'+(rec.confirmed_by||'?')+'</b> 确认。'+
+        '<button class="primary" style="margin-left:10px" onclick="doConfirm()">重新确认 / 更新时间</button></div>';
+    }else{
+      box.innerHTML='<div class="msg warn">⚠️ <b>'+esc(date)+'</b> 直营数据<b>尚未确认</b>，暂不计入业绩查询。'+
+        '<button class="primary" style="margin-left:10px" onclick="doConfirm()">确认该日数据</button></div>';
+    }
+  }catch(e){ box.innerHTML='<div class="msg err">确认状态读取失败：'+esc(e.message)+'</div>'; }
+}
+async function doConfirm(){
+  const date=$('rDate').value;
+  if(!date){ msg('请先选择核对日期','err'); return; }
+  // 保险：未对该日跑过核对时，二次确认避免误点
+  if(lastReconDate!==date){
+    if(!confirm('尚未对 '+date+' 跑过数据核对，确定直接确认该日直营数据？\n（建议先导入明细跑核对再确认）')) return;
+  }
+  try{
+    await ensureSession();
+    const r=await sb('/rest/v1/daily_confirm?on_conflict=form_date',{
+      method:'POST',
+      headers:{'Prefer':'resolution=merge-duplicates','Content-Type':'application/json'},
+      body:JSON.stringify({ form_date:date, confirmed_by: myName||'运营', confirmed_at:new Date().toISOString() })
+    });
+    if(!r.ok){ const err=await r.text(); throw new Error('HTTP '+r.status+' '+err); }
+    msg(date+' 直营数据已确认，已计入业绩查询','ok');
+    await refreshConfirm();
+  }catch(e){ msg('确认失败：'+esc(e.message),'err'); }
 }
 function cell(t, f, d, isMoney){
   const tv = isMoney ? fmtAmt(t) : Math.round(t);
