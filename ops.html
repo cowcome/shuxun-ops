@@ -1268,7 +1268,7 @@ async function loadOperators(){
    数据核对：导入平台明细 → 算真值 → 比对门店填报 → 标出差异
    ---------------------------------------------------------------------------
    口径（已用 2026-09-06 真实数据验证，10/10 门店全部吻合；2026-10-15 增加次卡规则）：
-     次卡整组属内购，不计入真实业绩与人数（明细与内购减数两端均剔除，不依赖券码是否填全）
+     次卡（套餐名含「次」）属内购：计入「内购金额」真值（报销额），不计入真实业绩与人数（美团/抖音核销明细端剔除）；内购减数侧不再含次卡，避免重复扣减（2026-10-20 修正 2026-10-15 误将次卡移出内购金额真值）
      美团真值金额 = (非次卡)Σ(结算价 − 平台技术服务费) − 该店「美团」非次卡内购消费金额
      美团真值人数 = (非次卡)Σ(双人套餐2人 / 其余1人) − 该店「美团」非次卡内购券张数
      抖音真值金额 = (非次卡)Σ(订单实收)，剔除内购券（按 app_config 配置的商品ID清单识别）
@@ -1446,19 +1446,23 @@ function parseInner(aoa, date){
     if(!std) continue;
     if(iDate >= 0 && !sameInnerDay(row[iDate], date)){ skipped++; continue; }
     const plat = String(row[iPlat]==null?'':row[iPlat]).indexOf('美团')>=0 ? '美团' : '抖音';
-    // 2026-10-15 修改：次卡整组属内购，不计入真实业绩/人数，故不参与内购减数（券码/金额均剔除）
-    if(iName>=0 && String(row[iName]==null?'':row[iName]).indexOf('次')>=0) continue;
+    const isCi = iName>=0 && String(row[iName]==null?'':row[iName]).indexOf('次')>=0;
+    // 2026-10-20 修正 2026-10-15 口径：次卡（套餐名含「次」）属内购，应计入「内购金额」真值（报销额），
+    // 但不得计入消费额/券码（平台真值的内购减数侧）——次卡核销已在美团/抖音明细端剔除、不在真实业绩里，
+    // 若此处再把次卡消费额拿去减，会扣到非次卡的真值上，算平失衡。故：次卡仅进报销额，不进消费额/券码。
     if(!out[std]) out[std] = { '美团':{amt:0,cnt:0,rebate:0}, '抖音':{amt:0,cnt:0,rebate:0} };
-    out[std][plat].amt += toNum(row[iUse]);
-    out[std][plat].rebate += toNum(row[iReb]);
-    codeIdx.forEach(ci=>{
-      const v = row[ci]==null ? '' : String(row[ci]).trim();
-      // 2026-09-15 修复：内购表「券码」列会混入占位 0 和自付差额数字（如 17/13/27），
-      // 旧版全部当券码计数 → 内购张数虚高（如万科 9 张被数成 12 张），
-      // 人数真值被扣成负数。真券码特征：美团 13 位、抖音 15 位纯数字，
-      // 这里统一要求 ≥10 位纯数字才算券。
-      if(/^\d{10,}$/.test(v)){ out[std][plat].cnt++; codes[v] = std; }
-    });
+    out[std][plat].rebate += toNum(row[iReb]);   // 内购金额真值（报销额）：次卡也计
+    if(!isCi){
+      out[std][plat].amt += toNum(row[iUse]);    // 内购减数侧（消费额）：仅非次卡
+      codeIdx.forEach(ci=>{
+        const v = row[ci]==null ? '' : String(row[ci]).trim();
+        // 2026-09-15 修复：内购表「券码」列会混入占位 0 和自付差额数字（如 17/13/27），
+        // 旧版全部当券码计数 → 内购张数虚高（如万科 9 张被数成 12 张），
+        // 人数真值被扣成负数。真券码特征：美团 13 位、抖音 15 位纯数字，
+        // 这里统一要求 ≥10 位纯数字才算券。
+        if(/^\d{10,}$/.test(v)){ out[std][plat].cnt++; codes[v] = std; }
+      });
+    }
   }
   return { byStore: out, codes: codes, skipped: skipped };
 }
