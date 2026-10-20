@@ -1146,7 +1146,19 @@ function openCreate(name, date){
   $('edBody').innerHTML = buildEditFields({});
   $('editMask').classList.remove('hide');
 }
-function closeEdit(){ $('editMask').classList.add('hide'); editingId = null; creating = null; }
+function closeEdit(){ $('editMask').classList.add('hide'); editingId = null; creating = null; editFromRecon = false; }
+/* 核对结果行内「修改」：复用查询与导出的编辑弹窗，保存后回到核对结果刷新 */
+function openEditRecon(id){
+  const r = Object.values(lastReconFill).find(x=>x.id===id);
+  if(!r) return;
+  creating = null;
+  editingId = id;
+  editFromRecon = true;
+  $('edTitle').textContent = '修改填报 · '+r.store_name+' · '+r.form_date+
+    (r.revision ? '（已修改 '+r.revision+' 次）' : '');
+  $('edBody').innerHTML = buildEditFields(r);
+  $('editMask').classList.remove('hide');
+}
 async function saveEdit(){
   if(!editingId && !creating) return;
   const body = {};
@@ -1175,9 +1187,15 @@ async function saveEdit(){
     }
     if(!r.ok) throw new Error('保存失败 HTTP '+r.status+'：'+await r.text());
     const wasCreating = !!creating;
+    const fromRecon = editFromRecon;
     closeEdit();
-    msg(wasCreating ? '已补录，明细已刷新' : '已保存，改动已记入操作日志','ok');
-    loadQuery();
+    if(fromRecon){
+      reconFlash = '已保存修改，核对结果已按新数据重算';
+      await runRecon();
+    }else{
+      msg(wasCreating ? '已补录，明细已刷新' : '已保存，改动已记入操作日志','ok');
+      loadQuery();
+    }
   }catch(e){ msg(esc(e.message),'err'); }
 }
 async function delRow(id){
@@ -1347,6 +1365,9 @@ async function saveInnerIds(){
 
 let reconFiles = { mt:null, dy:null, ng:null, yz:null };
 let lastReconDate = '';   // 最近一次跑核对的日期（用于确认前校验）
+let lastReconFill = {};   // 最近一次核对时各门店的填报记录（供行内「修改」按钮定位 daily_reports.id）
+let editFromRecon = false; // 标记编辑弹窗来自核对页：保存后刷新核对结果，而非查询与导出
+let reconFlash = '';      // 保存成功提示，由 runRecon 完成消息带出（避免被其 clearMsg 冲掉）
 
 // 平台明细店名 → 标准名：★ 权威来源 = stores 主表的 aliases（逗号分隔）+ std_name + short_name
 // 匹配策略：所有候选别名里取「命中且最长」的，避免短别名抢先误配；主表未加载时退回 ALIAS 硬编码
@@ -1591,6 +1612,7 @@ async function runRecon(){
     const rows = await fetchRows(date, date, '');
     const fill = {};
     rows.forEach(r=>fill[r.store_name] = r);
+    lastReconFill = fill;
 
     // 内购漏登记：抖音明细里有内购券（按配置ID识别），但内购表没登记该券码
     const missingInner = dy.innerCodes.filter(x=>{
@@ -1602,7 +1624,7 @@ async function runRecon(){
       '<tr><th class="store" rowspan="2">门店</th>'+
       '<th colspan="3">美团核销金</th><th colspan="3">美团客数</th>'+
       '<th colspan="3">抖音核销金</th><th colspan="3">抖音客数</th>'+
-      '<th colspan="3">内购金额</th><th rowspan="2">判定</th></tr>'+
+      '<th colspan="3">内购金额</th><th rowspan="2">判定</th><th rowspan="2">操作</th></tr>'+
       '<tr>'+
       '<th>真值</th><th>填报</th><th>差</th>'+
       '<th>真值</th><th>填报</th><th>差</th>'+
@@ -1672,7 +1694,10 @@ async function runRecon(){
         cell(dyTrueAmt, fDyA, dDyA, true) +
         cell(dyTruePpl, fDyP, dDyP, false) +
         cell(innerTrue, fIn,  dIn,  true) +
-        '<td>'+(isBad?'<span class="bad">异常</span>':'<span class="ok">一致</span>')+'</td></tr>';
+        '<td>'+(isBad?'<span class="bad">异常</span>':'<span class="ok">一致</span>')+'</td>'+
+        '<td>'+(f.id
+          ? '<button class="sm" onclick="openEditRecon('+f.id+')">修改</button>'
+          : '<span style="opacity:.4">未填报</span>')+'</td></tr>';
     });
     h += '</tbody></table></div>';
 
@@ -1752,11 +1777,13 @@ async function runRecon(){
 
     $('rBody').innerHTML = note + h + hintHtml + yzHtml +
       '<div class="msg '+(bad?'err':'ok')+'">核对完成：共 '+STORES.length+' 家，'+
-      (bad ? '<b>'+bad+' 家存在异常</b>' : '全部一致')+'（金额容差 ±'+TOL+' 元，人数差 1 即标红）</div>' +
+      (bad ? '<b>'+bad+' 家存在异常</b>' : '全部一致')+'（金额容差 ±'+TOL+' 元，人数差 1 即标红）'+
+      (reconFlash ? '；<b>'+esc(reconFlash)+'</b>' : '')+'</div>' +
       (hintCnt ? '<div class="msg info">'+hintCnt+' 家出现<b>黄色参考提醒</b>：常见两类——① 金额吻合但人数有出入：大概率是同一客户体验 2 个以上项目（一人多券，双人套餐核销即 2 人到店），或内购表券码少复制，核实后按实际到店数修正；② 内购金额有差且差值恰为平台补贴金额：疑似核销金额/报销金额填混，对照补贴报表核实后修正。均请在填报备注里写明原因留痕。</div>' : '');
   }catch(err){
     msg('核对失败：'+esc(err.message),'err');
   }
+  reconFlash = '';
   $('rBtn').disabled = false; $('rBtn').textContent = '开始核对';
   refreshConfirm();
 }
@@ -1772,7 +1799,16 @@ async function refreshConfirm(){
     const d=await r.json(); const rec=d&&d[0];
     if(rec){
       const t=new Date(rec.confirmed_at);
-      box.innerHTML='<div class="msg ok">✅ <b>'+esc(date)+'</b> 直营数据已于 '+t.toLocaleString('zh-CN')+' 由 <b>'+(rec.confirmed_by||'?')+'</b> 确认。'+
+      // 保险：确认之后若有门店填报又被修改（updated_at > confirmed_at），提醒重新确认
+      let staleHtml='';
+      try{
+        const r2=await sb('/rest/v1/daily_reports?select=store_name&form_date=eq.'+date+'&updated_at=gt.'+encodeURIComponent(rec.confirmed_at));
+        if(r2.ok){
+          const chg=await r2.json();
+          if(chg.length) staleHtml='<br>⚠️ <b>确认之后</b>这些门店的填报又被修改过：'+esc([...new Set(chg.map(x=>x.store_name))].join('、'))+'——数据已变，建议点「重新确认」更新闸门';
+        }
+      }catch(_){}
+      box.innerHTML='<div class="msg ok">✅ <b>'+esc(date)+'</b> 直营数据已于 '+t.toLocaleString('zh-CN')+' 由 <b>'+(rec.confirmed_by||'?')+'</b> 确认。'+staleHtml+
         '<button class="primary" style="margin-left:10px" onclick="doConfirm()">重新确认 / 更新时间</button></div>';
     }else{
       box.innerHTML='<div class="msg warn">⚠️ <b>'+esc(date)+'</b> 直营数据<b>尚未确认</b>，暂不计入业绩查询。'+
