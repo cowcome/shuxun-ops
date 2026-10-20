@@ -117,6 +117,8 @@ td.ref{color:#dc2626;font-weight:700}
 .cal-cell.out{opacity:.32}
 .cal-cell.gap{border:2px solid #ef4444;color:#ef4444;background:#fff5f5}
 .cal-cell.gap i{color:#ef4444;font-weight:600}
+.cal-cell.unconf{border:2px dashed #ef4444;color:#ef4444;background:#fff7f7}
+.cal-cell.unconf i{color:#ef4444;font-weight:600}
 .cal-cell.today{box-shadow:0 0 0 2px #0a84ff inset}
 .cal-cell.can-click{cursor:pointer;transition:filter .12s}
 .cal-cell.can-click:hover{filter:brightness(.95);box-shadow:0 0 0 2px #0a84ff inset}
@@ -209,6 +211,8 @@ function money(x){
 const $=(id)=>document.getElementById(id);
 
 let ALL_ORDERS=[], ALL_STORES=[], OP_MAP={}, SPECIAL=[], ALL_REFUNDS=[], pctCell=(a,b)=> b?Math.round(a/b*100):0;
+// 确认闸门：已确认日期集合 / 全量直营日期映射(含未确认,供日历红框) / 待确认日期列表
+let CONFIRMED_SET=new Set(), DIRECT_ALL={}, PENDING_DATES=[];
 
 async function loadData(start,end){
   const endX=endNextDay(end);   // 结束日+1 天，用 lt 比较（见 endNextDay 注释）
@@ -232,11 +236,30 @@ async function loadData(start,end){
     if(b.length<1000) break;
     doff+=1000;
   }
+  // 全量直营日期映射（含未确认），仅供日历标"待确认"红框
+  DIRECT_ALL={};
+  daily.forEach(r=>{
+    const k=r.form_date, mt=Number(r.meituan_verify_amount)||0, dy=Number(r.douyin_verify_amount)||0;
+    if(mt<=0 && dy<=0) return;
+    if(!DIRECT_ALL[k]) DIRECT_ALL[k]={amt:0,vis:0};
+    DIRECT_ALL[k].amt+=mt+dy;
+    DIRECT_ALL[k].vis+=(Number(r.meituan_visitors)||0)+(Number(r.douyin_visitors)||0);
+  });
+  // 已确认日期集合
+  CONFIRMED_SET=new Set();
+  try{
+    const rc=await sb('/rest/v1/daily_confirm?select=form_date&form_date=gte.'+start+'&form_date=lt.'+endX);
+    if(rc.ok){ (await rc.json()).forEach(x=>CONFIRMED_SET.add(x.form_date)); }
+  }catch(e){ /* 表未建时静默：全部按未确认，不影响旧逻辑 */ }
   const rs=await sb('/rest/v1/stores?select=id,std_name,status,store_type,operator,city&order=id.asc');
   if(!rs.ok) throw new Error('门店表拉取失败 HTTP '+rs.status);
   ALL_STORES=await rs.json();
   const nameMap={}; ALL_STORES.forEach(s=>{ nameMap[(s.std_name||'').trim()]=s; });
+  // 待确认日期（仅过去、有直营数据的），供顶部横幅提示
+  const todayIso=new Date().toISOString().slice(0,10);
+  PENDING_DATES=Object.keys(DIRECT_ALL).filter(k=>!CONFIRMED_SET.has(k) && k<=todayIso).sort();
   daily.forEach(r=>{
+    if(!CONFIRMED_SET.has(r.form_date)) return;   // ⛔ 闸门：未确认日期不进入业绩
     const st=nameMap[(r.store_name||'').trim()];
     const sid=st?st.id:null;
     const mt=Number(r.meituan_verify_amount)||0, dy=Number(r.douyin_verify_amount)||0;
@@ -374,7 +397,7 @@ function renderCalendar(d){
   let H='<section><div class="cal-hd"><h2>业绩日历<span class="badge">按日业绩 · 点某天看明细</span></h2>'
        +'<button class="cal-toggle" onclick="sxCalToggle()">'+(CAL_OPEN?'收起':'展开')+'</button></div>';
   H+='<div id="calBody" style="display:'+(CAL_OPEN?'block':'none')+'">';
-  H+='<div class="note" style="margin:10px 0 12px">格子颜色：浅黄=低 · 绿=中 · 蓝=高（按当前周期分布）。<span style="color:#ef4444;font-weight:600">红框「连锁漏」</span>= 该日连锁无导入数据（直营每日正常填报，整日缺数即连锁漏导入）。<b>点任意日期</b>看当天门店明细。</div>';
+  H+='<div class="note" style="margin:10px 0 12px">格子颜色：浅黄=低 · 绿=中 · 蓝=高（按当前周期分布）。<span style="color:#ef4444;font-weight:600">红框「连锁漏」</span>= 该日连锁无导入数据（直营每日正常填报，整日缺数即连锁漏导入）。<span style="color:#ef4444;font-weight:600">红框虚线「直营待确认」</span>= 该日直营已填报但运营尚未点确认，不计入业绩。<b>点任意日期</b>看当天门店明细。</div>';
   H+='<div class="cal-wrap"><div class="cal-months" style="grid-template-columns:'+colCss+'">';
   months.forEach(mo=>{
     const y=mo.getFullYear(), mm=mo.getMonth();
@@ -393,21 +416,27 @@ function renderCalendar(d){
       const chainGross = rec ? (rec.cnt||0) : 0;
       const directGross = rec ? (rec.vis||0) : 0;
       const hasData = rec && ((rec.amt||0)>0 || chainGross>0 || directGross>0);
+      const directInScope = d.tp !== '连锁';
+      const directUnconf = directInScope && DIRECT_ALL[dk] && !CONFIRMED_SET.has(dk);
       let cls='cal-cell', bg='', txt='<b>'+day+'</b>', clickable=false;
       if(!inRange){ cls+=' out'; }
       else if(isPast){
         if(chainInScope && chainGross===0){
           cls+=' gap'; clickable=true;
           txt='<b>'+day+'</b><i>连锁漏</i>';
-        } else if(!hasData){
+        } else if(!hasData && !directUnconf){
           cls+=' out';
           txt='<b>'+day+'</b><i>—</i>';
         } else {
-          const netv=net[dk]; const t = mx>mn ? (netv-mn)/(mx-mn) : 0.5;
-          bg=dayColor(t); clickable=true;
-          const cnt=(rec.cnt||0)-((dref[dk]&&dref[dk].cnt)||0);
-          const vis=(rec.vis||0);
-          txt='<b>'+day+'</b><i>¥'+fmtWan(netv)+'</i>';
+          clickable=true;
+          if(directUnconf){
+            cls+=' unconf';
+            txt='<b>'+day+'</b><i>待确认</i>';
+          } else {
+            const netv=net[dk]; const t = mx>mn ? (netv-mn)/(mx-mn) : 0.5;
+            bg=dayColor(t);
+            txt='<b>'+day+'</b><i>¥'+fmtWan(netv)+'</i>';
+          }
         }
       } else { cls+=' out'; }
       if(isToday) cls+=' today';
@@ -511,12 +540,18 @@ function sxCalDay(dk){
     });
     H+='</tbody></table>';
   }
+  if(tp!=='连锁' && DIRECT_ALL[dk] && !CONFIRMED_SET.has(dk)){
+    H+='<div class="msg warn" style="margin-top:10px">⚠️ 该日直营数据尚<b>未确认</b>（运营在「数据核对」页核对后点「确认」），当前未计入业绩查询。</div>';
+  }
   box.innerHTML=H;
   if(side) side.innerHTML=calSideHtml(dk);
 }
 function render(d){
   const out=$('out');
   let H='';
+  if(PENDING_DATES && PENDING_DATES.length){
+    H+='<div class="banner">⚠ 以下直营日期<b>尚未确认</b>，数据已隐藏、未计入业绩：'+PENDING_DATES.map(esc).join('、')+'（运营在「数据核对」页核对后点「确认」即可放行）</div>';
+  }
   const chainKPI = d.totalCnt? d.chainAmt/d.totalCnt : 0;
   const directKPI = d.totalVis? d.directAmt/d.totalVis : 0;
   const cN=d.chainStores, dN=d.directStores;
