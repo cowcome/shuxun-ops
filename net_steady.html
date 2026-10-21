@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>书荀后台 · 稳定性与速度测试</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:#f4f6fa;color:#1f2330;font-size:14px;line-height:1.6;
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       padding:16px 12px 60px}
+  .wrap{max-width:820px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 6px}
+  .sub{font-size:13px;color:#6b7280;margin-bottom:14px}
+  .card{background:#fff;border:1px solid #e5e8ef;border-radius:14px;padding:16px;margin-bottom:12px}
+  .btn{width:100%;height:48px;border:0;border-radius:12px;background:#0a84ff;color:#fff;
+       font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn:disabled{opacity:.55;cursor:default}
+  .btn2{height:40px;border:1px solid #d6d9e2;background:#fff;color:#1f2330;border-radius:10px;
+        padding:0 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  .hint{font-size:12.5px;color:#6b7280;margin-top:10px}
+  .tgt{margin-bottom:14px}
+  .tgt:last-child{margin-bottom:0}
+  .tname{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .thint{font-size:12px;color:#8a8f9e;font-weight:400}
+  .seq{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap}
+  .sq{width:17px;height:17px;border-radius:4px;background:#e9ecf2}
+  .sq.ok{background:#10b981}
+  .sq.bad{background:#ef4444}
+  .sq.run{background:#fbbf24}
+  .stat{font-size:12.5px;color:#4b5563;margin-top:5px;font-variant-numeric:tabular-nums}
+  .b-ok{color:#0f7a52;font-weight:700}
+  .b-bad{color:#c0392b;font-weight:700}
+  .b-warn{color:#b45309;font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:12px;color:#6b7280;font-weight:600;padding:7px 8px;
+     border-bottom:1px solid #e5e8ef;white-space:nowrap}
+  td{padding:7px 8px;border-bottom:1px solid #f1f3f7;font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:0}
+  .verdict{border-radius:12px;padding:14px;font-size:14px;line-height:1.7}
+  .v-ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+  .v-bad{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+  .v-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+  pre{background:#0f172a;color:#cbd5e1;font-size:12px;line-height:1.55;padding:12px;
+      border-radius:10px;overflow:auto;max-height:300px;margin:10px 0 0;
+      font-family:ui-monospace,Menlo,Consolas,monospace}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>稳定性与速度测试</h1>
+  <div class="sub">连打 15 次，看成功率。用来判断「时好时坏」到底是网络间歇拦截，还是别的原因。</div>
+
+  <div class="card">
+    <button class="btn" id="go" onclick="runAll()">开 始 测 试（约 25 秒）</button>
+    <div class="hint">请在出问题的那台设备、那个网络下打开（例如 iPad 连公司 Wi-Fi「阿玛仕」）。不用改任何设置。</div>
+  </div>
+
+  <div class="card hide" id="progCard">
+    <div id="prog" style="font-size:13px;color:#4b5563">准备中…</div>
+  </div>
+
+  <div class="card hide" id="listCard">
+    <div id="list"></div>
+  </div>
+
+  <div class="card hide" id="verdictCard">
+    <div id="verdict"></div>
+  </div>
+
+  <div class="card hide" id="tblCard">
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px">耗时明细（毫秒）</div>
+    <div id="tbl"></div>
+  </div>
+
+  <div class="card hide" id="dumpCard">
+    <button class="btn2" onclick="copyAll()" id="copyBtn">复制全部结果</button>
+    <pre id="dump"></pre>
+  </div>
+</div>
+
+<script>
+var RUNS = 15;
+var TIMEOUT = 8000;
+
+/* 四个目标：第一个是我们怀疑被拦的，后三个都是对照组 */
+var TARGETS = [
+  { key:'sb', name:'Supabase 数据库', hint:'我们的数据库（怀疑被间歇拦截）',
+    url:'https://fgrjdaizgjpqdimgtxrp.supabase.co/auth/v1/health' },
+  { key:'gh', name:'本站 GitHub Pages', hint:'后台页面所在，对照组',
+    url:'https://cowcome.github.io/shuxun-ops/version.json', ttl:0 },
+  { key:'bd', name:'百度', hint:'国内基线，对照组',
+    url:'https://www.baidu.com/favicon.ico', ttl:0 },
+  { key:'cf', name:'Cloudflare 官网', hint:'和数据库同一家 CDN，对照组',
+    url:'https://www.cloudflare.com/favicon.ico', ttl:0 }
+];
+
+var DATA = {};
+var LINES = [];
+
+function $(id){ return document.getElementById(id); }
+function nowMs(){ return (window.performance && performance.now) ? performance.now() : Date.now(); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function log(t){ LINES.push(t); }
+function stamp(){ var d=new Date(); function p(n){return n<10?'0'+n:''+n;}
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
+
+/* 单次探测：成功/失败 + 耗时 + 错误文案 */
+function probe(url){
+  var ctl = ('AbortController' in window) ? new AbortController() : null;
+  var timer = null;
+  var p = fetch(url + (url.indexOf('?')>=0?'&':'?') + '_t=' + Math.random().toString(36).slice(2),
+                { cache:'no-store', signal: ctl ? ctl.signal : undefined });
+  if(ctl){
+    timer = setTimeout(function(){ try{ ctl.abort(); }catch(e){} }, TIMEOUT);
+  }
+  var t0 = nowMs();
+  return p.then(function(r){
+    if(timer) clearTimeout(timer);
+    return { ok:true, status:r.status, ms:Math.round(nowMs()-t0), err:'' };
+  }).catch(function(e){
+    if(timer) clearTimeout(timer);
+    var msg = (e && e.message) ? e.message : String(e);
+    if(e && e.name === 'AbortError') msg = '超时 ' + (TIMEOUT/1000) + ' 秒无响应';
+    return { ok:false, status:0, ms:Math.round(nowMs()-t0), err:msg };
+  });
+}
+
+function renderSeq(t){
+  var d = DATA[t.key];
+  var h = '';
+  for(var i=0;i<RUNS;i++){
+    var r = d.runs[i];
+    var cls = !r ? '' : (r.ok ? 'ok' : 'bad');
+    var tip = !r ? '未测' : (r.ok ? ('成功 ' + r.status + ' · ' + r.ms + 'ms') : ('失败 · ' + r.ms + 'ms · ' + r.err));
+    h += '<div class="sq ' + cls + '" title="' + esc(tip) + '"></div>';
+  }
+  var done = d.runs.length;
+  var okN = d.runs.filter(function(x){return x.ok;}).length;
+  var badN = done - okN;
+  var rate = done ? Math.round(okN / done * 100) : 0;
+  var msArr = d.runs.filter(function(x){return x.ok;}).map(function(x){return x.ms;}).sort(function(a,b){return a-b;});
+  var msTxt = '';
+  if(msArr.length){
+    var med = msArr[Math.floor(msArr.length/2)];
+    msTxt = ' ｜ 成功耗时 中位 <b>' + med + 'ms</b>（' + msArr[0] + '~' + msArr[msArr.length-1] + '）';
+  }
+  return '<div class="tgt" id="tgt_' + t.key + '">' +
+    '<div class="tname">' + esc(t.name) + ' <span class="thint">' + esc(t.hint) + '</span></div>' +
+    '<div class="seq">' + h + '</div>' +
+    '<div class="stat">' + (done ? ('已测 ' + done + '/' + RUNS + ' ｜ 成功 <span class="' + (badN?'b-warn':'b-ok') + '">' + okN + '</span> · 失败 <span class="' + (badN?'b-bad':'') + '">' + badN + '</span> ｜ 成功率 <b>' + rate + '%</b>' + msTxt) : '等待测试…') + '</div>' +
+  '</div>';
+}
+
+function renderList(){
+  var h = '';
+  TARGETS.forEach(function(t){ h += renderSeq(t); });
+  $('list').innerHTML = h;
+}
+
+/* 逐目标、逐次串行执行（串行才测得准） */
+function runTarget(idx){
+  if(idx >= TARGETS.length) return Promise.resolve();
+  var t = TARGETS[idx];
+  if(!DATA[t.key]) DATA[t.key] = { runs: [] };
+  var i = 0;
+  function step(){
+    if(i >= RUNS) return Promise.resolve();
+    $('prog').textContent = '正在测：' + t.name + '（第 ' + (i+1) + '/' + RUNS + ' 次）';
+    return probe(t.url).then(function(r){
+      DATA[t.key].runs.push(r);
+      i++;
+      renderList();
+      log('[' + t.name + '] #' + i + ' ' + (r.ok ? ('OK ' + r.status) : 'FAIL ' + r.err) + ' · ' + r.ms + 'ms');
+      return step();
+    });
+  }
+  return step().then(function(){ return runTarget(idx+1); });
+}
+
+function median(a){
+  if(!a.length) return 0;
+  var b = a.slice().sort(function(x,y){return x-y;});
+  return b[Math.floor(b.length/2)];
+}
+
+function verdict(){
+  var el = $('verdict');
+  var sb = DATA.sb.runs, gh = DATA.gh.runs, bd = DATA.bd.runs, cf = DATA.cf.runs;
+  function rate(a){ return a.length ? a.filter(function(x){return x.ok;}).length / a.length : 0; }
+  var rSb = rate(sb), rGh = rate(gh), rBd = rate(bd), rCf = rate(cf);
+  var sbOkMs = sb.filter(function(x){return x.ok;}).map(function(x){return x.ms;});
+  var bdOkMs = bd.filter(function(x){return x.ok;}).map(function(x){return x.ms;});
+  var sbMed = median(sbOkMs), bdMed = median(bdOkMs);
+  var bad = sb.length - sb.filter(function(x){return x.ok;}).length;
+  var errs = {};
+  sb.filter(function(x){return !x.ok;}).forEach(function(x){ var k=x.err||'未知'; errs[k]=(errs[k]||0)+1; });
+  var errTxt = Object.keys(errs).map(function(k){ return k + ' ×' + errs[k]; }).join('；');
+
+  var h = '';
+  if(rSb === 1){
+    if(rGh === 1 && rBd === 1){
+      h = '<div class="verdict v-ok"><b>这次测试期间，数据库 15 次全部成功。</b><br>' +
+          (sbMed ? ('数据库中位耗时 <b>' + sbMed + 'ms</b>' + (bdMed ? ('，百度 ' + bdMed + 'ms') : '') + '。<br>') : '') +
+          '说明此刻网络是通的。所以「刚才不行」是<b>瞬时故障</b>，不是稳定拦截 —— 常见原因是 DNS 缓存过期后被污染、或连接重建时撞上被拦的出口。<br>' +
+          '<b>建议：过一会儿再跑一次本测试</b>，抓一次「失败出现」的现场，才看得清。</div>';
+    } else {
+      h = '<div class="verdict v-warn"><b>数据库全通，但对照组有失败</b>（本站 ' + Math.round(rGh*100) + '% · 百度 ' + Math.round(rBd*100) + '% · Cloudflare ' + Math.round(rCf*100) + '%）。<br>' +
+          '说明这台设备此刻的<b>整体网络不稳</b>，跟数据库无关。先解决网络，再看后台。</div>';
+    }
+  } else if(rGh >= 0.9 || rBd >= 0.9){
+    h = '<div class="verdict v-bad"><b>抓到了：数据库成功率只有 ' + Math.round(rSb*100) + '%（15 次里失败 ' + bad + ' 次），而对照网站基本都通。</b><br>' +
+        '· 本站 ' + Math.round(rGh*100) + '% ｜ 百度 ' + Math.round(rBd*100) + '% ｜ Cloudflare 官网 ' + Math.round(rCf*100) + '%<br>' +
+        (errTxt ? ('· 失败原因：' + esc(errTxt) + '<br>') : '') +
+        (rSb === 0
+          ? '<b>结论：网络对「数据库这一个域名」是稳定拦截 —— 15 次全失败，一次都没通。</b><br>处理：换自有域名能彻底绕开；临时用手机热点。'
+          : '<b>结论：网络对「数据库这一个域名」在做间歇性拦截（不是全封，是时通时不通）。</b><br>' +
+            '这就解释了「今天这个浏览器行、明天换个才行」—— 每次新建连接都在赌。<br>' +
+            '<b>处理：换自有域名能彻底绕开</b>（正在新任务推进）；临时用手机热点。') +
+        '</div>';
+  } else {
+    h = '<div class="verdict v-warn"><b>数据库 ' + Math.round(rSb*100) + '%，对照网站也不太好</b>（本站 ' + Math.round(rGh*100) + '% · 百度 ' + Math.round(rBd*100) + '%）。<br>' +
+        '这台设备的整体出网都不稳，不能归因到数据库。<br>建议换一个网络再测一次做对比。</div>';
+  }
+  if(sbMed >= 800){
+    h += '<div class="verdict v-warn" style="margin-top:12px"><b>另外：能通，但慢。</b>数据库中位耗时 <b>' + sbMed + 'ms</b>' +
+      (bdMed ? ('，是百度（' + bdMed + 'ms）的 <b>' + Math.round(sbMed / bdMed) + ' 倍</b>') : '') +
+      '。<br>后台一次加载要发十几次请求，每次都要等这么久，串起来就是好几秒 —— 这是「经常很慢」的另一半原因，和拦截无关。</div>';
+  }
+  h += '<div style="margin-top:12px;font-size:12.5px;color:#6b7280">说明：每次请求都带随机参数、禁用缓存，所以 15 次是真发起 15 次新连接，不是缓存命中。</div>';
+  el.innerHTML = h;
+}
+
+function table(){
+  var h = '<table><thead><tr><th>目标</th><th>成功</th><th>成功率</th><th>中位</th><th>最快</th><th>最慢</th></tr></thead><tbody>';
+  TARGETS.forEach(function(t){
+    var d = DATA[t.key].runs;
+    var ok = d.filter(function(x){return x.ok;});
+    var ms = ok.map(function(x){return x.ms;}).sort(function(a,b){return a-b;});
+    var rate = d.length ? Math.round(ok.length/d.length*100) : 0;
+    h += '<tr><td>' + esc(t.name) + '</td>' +
+      '<td>' + ok.length + '/' + d.length + '</td>' +
+      '<td class="' + (rate===100?'b-ok':(rate>=60?'b-warn':'b-bad')) + '">' + rate + '%</td>' +
+      '<td>' + (ms.length?median(ms):'—') + '</td>' +
+      '<td>' + (ms.length?ms[0]:'—') + '</td>' +
+      '<td>' + (ms.length?ms[ms.length-1]:'—') + '</td></tr>';
+  });
+  h += '</tbody></table>';
+  $('tbl').innerHTML = h;
+}
+
+function copyAll(){
+  var txt = LINES.join('\n');
+  var ta = document.createElement('textarea');
+  ta.value = txt; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); $('copyBtn').textContent = '已复制 ✓'; }
+  catch(e){ $('copyBtn').textContent = '复制失败，请手动选中'; }
+  setTimeout(function(){ document.body.removeChild(ta); $('copyBtn').textContent = '复制全部结果'; }, 1600);
+}
+
+function sysInfo(){
+  var ua = navigator.userAgent;
+  var br = /Edg\//.test(ua) ? 'Edge' : (/Chrome\//.test(ua) && !/Edg\//.test(ua) ? 'Chrome' : (/Firefox\//.test(ua) ? 'Firefox' : (/Safari\//.test(ua) ? 'Safari' : '其他')));
+  log('# 书荀后台 · 稳定性与速度测试');
+  log('时间: ' + stamp());
+  log('浏览器: ' + br + ' ｜ 在线: ' + (navigator.onLine ? 'yes' : 'no'));
+  log('UA: ' + ua);
+  log('每目标 ' + RUNS + ' 次，超时 ' + (TIMEOUT/1000) + ' 秒，禁用缓存');
+  log('');
+}
+
+function runAll(){
+  var btn = $('go');
+  btn.disabled = true; btn.textContent = '测 试 中…';
+  DATA = {}; LINES = [];
+  TARGETS.forEach(function(t){ DATA[t.key] = { runs: [] }; });
+  $('progCard').classList.remove('hide');
+  $('listCard').classList.remove('hide');
+  $('tblCard').classList.remove('hide');
+  $('verdictCard').classList.remove('hide');
+  $('dumpCard').classList.remove('hide');
+  $('list').innerHTML = ''; $('tbl').innerHTML = ''; $('verdict').innerHTML = '';
+  sysInfo();
+  renderList();
+  runTarget(0).then(function(){
+    $('prog').textContent = '测试完成 ✓';
+    verdict();
+    table();
+    $('dump').textContent = LINES.join('\n');
+    btn.disabled = false; btn.textContent = '再 测 一 次';
+    log('');
+    log('=== 结果汇总 ===');
+    TARGETS.forEach(function(t){
+      var d = DATA[t.key].runs;
+      var ok = d.filter(function(x){return x.ok;}).length;
+      var ms = d.filter(function(x){return x.ok;}).map(function(x){return x.ms;});
+      log(t.name + ': 成功 ' + ok + '/' + d.length + (ms.length ? (' · 中位 ' + median(ms) + 'ms') : ''));
+    });
+  });
+}
+</script>
+</body>
+</html>
