@@ -50,11 +50,11 @@
 <body>
 <div class="wrap">
   <h1>稳定性与速度测试</h1>
-  <div class="sub">连打 15 次，看成功率。用来判断「时好时坏」到底是网络间歇拦截，还是别的原因。</div>
+  <div class="sub">连打多次，分四路验证：普通请求 / 带密钥头的请求 / 登录请求 / 对照站。用来判断卡在哪一层。</div>
 
   <div class="card">
-    <button class="btn" id="go" onclick="runAll()">开 始 测 试（约 25 秒）</button>
-    <div class="hint">请在出问题的那台设备、那个网络下打开（例如 iPad 连公司 Wi-Fi「阿玛仕」）。不用改任何设置。</div>
+    <button class="btn" id="go" onclick="runAll()">开 始 测 试（约 15 秒）</button>
+    <div class="hint">请在「登不上」的那台设备、用「登不上」的那个浏览器打开。不用改任何设置。</div>
   </div>
 
   <div class="card hide" id="progCard">
@@ -81,19 +81,27 @@
 </div>
 
 <script>
-var RUNS = 15;
 var TIMEOUT = 8000;
+var KEY = 'sb_publishable_PddH-hdBtn_G2vwtdB9xuA_UuBSLVgG';
+var BASE = 'https://fgrjdaizgjpqdimgtxrp.supabase.co';
 
-/* 四个目标：第一个是我们怀疑被拦的，后三个都是对照组 */
+/* 五个目标：A 是「不触发跨域预检」的对照组，B/C 是「触发预检」的嫌疑项，
+   D 是本站对照，E 是标定项（它必然失败，用来证明 Failed to fetch 不等于断网） */
 var TARGETS = [
-  { key:'sb', name:'Supabase 数据库', hint:'我们的数据库（怀疑被间歇拦截）',
-    url:'https://fgrjdaizgjpqdimgtxrp.supabase.co/auth/v1/health' },
-  { key:'gh', name:'本站 GitHub Pages', hint:'后台页面所在，对照组',
-    url:'https://cowcome.github.io/shuxun-ops/version.json', ttl:0 },
-  { key:'bd', name:'百度', hint:'国内基线，对照组',
-    url:'https://www.baidu.com/favicon.ico', ttl:0 },
-  { key:'cf', name:'Cloudflare 官网', hint:'和数据库同一家 CDN，对照组',
-    url:'https://www.cloudflare.com/favicon.ico', ttl:0 }
+  { key:'a', name:'A · 数据库 普通请求', hint:'不带自定义头 → 不触发跨域预检（对照组，应该通）',
+    runs:15, url: BASE + '/auth/v1/health', opts:{ cache:'no-store' } },
+  { key:'b', name:'B · 数据库 带密钥头的查询', hint:'带 apikey 头 → 会先发 OPTIONS 预检（嫌疑项）',
+    runs:10, url: BASE + '/rest/v1/stores?select=id&limit=1',
+    opts:{ cache:'no-store', headers:{ 'apikey': KEY } } },
+  { key:'c', name:'C · 数据库 登录请求', hint:'后台真实登录用的 POST+JSON → 会先发 OPTIONS 预检（嫌疑项）',
+    runs:6, url: BASE + '/auth/v1/token?grant_type=password',
+    opts:{ method:'POST', cache:'no-store',
+           headers:{ 'apikey': KEY, 'Content-Type':'application/json' },
+           body: JSON.stringify({ email:'probe-not-real@example.com', password:'probe-not-real' }) } },
+  { key:'d', name:'D · 本站 GitHub Pages', hint:'对照组，应通',
+    runs:10, url:'https://cowcome.github.io/shuxun-ops/version.json', opts:{ cache:'no-store' } },
+  { key:'e', name:'E · 百度（标定项）', hint:'必然失败，用来证明「Failed to fetch」不代表网络断',
+    runs:5, calib:true, url:'https://www.baidu.com/favicon.ico', opts:{ cache:'no-store' } }
 ];
 
 var DATA = {};
@@ -107,15 +115,20 @@ function stamp(){ var d=new Date(); function p(n){return n<10?'0'+n:''+n;}
   return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
 
 /* 单次探测：成功/失败 + 耗时 + 错误文案 */
-function probe(url){
+function probe(t){
+  var o = {};
+  var src = t.opts || {};
+  for(var k in src) o[k] = src[k];
+  o.signal = ('AbortController' in window) ? undefined : undefined;
   var ctl = ('AbortController' in window) ? new AbortController() : null;
+  if(ctl) o.signal = ctl.signal;
   var timer = null;
-  var p = fetch(url + (url.indexOf('?')>=0?'&':'?') + '_t=' + Math.random().toString(36).slice(2),
-                { cache:'no-store', signal: ctl ? ctl.signal : undefined });
-  if(ctl){
-    timer = setTimeout(function(){ try{ ctl.abort(); }catch(e){} }, TIMEOUT);
-  }
+  var url = t.url + (t.url.indexOf('?')>=0?'&':'?') + '_t=' + Math.random().toString(36).slice(2);
   var t0 = nowMs();
+  var p;
+  try { p = fetch(url, o); }
+  catch(e){ return Promise.resolve({ ok:false, status:0, ms:0, err:(e&&e.message)||String(e) }); }
+  if(ctl) timer = setTimeout(function(){ try{ ctl.abort(); }catch(e){} }, TIMEOUT);
   return p.then(function(r){
     if(timer) clearTimeout(timer);
     return { ok:true, status:r.status, ms:Math.round(nowMs()-t0), err:'' };
@@ -130,13 +143,13 @@ function probe(url){
 function renderSeq(t){
   var d = DATA[t.key];
   var h = '';
-  for(var i=0;i<RUNS;i++){
+  for(var i=0;i<(t.runs||15);i++){
     var r = d.runs[i];
     var cls = !r ? '' : (r.ok ? 'ok' : 'bad');
     var tip = !r ? '未测' : (r.ok ? ('成功 ' + r.status + ' · ' + r.ms + 'ms') : ('失败 · ' + r.ms + 'ms · ' + r.err));
     h += '<div class="sq ' + cls + '" title="' + esc(tip) + '"></div>';
   }
-  var done = d.runs.length;
+  var done = d.runs.length; var TOT = t.runs||15;
   var okN = d.runs.filter(function(x){return x.ok;}).length;
   var badN = done - okN;
   var rate = done ? Math.round(okN / done * 100) : 0;
@@ -149,7 +162,7 @@ function renderSeq(t){
   return '<div class="tgt" id="tgt_' + t.key + '">' +
     '<div class="tname">' + esc(t.name) + ' <span class="thint">' + esc(t.hint) + '</span></div>' +
     '<div class="seq">' + h + '</div>' +
-    '<div class="stat">' + (done ? ('已测 ' + done + '/' + RUNS + ' ｜ 成功 <span class="' + (badN?'b-warn':'b-ok') + '">' + okN + '</span> · 失败 <span class="' + (badN?'b-bad':'') + '">' + badN + '</span> ｜ 成功率 <b>' + rate + '%</b>' + msTxt) : '等待测试…') + '</div>' +
+    '<div class="stat">' + (done ? ('已测 ' + done + '/' + TOT + ' ｜ 成功 <span class="' + (badN?'b-warn':'b-ok') + '">' + okN + '</span> · 失败 <span class="' + (badN?'b-bad':'') + '">' + badN + '</span> ｜ 成功率 <b>' + rate + '%</b>' + msTxt) : '等待测试…') + '</div>' +
   '</div>';
 }
 
@@ -163,12 +176,13 @@ function renderList(){
 function runTarget(idx){
   if(idx >= TARGETS.length) return Promise.resolve();
   var t = TARGETS[idx];
+  var TOT = t.runs || 15;
   if(!DATA[t.key]) DATA[t.key] = { runs: [] };
   var i = 0;
   function step(){
-    if(i >= RUNS) return Promise.resolve();
-    $('prog').textContent = '正在测：' + t.name + '（第 ' + (i+1) + '/' + RUNS + ' 次）';
-    return probe(t.url).then(function(r){
+    if(i >= TOT) return Promise.resolve();
+    $('prog').textContent = '正在测：' + t.name + '（第 ' + (i+1) + '/' + TOT + ' 次）';
+    return probe(t).then(function(r){
       DATA[t.key].runs.push(r);
       i++;
       renderList();
@@ -187,48 +201,65 @@ function median(a){
 
 function verdict(){
   var el = $('verdict');
-  var sb = DATA.sb.runs, gh = DATA.gh.runs, bd = DATA.bd.runs, cf = DATA.cf.runs;
-  function rate(a){ return a.length ? a.filter(function(x){return x.ok;}).length / a.length : 0; }
-  var rSb = rate(sb), rGh = rate(gh), rBd = rate(bd), rCf = rate(cf);
-  var sbOkMs = sb.filter(function(x){return x.ok;}).map(function(x){return x.ms;});
-  var bdOkMs = bd.filter(function(x){return x.ok;}).map(function(x){return x.ms;});
-  var sbMed = median(sbOkMs), bdMed = median(bdOkMs);
-  var bad = sb.length - sb.filter(function(x){return x.ok;}).length;
-  var errs = {};
-  sb.filter(function(x){return !x.ok;}).forEach(function(x){ var k=x.err||'未知'; errs[k]=(errs[k]||0)+1; });
-  var errTxt = Object.keys(errs).map(function(k){ return k + ' ×' + errs[k]; }).join('；');
-
+  function arr(k){ return DATA[k].runs; }
+  function rate(k){ var a = arr(k); if(!a.length) return 0; return a.filter(function(x){return x.ok;}).length / a.length; }
+  function oks(k){ return arr(k).filter(function(x){return x.ok;}); }
+  function med(k){ return median(oks(k).map(function(x){return x.ms;})); }
+  function bad(k){ return arr(k).length - oks(k).length; }
+  function errs(k){
+    var m = {};
+    arr(k).filter(function(x){return !x.ok;}).forEach(function(x){ var t=x.err||'未知'; m[t]=(m[t]||0)+1; });
+    return Object.keys(m).map(function(t){ return t + ' ×' + m[t]; }).join('；');
+  }
+  var rA=rate('a'), rB=rate('b'), rC=rate('c'), rD=rate('d'), rE=rate('e');
+  var mA=med('a'), mB=med('b'), mC=med('c'), mD=med('d');
   var h = '';
-  if(rSb === 1){
-    if(rGh === 1 && rBd === 1){
-      h = '<div class="verdict v-ok"><b>这次测试期间，数据库 15 次全部成功。</b><br>' +
-          (sbMed ? ('数据库中位耗时 <b>' + sbMed + 'ms</b>' + (bdMed ? ('，百度 ' + bdMed + 'ms') : '') + '。<br>') : '') +
-          '说明此刻网络是通的。所以「刚才不行」是<b>瞬时故障</b>，不是稳定拦截 —— 常见原因是 DNS 缓存过期后被污染、或连接重建时撞上被拦的出口。<br>' +
-          '<b>建议：过一会儿再跑一次本测试</b>，抓一次「失败出现」的现场，才看得清。</div>';
-    } else {
-      h = '<div class="verdict v-warn"><b>数据库全通，但对照组有失败</b>（本站 ' + Math.round(rGh*100) + '% · 百度 ' + Math.round(rBd*100) + '% · Cloudflare ' + Math.round(rCf*100) + '%）。<br>' +
-          '说明这台设备此刻的<b>整体网络不稳</b>，跟数据库无关。先解决网络，再看后台。</div>';
-    }
-  } else if(rGh >= 0.9 || rBd >= 0.9){
-    h = '<div class="verdict v-bad"><b>抓到了：数据库成功率只有 ' + Math.round(rSb*100) + '%（15 次里失败 ' + bad + ' 次），而对照网站基本都通。</b><br>' +
-        '· 本站 ' + Math.round(rGh*100) + '% ｜ 百度 ' + Math.round(rBd*100) + '% ｜ Cloudflare 官网 ' + Math.round(rCf*100) + '%<br>' +
-        (errTxt ? ('· 失败原因：' + esc(errTxt) + '<br>') : '') +
-        (rSb === 0
-          ? '<b>结论：网络对「数据库这一个域名」是稳定拦截 —— 15 次全失败，一次都没通。</b><br>处理：换自有域名能彻底绕开；临时用手机热点。'
-          : '<b>结论：网络对「数据库这一个域名」在做间歇性拦截（不是全封，是时通时不通）。</b><br>' +
-            '这就解释了「今天这个浏览器行、明天换个才行」—— 每次新建连接都在赌。<br>' +
-            '<b>处理：换自有域名能彻底绕开</b>（正在新任务推进）；临时用手机热点。') +
-        '</div>';
+
+  if(rD === 0){
+    h = '<div class="verdict v-warn"><b>连本站页面都打不开</b>，说明这台设备此刻整体出不了网（或 GitHub Pages 被拦）。<br>先解决网络，再看后台。</div>';
+  } else if(rA === 1 && rB === 1 && rC === 1){
+    h = '<div class="verdict v-ok"><b>三项数据库请求全部通过（普通请求 / 带密钥头 / 登录 POST），跨域预检没有被拦。</b><br>' +
+        '· 普通请求中位 <b>' + mA + 'ms</b> ｜ 带密钥头 <b>' + mB + 'ms</b> ｜ 登录 POST <b>' + mC + 'ms</b><br>' +
+        '也就是说：<b>网络、跨域、登录通道全部正常</b>。后台登不上或很慢，原因在别处（浏览器缓存、旧会话、密码、或前端逻辑）。<br>' +
+        '下一步该查浏览器侧：清掉站点数据后重登，或换个账号试。</div>';
+  } else if(rA === 1 && (rB < 1 || rC < 1)){
+    h = '<div class="verdict v-bad"><b>抓到了：不带头的请求能通，带头的请求被拦。</b><br>' +
+        '· A 普通请求：<b>' + Math.round(rA*100) + '%</b>（' + arr('a').length + ' 次）<br>' +
+        '· B 带密钥头：<b>' + Math.round(rB*100) + '%</b>' + (bad('b')?('（失败 ' + bad('b') + ' 次：' + esc(errs('b')) + '）'):'') + '<br>' +
+        '· C 登录 POST：<b>' + Math.round(rC*100) + '%</b>' + (bad('c')?('（失败 ' + bad('c') + ' 次：' + esc(errs('c')) + '）'):'') + '<br>' +
+        '<b>结论：网络在拦「跨域预检请求（OPTIONS）」，只放行最普通的 GET。</b><br>' +
+        '这正好解释：诊断页能通、后台登录报 Failed to fetch、换个浏览器有时又行（浏览器会缓存预检结果）。<br>' +
+        '<b>这条路要这么解</b>：让自有域名的反代直接在边缘应答预检、不转到 Supabase —— 换域名依然有效，但必须把预检一起接管。</div>';
+  } else if(rA < 1 && rD === 1){
+    h = '<div class="verdict v-bad"><b>数据库整体不通</b>（A 只有 ' + Math.round(rA*100) + '%），而本站正常。<br>' +
+        (bad('a') ? ('失败原因：' + esc(errs('a')) + '<br>') : '') +
+        '这是域名或链路层的问题：换自有域名能绕开；临时用手机热点。</div>';
   } else {
-    h = '<div class="verdict v-warn"><b>数据库 ' + Math.round(rSb*100) + '%，对照网站也不太好</b>（本站 ' + Math.round(rGh*100) + '% · 百度 ' + Math.round(rBd*100) + '%）。<br>' +
-        '这台设备的整体出网都不稳，不能归因到数据库。<br>建议换一个网络再测一次做对比。</div>';
+    h = '<div class="verdict v-warn"><b>结果不稳定，需要再看一眼。</b><br>' +
+        '· A 普通请求 ' + Math.round(rA*100) + '% ｜ B 带头 ' + Math.round(rB*100) + '% ｜ C 登录 ' + Math.round(rC*100) + '% ｜ D 本站 ' + Math.round(rD*100) + '%<br>' +
+        '请再跑一次，把两次结果一起发我。</div>';
   }
-  if(sbMed >= 800){
-    h += '<div class="verdict v-warn" style="margin-top:12px"><b>另外：能通，但慢。</b>数据库中位耗时 <b>' + sbMed + 'ms</b>' +
-      (bdMed ? ('，是百度（' + bdMed + 'ms）的 <b>' + Math.round(sbMed / bdMed) + ' 倍</b>') : '') +
-      '。<br>后台一次加载要发十几次请求，每次都要等这么久，串起来就是好几秒 —— 这是「经常很慢」的另一半原因，和拦截无关。</div>';
+
+  /* E 标定项的解释：正常情况下它一定失败 */
+  if(rE === 1){
+    h += '<div class="verdict v-warn" style="margin-top:12px;font-size:13px">' +
+         '<b>注意：E（百度）这次居然 ' + Math.round(rE*100) + '% 成功了，这在正常浏览器里不该发生。</b><br>' +
+         '说明这个浏览器上装了会改写请求的东西（代理类插件、安全软件、或企业管控客户端）。' +
+         '这类插件的状态会变，正是「今天这个浏览器行、明天换个才行」的常见原因 —— 先把它找出来关掉再看。</div>';
+  } else {
+    h += '<div class="verdict v-warn" style="margin-top:12px;font-size:13px">' +
+         '<b>关于 E（百度）：它 ' + Math.round(rE*100) + '% 是正常的，不是故障。</b><br>' +
+         '百度不返回跨域许可头，浏览器一定拒绝读取，所以任何电脑都会失败。' +
+         '它留在这里是为了标定一件事：<b>「Failed to fetch」不代表网断了</b>，也可能是被浏览器在跨域检查这一关拦下。</div>';
   }
-  h += '<div style="margin-top:12px;font-size:12.5px;color:#6b7280">说明：每次请求都带随机参数、禁用缓存，所以 15 次是真发起 15 次新连接，不是缓存命中。</div>';
+
+  if(mA >= 800){
+    h += '<div class="verdict v-warn" style="margin-top:12px;font-size:13px"><b>另外：能通，但慢。</b>' +
+         '数据库普通请求中位 <b>' + mA + 'ms</b>' + (mD ? ('，是本站（' + mD + 'ms）的 ' + Math.round(mA/mD) + ' 倍') : '') +
+         '。后台一次加载要发十几次请求，这部分乘起来就是好几秒 —— 这是「慢」的另一半原因，和拦截无关。</div>';
+  }
+
+  h += '<div style="margin-top:12px;font-size:12.5px;color:#6b7280">说明：每次请求都带随机参数、禁用缓存，是真发起新连接。C 用的是假账号，只会被服务器拒绝、不会产生任何数据。</div>';
   el.innerHTML = h;
 }
 
@@ -266,7 +297,7 @@ function sysInfo(){
   log('时间: ' + stamp());
   log('浏览器: ' + br + ' ｜ 在线: ' + (navigator.onLine ? 'yes' : 'no'));
   log('UA: ' + ua);
-  log('每目标 ' + RUNS + ' 次，超时 ' + (TIMEOUT/1000) + ' 秒，禁用缓存');
+  log('每目标 5~15 次（见下），超时 ' + (TIMEOUT/1000) + ' 秒，禁用缓存');
   log('');
 }
 
