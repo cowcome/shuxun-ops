@@ -101,7 +101,10 @@ var TARGETS = [
   { key:'d', name:'D · 本站 GitHub Pages', hint:'对照组，应通',
     runs:10, url:'https://cowcome.github.io/shuxun-ops/version.json', opts:{ cache:'no-store' } },
   { key:'e', name:'E · 百度（标定项）', hint:'必然失败，用来证明「Failed to fetch」不代表网络断',
-    runs:5, calib:true, url:'https://www.baidu.com/favicon.ico', opts:{ cache:'no-store' } }
+    runs:5, calib:true, url:'https://www.baidu.com/favicon.ico', opts:{ cache:'no-store' } },
+  { key:'f', name:'F · 同一地址连发（测预检是否被缓存）', hint:'固定不变的长地址，带密钥头。若第 1 次慢、后面快 = 预检有缓存',
+    runs:8, noBust:true, url: BASE + '/rest/v1/stores?select=id&limit=1',
+    opts:{ cache:'no-store', headers:{ 'apikey': KEY } } }
 ];
 
 var DATA = {};
@@ -123,7 +126,7 @@ function probe(t){
   var ctl = ('AbortController' in window) ? new AbortController() : null;
   if(ctl) o.signal = ctl.signal;
   var timer = null;
-  var url = t.url + (t.url.indexOf('?')>=0?'&':'?') + '_t=' + Math.random().toString(36).slice(2);
+  var url = t.noBust ? t.url : (t.url + (t.url.indexOf('?')>=0?'&':'?') + '_t=' + Math.random().toString(36).slice(2));
   var t0 = nowMs();
   var p;
   try { p = fetch(url, o); }
@@ -220,8 +223,10 @@ function verdict(){
   } else if(rA === 1 && rB === 1 && rC === 1){
     h = '<div class="verdict v-ok"><b>三项数据库请求全部通过（普通请求 / 带密钥头 / 登录 POST），跨域预检没有被拦。</b><br>' +
         '· 普通请求中位 <b>' + mA + 'ms</b> ｜ 带密钥头 <b>' + mB + 'ms</b> ｜ 登录 POST <b>' + mC + 'ms</b><br>' +
-        '也就是说：<b>网络、跨域、登录通道全部正常</b>。后台登不上或很慢，原因在别处（浏览器缓存、旧会话、密码、或前端逻辑）。<br>' +
-        '下一步该查浏览器侧：清掉站点数据后重登，或换个账号试。</div>';
+        '也就是说：<b>网络、跨域、登录通道全部正常，没有被拦</b>。<br>' +
+        (mB && mA ? ('但要注意：带密钥头的请求比普通请求慢了 <b>' + (mB - mA) + 'ms</b>，这就是「跨域先问一句」的成本。' +
+          '后台每个数据请求都要付这笔钱。<br>') : '') +
+        '<b>所以「登不上」不是网络问题</b>，要往浏览器缓存、旧会话、密码这几处查；<b>「慢」是请求次数 × 单次成本的账</b>，跟域名无关。</div>';
   } else if(rA === 1 && (rB < 1 || rC < 1)){
     h = '<div class="verdict v-bad"><b>抓到了：不带头的请求能通，带头的请求被拦。</b><br>' +
         '· A 普通请求：<b>' + Math.round(rA*100) + '%</b>（' + arr('a').length + ' 次）<br>' +
@@ -251,6 +256,26 @@ function verdict(){
          '<b>关于 E（百度）：它 ' + Math.round(rE*100) + '% 是正常的，不是故障。</b><br>' +
          '百度不返回跨域许可头，浏览器一定拒绝读取，所以任何电脑都会失败。' +
          '它留在这里是为了标定一件事：<b>「Failed to fetch」不代表网断了</b>，也可能是被浏览器在跨域检查这一关拦下。</div>';
+  }
+
+  /* F：预检是否被缓存 —— 直接决定「减少请求数」值不值钱 */
+  var fRuns = arr('f');
+  if(fRuns.length >= 2){
+    var fOk = fRuns.filter(function(x){return x.ok;});
+    if(fOk.length >= 2){
+      var fFirst = fOk[0].ms;
+      var fRest = median(fOk.slice(1).map(function(x){return x.ms;}));
+      var fGood = (fRest <= Math.max(mA * 1.35, 300));
+      h += '<div class="verdict ' + (fGood ? 'v-ok' : 'v-warn') + '" style="margin-top:12px;font-size:13px">' +
+           '<b>F（同一地址连发）第 1 次 <b>' + fFirst + 'ms</b>，之后中位 <b>' + fRest + 'ms</b>。</b><br>' +
+           (fGood
+             ? '说明<b>问询结果被浏览器缓存了</b> —— 同一个地址只有第一次要付跨域问询的钱，后面都便宜。<br>' +
+               '对后台的含义：<b>把请求数压下来收益有限，重点应该放在「并行」和「减少拉取的数据量」上。</b>'
+             : '说明<b>每次都要重新问一遍</b>，浏览器没有复用问询结果。<br>' +
+               '对后台的含义：<b>请求数就是致命指标</b> —— 每少一次请求就省 ' + Math.max(0, fRest) + 'ms，' +
+               '所以「把汇总放到数据库里算、前端只取几十行」这类改动收益最大。') +
+           '</div>';
+    }
   }
 
   if(mA >= 800){
