@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>书荀互联网运营工作区</title>
+<style>
+:root{
+  --bg:#F5FAFF; --card:#fff; --sub:#E6F4FF; --line:#DBEAFB;
+  --ink:#14213D; --ink2:#5B6B8C; --ink3:#93A2BF;
+  --blue:#007AFF; --cyan:#00A4FF; --yellow:#FFE873;
+  --green:#10B981; --red:#F04438; --mt:#F97316; --dy:#7C5CFF;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  padding-bottom:60px;
+}
+/* ---------- 顶部横幅 ---------- */
+.topbar{
+  background:#fff; border-bottom:1px solid var(--line);
+  padding:0 24px; position:sticky; top:0; z-index:20;
+  box-shadow:0 1px 3px rgba(20,33,61,.04);
+}
+.tbrow{display:flex;align-items:center;gap:16px;height:58px;max-width:1400px;margin:0 auto}
+.brand{font-weight:800;font-size:16px;letter-spacing:.3px;white-space:nowrap}
+.brand i{font-style:normal;color:var(--blue)}
+.roles{display:flex;gap:4px;margin-left:8px;background:var(--sub);padding:3px;border-radius:10px}
+.roles button{
+  font:inherit;font-size:12.5px;font-weight:600;border:0;background:transparent;color:var(--ink2);
+  padding:6px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:background .16s,color .16s;
+}
+.roles button.on{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(0,122,255,.18)}
+.roles button:active{transform:scale(.97)}
+.spacer{flex:1}
+.who{font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--cyan));
+  color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+/* ---------- 导航 ---------- */
+.nav{border-top:1px solid #F0F6FF;overflow-x:auto}
+.navrow{display:flex;gap:2px;max-width:1400px;margin:0 auto;height:44px;align-items:stretch}
+.navrow a{
+  display:flex;align-items:center;padding:0 15px;font-size:13.5px;font-weight:600;
+  color:var(--ink2);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;
+  transition:color .16s,border-color .16s;
+}
+.navrow a:hover{color:var(--blue)}
+.navrow a.on{color:var(--blue);border-bottom-color:var(--blue)}
+.navrow a .dot{width:6px;height:6px;border-radius:50%;background:var(--red);margin-left:6px}
+/* ---------- 主体 ---------- */
+.wrap{max-width:1400px;margin:0 auto;padding:22px 24px}
+.page{display:none}
+.page.on{display:block;animation:fade .22s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.ph{margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ph h2{margin:0;font-size:19px;letter-spacing:.2px}
+.ph .rt{margin-left:auto;display:flex;gap:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+.ct{font-weight:700;font-size:14.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.ct .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--sub);color:var(--blue)}
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.kpi .lab{font-size:12.5px;color:var(--ink2);margin-bottom:6px}
+.kpi .val{font-size:25px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.kpi .val small{font-size:13px;font-weight:600;color:var(--ink2);margin-left:3px}
+.kpi .dlt{font-size:12px;font-weight:700;margin-top:4px}
+.up{color:var(--red)} .down{color:var(--green)} .flat{color:var(--ink3)}
+/* 表格 */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{
+  text-align:left;padding:9px 10px;background:#F7FBFF;color:var(--ink2);
+  font-weight:600;font-size:12px;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+td{padding:10px;border-bottom:1px solid #F0F6FF;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.n{font-variant-numeric:tabular-nums;text-align:right}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#F1F7FF;
+  color:#0369A1;padding:1px 5px;border-radius:5px}
+/* 标签 */
+.b{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.b.blue{background:#E6F4FF;color:#0369A1}
+.b.green{background:#ECFDF5;color:#047857}
+.b.red{background:#FEF2F2;color:#B42318}
+.b.amber{background:#FFFBEB;color:#92400E}
+.b.gray{background:#F1F5F9;color:#64748B}
+.b.dy{background:#F1EEFF;color:#5B3FD1}
+.b.mt{background:#FFF1E7;color:#B45309}
+.b.new{background:#FFF7D6;color:#8A6D00}
+.b.old{background:#FDF2F8;color:#9D174D}
+/* 平台占比条 */
+.struct{display:flex;height:10px;border-radius:99px;overflow:hidden;background:#EEF6FF;margin:10px 0 8px}
+.struct i{display:block;height:100%}
+.legend{display:flex;gap:18px;font-size:12.5px;color:var(--ink2);flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend b{display:inline-block;width:9px;height:9px;border-radius:50%}
+/* 筛选条 / 工具栏 */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--card);
+  border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px}
+.qb{display:flex;gap:4px;background:var(--sub);padding:3px;border-radius:9px}
+.qb button{font:inherit;font-size:12.5px;font-weight:600;border:0;background:transparent;
+  color:var(--ink2);padding:5px 11px;border-radius:7px;cursor:pointer}
+.qb button.on{background:#fff;color:var(--blue);box-shadow:0 1px 2px rgba(0,122,255,.16)}
+.inp{border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px;color:var(--ink);background:#fff}
+.inp.w180{width:180px}
+.inp.w240{width:240px}
+/* 按钮 */
+.btn{font:inherit;font-size:13px;font-weight:700;border:0;border-radius:9px;padding:8px 16px;cursor:pointer;
+  background:var(--blue);color:#fff;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink2)}
+.btn.ghost:hover{border-color:#B9D8FF;color:var(--blue)}
+.btn.sm{padding:5px 12px;font-size:12.5px}
+.chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink2);font-weight:600;cursor:pointer;
+  background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 11px}
+.chk input{width:15px;height:15px;accent-color:var(--blue);margin:0}
+/* 拖拽区 */
+.drop{border:2px dashed #C9DFF7;border-radius:14px;background:#FAFDFF;padding:34px 20px;text-align:center;color:var(--ink2)}
+.drop .big{font-size:15px;font-weight:700;color:var(--blue);margin-bottom:6px}
+/* 分段控件 */
+.seg{display:inline-flex;gap:3px;background:var(--sub);padding:3px;border-radius:10px;margin-bottom:14px;flex-wrap:wrap}
+.seg button{font:inherit;font-size:13px;font-weight:600;border:0;background:transparent;color:var(--ink2);
+  padding:7px 16px;border-radius:8px;cursor:pointer}
+.seg button.on{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(0,122,255,.16)}
+/* 表单 */
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.fld label{display:block;font-size:12.5px;color:var(--ink2);font-weight:600;margin-bottom:5px}
+.fld input,.fld select{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 11px;
+  font:inherit;font-size:13.5px;color:var(--ink);background:#fff}
+.fld .hint{font-size:11.5px;color:var(--ink3);margin-top:4px}
+/* 门店卡 */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:12px}
+.sc{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px 15px;position:relative}
+.sc .nm{font-weight:700;font-size:13.5px;margin-bottom:2px}
+.sc .op{font-size:11.5px;color:var(--ink3);margin-bottom:9px}
+.sc .amt{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.sc .meta{font-size:11.5px;color:var(--ink2);margin-top:6px;display:flex;justify-content:space-between;gap:6px}
+.sc .pin{position:absolute;top:11px;right:11px;width:7px;height:7px;border-radius:50%}
+.pin.new{background:#F5C518;box-shadow:0 0 0 3px rgba(245,197,24,.22)}
+.pin.old{background:#F472B6;box-shadow:0 0 0 3px rgba(244,114,182,.18)}
+/* 陪跑卡（两平台分行） */
+.sc .split{display:flex;gap:8px;margin-top:3px}
+.sc .split div{flex:1}
+.sc .split .pl{font-size:10.5px;font-weight:700;color:var(--ink3);letter-spacing:.2px}
+.sc .split .pv{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+/* 提示条 */
+.tip{background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:12px 15px;
+  font-size:12.5px;color:#92400E;margin-bottom:16px}
+.note{font-size:12px;color:var(--ink3);margin-top:10px}
+/* ---------- 数据截止条 ---------- */
+.fresh{display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;
+  border-radius:12px;padding:10px 15px;font-size:12.5px;color:#166534;margin-bottom:14px}
+.fresh i{width:7px;height:7px;border-radius:50%;background:#22C55E;display:block;flex:0 0 auto}
+.fresh b{font-weight:800}
+.fresh .gapwarn{margin-left:auto;color:#B42318;font-weight:700}
+/* ---------- 视图切换 ---------- */
+.vtabs{display:inline-flex;gap:3px;background:var(--sub);padding:3px;border-radius:10px}
+.vtabs button{font:inherit;font-size:12.5px;font-weight:600;border:0;background:transparent;
+  color:var(--ink2);padding:6px 14px;border-radius:8px;cursor:pointer;transition:background .16s,color .16s}
+.vtabs button.on{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(0,122,255,.16)}
+.vtabs button:active{transform:scale(.97)}
+/* ---------- 平台结构 / 运营人 ---------- */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:820px){.two{grid-template-columns:1fr}}
+.pfp{display:flex;height:12px;border-radius:99px;overflow:hidden;background:#EEF6FF;margin:4px 0 12px}
+.pfp i{display:block;height:100%}
+.pfleg{display:flex;flex-direction:column;gap:9px;font-size:12.5px}
+.pfleg .lg{display:flex;align-items:center;gap:8px}
+.pfleg .lg .dt{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+.pfleg .lg .amt{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+.pfleg .lg .pct{width:42px;text-align:right;color:var(--ink3);font-weight:700}
+.oprow{display:flex;align-items:center;gap:10px;padding:7px 0}
+.oprow .nm{width:58px;font-weight:700;font-size:12.5px;flex:0 0 auto}
+.oprow .bar{flex:1;height:9px;background:#EEF6FF;border-radius:99px;overflow:hidden}
+.oprow .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--blue));border-radius:99px}
+.oprow .val{width:76px;text-align:right;font-weight:800;font-size:12.5px;font-variant-numeric:tabular-nums}
+.oprow .sub{width:52px;text-align:right;color:var(--ink3);font-size:11.5px}
+/* ---------- 三板块对比 ---------- */
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+@media(max-width:820px){.trio{grid-template-columns:1fr}}
+.tri{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}
+.tri .th{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--ink2);margin-bottom:9px}
+.tri .th .dt{width:9px;height:9px;border-radius:50%}
+.tri .tv{font-size:23px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.tri .tv small{font-size:12.5px;font-weight:600;color:var(--ink2);margin-left:3px}
+.tri .ts{font-size:11.5px;color:var(--ink3);margin-top:5px}
+.tri .tbar{height:6px;border-radius:99px;background:#EEF6FF;margin-top:11px;overflow:hidden}
+.tri .tbar i{display:block;height:100%;border-radius:99px}
+/* ---------- 业绩日历 ---------- */
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.calhead span{text-align:center;font-size:11px;color:var(--ink3);font-weight:700;padding-bottom:3px}
+.calcell{aspect-ratio:1/1;border-radius:8px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;font-size:12px;font-weight:700;color:var(--ink);background:#F7FBFF;gap:1px;cursor:pointer}
+.calcell b{font-weight:800;font-size:12.5px;line-height:1}
+.calcell i{font-style:normal;font-size:9px;font-weight:700;color:var(--ink2);line-height:1}
+.calcell.low{background:#FFFBEB}
+.calcell.mid{background:#D1FAE5}
+.calcell.high{background:#DBEAFE}
+.calcell.out{background:transparent;color:#CBD5E1;cursor:default}
+.calcell.gap{background:#FEF2F2;box-shadow:inset 0 0 0 2px var(--red);color:#B42318}
+.calcell.wait{background:#FFF;box-shadow:inset 0 0 0 2px #FCA5A5;border:1px dashed #F87171}
+.calcell.today{outline:2px solid var(--blue);outline-offset:1px}
+.calmons{display:grid;grid-template-columns:1fr;gap:14px;max-width:460px}
+.calmo{background:#FAFDFF;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.calmo .mt{font-size:12.5px;font-weight:800;margin-bottom:9px;color:var(--ink)}
+/* ---------- 页内跳转 ---------- */
+.jump{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.jump a{font-size:12.5px;font-weight:600;color:var(--blue);background:#fff;border:1px solid var(--line);
+  border-radius:99px;padding:5px 14px;cursor:pointer;text-decoration:none;transition:background .16s,border-color .16s}
+.jump a:hover{background:var(--sub);border-color:#B9D8FF}
+/* ---------- 退款明细 ---------- */
+tr.rfr td{background:#FFFBFB}
+/* ---------- 门店档案扩展列 ---------- */
+.xc{display:none}
+body.allcols .xc{display:table-cell}
+/* ---------- 页脚 ---------- */
+.foot{max-width:1400px;margin:0 auto;padding:14px 24px 0;text-align:center;
+  font-size:11.5px;color:#B9C6DB;letter-spacing:.3px}
+.empty{text-align:center;color:var(--ink3);font-size:13px;padding:26px 0}
+.lnk{color:var(--pri);cursor:pointer;font-size:12.5px}
+.lnk:hover{text-decoration:underline}
+.nowrap{white-space:nowrap}
+.sw{position:relative;display:inline-block;width:38px;height:21px;border-radius:11px;background:var(--line2,rgba(0,0,0,.15));vertical-align:middle;cursor:pointer}
+.sw i{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .16s}
+.sw.on{background:var(--pri)}
+.sw.on i{left:19px}
+
+/* ===== v11 内购填写 ===== */
+.steplab{margin:18px 0 10px;font-weight:700;font-size:13px}
+.steplab .h2{font-weight:400;color:var(--ink3);font-size:12px;margin-left:8px}
+.ipgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:10px}
+.ipitem{border:1px solid var(--line);border-radius:10px;padding:11px 13px;cursor:pointer;background:#fff}
+.ipitem:hover{border-color:var(--blue)}
+.ipitem.on{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.10);background:#F7FBFF}
+.ipitem .nm{font-weight:600;font-size:13px;line-height:1.45}
+.ipitem .ml{font-size:12px;color:var(--ink3);margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ipform{margin-top:16px;padding:14px;background:var(--sub);border-radius:10px;border:1px solid var(--line)}
+.ick{width:26px;height:26px;border-radius:7px;border:1.5px solid var(--line);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink3)}
+.ick.on{background:var(--blue);border-color:var(--blue);color:#fff}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tbrow">
+    <div class="brand">书荀<i>互联网</i>运营工作区</div>
+    <div class="roles" id="roles">
+      <button data-r="owner" class="on">所有者</button>
+      <button data-r="admin">管理员</button>
+      <button data-r="ops">运营</button>
+      <button data-r="store">门店号</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="who"><span id="whoName">崔智颖</span><span class="avatar" id="whoAv">崔</span></div>
+  </div>
+  <div class="nav"><div class="navrow" id="nav"></div></div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ 书荀大盘 ============ -->
+<div class="page on" id="p-dash">
+  <div class="ph"><h2>书荀大盘</h2></div>
+
+  <div class="fresh"><i></i>数据已更新至 <b>2026-10-21</b>（连锁账单 10-21 09:12 · 美团 10-21 10:04 · 抖音 10-21 10:11 · 直营填报 10-21 22:40）<span class="gapwarn">⚠ 10-12 连锁漏导入</span></div>
+  <div class="fresh" style="background:#FFFBF3;border-color:#FDE68A"><i style="background:#F59E0B"></i>直营已确认至 <b>2026-10-20</b> · <b>10-21</b> 尚未确认<span class="gapwarn">⚠ 10-21 的直营业绩暂未计入</span></div>
+
+  <div class="filters">
+    <div class="qb"><button>近7天</button><button class="on">本月</button><button>上月</button><button>自定义</button></div>
+    <input class="inp" type="date" value="2026-10-01">
+    <span style="color:var(--ink3)">至</span>
+    <input class="inp" type="date" value="2026-10-21">
+    <select class="inp"><option>全部运营人</option><option>琦琦</option><option>琳琳</option><option>慧慧</option><option>小梅</option><option>夏夏</option></select>
+    <select class="inp"><option>全部板块</option><option>佛山直营</option><option>全国连锁</option><option>陪跑门店</option></select>
+    <select class="inp"><option>全部平台</option><option>抖音</option><option>美团</option></select>
+    <span style="margin-left:auto;font-size:12.5px;color:var(--ink3)">20 天 · 不含今天</span>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lab">核销金额</div><div class="val">1,509,610<small>元</small></div><div class="dlt up">↑ 11.8% 环比上月</div></div>
+    <div class="kpi"><div class="lab">日均</div><div class="val">75,481<small>元</small></div><div class="dlt up">↑ 9.4%</div></div>
+    <div class="kpi"><div class="lab">单数 / 客数</div><div class="val">20,070</div><div class="dlt flat">客单价 75 元</div></div>
+    <div class="kpi"><div class="lab">覆盖门店</div><div class="val">112<small>家</small></div><div class="dlt flat">连锁 82 · 陪跑 20 · 直营 10</div></div>
+  </div>
+
+  <div class="trio">
+    <div class="tri">
+      <div class="th"><span class="dt" style="background:#007AFF"></span>佛山直营 <span class="b blue">填报</span></div>
+      <div class="tv">386,420<small>元</small></div>
+      <div class="ts">6,214 人 · 客单 62 · 10 家</div>
+      <div class="tbar"><i style="width:25.6%;background:#007AFF"></i></div>
+    </div>
+    <div class="tri">
+      <div class="th"><span class="dt" style="background:#7C5CFF"></span>全国连锁 <span class="b dy">账单</span></div>
+      <div class="tv">823,590<small>元</small></div>
+      <div class="ts">11,936 单 · 客单 69 · 82 家</div>
+      <div class="tbar"><i style="width:54.6%;background:#7C5CFF"></i></div>
+    </div>
+    <div class="tri">
+      <div class="th"><span class="dt" style="background:#F97316"></span>陪跑门店 <span class="b mt">双平台</span></div>
+      <div class="tv">299,600<small>元</small></div>
+      <div class="ts">1,920 单 · 客单 156 · 20 家</div>
+      <div class="tbar"><i style="width:19.8%;background:#F97316"></i></div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="card" style="margin-bottom:0">
+      <div class="ct">平台结构</div>
+      <div class="pfp"><i style="width:63%;background:#7C5CFF"></i><i style="width:37%;background:#F97316"></i></div>
+      <div class="pfleg">
+        <span class="lg"><span class="dt" style="background:#7C5CFF"></span><span>抖音</span><span class="amt">951,050</span><span class="pct">63%</span></span>
+        <span class="lg"><span class="dt" style="background:#F97316"></span><span>美团</span><span class="amt">558,560</span><span class="pct">37%</span></span>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="ct">按运营人对比 <span class="tag">6 人</span></div>
+      <div class="oprow"><div class="nm">琳琳</div><div class="bar"><i style="width:100%"></i></div><div class="val">456,280</div><div class="sub">20 家</div></div>
+      <div class="oprow"><div class="nm">琦琦</div><div class="bar"><i style="width:64%"></i></div><div class="val">291,160</div><div class="sub">6 家</div></div>
+      <div class="oprow"><div class="nm">慧慧</div><div class="bar"><i style="width:52%"></i></div><div class="val">236,940</div><div class="sub">17 家</div></div>
+      <div class="oprow"><div class="nm">小梅</div><div class="bar"><i style="width:46%"></i></div><div class="val">209,420</div><div class="sub">15 家</div></div>
+      <div class="oprow"><div class="nm">夏夏</div><div class="bar"><i style="width:38%"></i></div><div class="val">172,760</div><div class="sub">12 家</div></div>
+      <div class="oprow"><div class="nm">小艾</div><div class="bar"><i style="width:31%"></i></div><div class="val">143,050</div><div class="sub">9 家</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">业绩日历 <span class="tag">点某天看当天明细</span></div>
+    <div class="legend" style="margin:-4px 0 12px;font-size:12px">
+      <span><b style="background:#FFFBEB;border:1px solid #FDE68A"></b>低</span>
+      <span><b style="background:#D1FAE5"></b>中</span>
+      <span><b style="background:#DBEAFE"></b>高</span>
+      <span><b style="background:#FEF2F2;box-shadow:inset 0 0 0 2px #F04438"></b>连锁漏导入</span>
+      <span><b style="background:#fff;box-shadow:inset 0 0 0 2px #FCA5A5"></b>直营待确认</span>
+      <span style="margin-left:auto;color:var(--ink3)">格内数字为该日金额（万元）</span>
+    </div>
+    <div class="calmons">
+      <div class="calmo">
+        <div class="mt">2026 年 10 月</div>
+        <div class="calgrid calhead"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+        <div class="calgrid" style="margin-top:5px">
+          <span class="calcell out"></span>
+          <span class="calcell out"></span>
+          <span class="calcell out"></span>
+          <span class="calcell mid" title="65.3 万"><b>1</b><i>65</i></span>
+          <span class="calcell mid" title="57.2 万"><b>2</b><i>57</i></span>
+          <span class="calcell high" title="80.6 万"><b>3</b><i>81</i></span>
+          <span class="calcell low" title="38.5 万"><b>4</b><i>39</i></span>
+          <span class="calcell mid" title="57.1 万"><b>5</b><i>57</i></span>
+          <span class="calcell mid" title="53.7 万"><b>6</b><i>54</i></span>
+          <span class="calcell high" title="70.2 万"><b>7</b><i>70</i></span>
+          <span class="calcell mid" title="62.1 万"><b>8</b><i>62</i></span>
+          <span class="calcell mid" title="58.3 万"><b>9</b><i>58</i></span>
+          <span class="calcell high" title="83.4 万"><b>10</b><i>83</i></span>
+          <span class="calcell low" title="38.9 万"><b>11</b><i>39</i></span>
+          <span class="calcell gap" title="该日连锁无导入数据"><b>12</b><i>漏导入</i></span>
+          <span class="calcell mid" title="67.3 万"><b>13</b><i>67</i></span>
+          <span class="calcell low" title="41.1 万"><b>14</b><i>41</i></span>
+          <span class="calcell mid" title="61.1 万"><b>15</b><i>61</i></span>
+          <span class="calcell low" title="42.5 万"><b>16</b><i>43</i></span>
+          <span class="calcell low" title="53.4 万"><b>17</b><i>53</i></span>
+          <span class="calcell high" title="80.4 万"><b>18</b><i>80</i></span>
+          <span class="calcell mid" title="72.8 万"><b>19</b><i>73</i></span>
+          <span class="calcell low" title="46.9 万"><b>20</b><i>47</i></span>
+          <span class="calcell wait" title="直营已填报，运营尚未确认"><b>21</b><i>待确认</i></span>
+          <span class="calcell out today"><b>22</b></span>
+          <span class="calcell out"><b>23</b></span>
+          <span class="calcell out"><b>24</b></span>
+          <span class="calcell out"><b>25</b></span>
+          <span class="calcell out"><b>26</b></span>
+          <span class="calcell out"><b>27</b></span>
+          <span class="calcell out"><b>28</b></span>
+          <span class="calcell out"><b>29</b></span>
+          <span class="calcell out"><b>30</b></span>
+          <span class="calcell out"><b>31</b></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>门店表现 <span class="tag">112 家</span></span>
+      <span class="vtabs" id="perfTabs">
+        <button class="on" data-v="card">卡片</button>
+        <button data-v="table">表格</button>
+      </span>
+    </div>
+
+    <div id="perfCard">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        <span class="b blue">全部 112</span>
+        <span class="b green">营业 104</span>
+        <span class="b amber">特殊 3</span>
+        <span class="b new">● 新店 5</span>
+        <span class="b old">● 老店 99</span>
+        <span class="b gray">待上线 4</span>
+      </div>
+      <div class="cards">
+        <div class="sc"><span class="pin old"></span><div class="nm">佛山祖庙店</div><div class="op">琦琦 · 直营</div><div class="amt">48,260</div><div class="meta"><span>742 人</span><span>21 天</span></div></div>
+        <div class="sc"><span class="pin old"></span><div class="nm" onclick="openStore('广州天河店')" style="cursor:pointer;color:var(--blue)">广州天河店</div><div class="op">琳琳 · 连锁</div><div class="amt">28,640</div><div class="meta"><span>386 单</span><span>21 天</span></div></div>
+        <div class="sc" style="border-color:#FDE68A;background:#FFFDF5"><span class="pin new"></span><div class="nm">佛山南海万科店</div><div class="op">琳琳 · 直营</div><div class="amt">26,880</div><div class="meta"><span>412 人</span><span><span class="b amber">培训闭店 3 天</span></span></div></div>
+        <div class="sc"><span class="pin old"></span><div class="nm">YSY中关村店</div><div class="op">夏夏 · 陪跑</div><div class="amt">30,164</div><div class="meta"><span>美团 26,377</span><span>抖音 3,787</span></div></div>
+        <div class="sc"><span class="pin old"></span><div class="nm" onclick="openStore('深圳福田店')" style="cursor:pointer;color:var(--blue)">深圳福田店</div><div class="op">小梅 · 连锁</div><div class="amt">24,180</div><div class="meta"><span>312 单</span><span>21 天</span></div></div>
+        <div class="sc"><span class="pin old"></span><div class="nm">广州和丰店</div><div class="op">夏夏 · 陪跑</div><div class="amt">32,063</div><div class="meta"><span>美团 14,661</span><span>抖音 17,402</span></div></div>
+        <div class="sc" style="opacity:.62"><span class="pin old"></span><div class="nm">陕西海螺湾</div><div class="op">夏夏 · 陪跑</div><div class="amt">11,902</div><div class="meta"><span>美团 567</span><span>抖音 11,335</span></div></div>
+        <div class="sc" style="opacity:.62"><div class="nm">东莞松山湖店</div><div class="op">慧慧 · 连锁</div><div class="amt">—</div><div class="meta"><span>待上线</span><span>—</span></div></div>
+      </div>
+    </div>
+
+    <div id="perfTable" style="display:none">
+      <table>
+        <thead><tr><th>#</th><th>门店</th><th>板块</th><th>分公司</th><th>运营人</th><th class="n">核销金额</th><th class="n">单数/客数</th><th class="n">客单价</th><th class="n">营业天</th><th class="n">日均</th><th>特殊营业</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><b>佛山祖庙店</b></td><td><span class="b blue">直营</span></td><td>佛山分公司</td><td>琦琦</td><td class="n">48,260</td><td class="n">742</td><td class="n">65</td><td class="n">21</td><td class="n">2,298</td><td>—</td></tr>
+          <tr><td>2</td><td><b>广州和丰店</b></td><td><span class="b amber">陪跑</span></td><td>广州分公司</td><td>夏夏</td><td class="n">32,063</td><td class="n">198</td><td class="n">162</td><td class="n">21</td><td class="n">1,527</td><td>—</td></tr>
+          <tr><td>3</td><td><b>YSY中关村店</b></td><td><span class="b amber">陪跑</span></td><td>北京分公司</td><td>夏夏</td><td class="n">30,164</td><td class="n">247</td><td class="n">122</td><td class="n">21</td><td class="n">1,436</td><td>—</td></tr>
+          <tr><td>4</td><td><b>广州天河店</b></td><td><span class="b gray">连锁</span></td><td>广州分公司</td><td>琳琳</td><td class="n">28,640</td><td class="n">386</td><td class="n">74</td><td class="n">21</td><td class="n">1,364</td><td>—</td></tr>
+          <tr><td>5</td><td><b>佛山南海万科店</b></td><td><span class="b blue">直营</span></td><td>佛山分公司</td><td>琳琳</td><td class="n">26,880</td><td class="n">412</td><td class="n">65</td><td class="n">18</td><td class="n">1,493</td><td><span class="b amber">培训闭店 3 天</span></td></tr>
+          <tr><td>6</td><td><b>深圳福田店</b></td><td><span class="b gray">连锁</span></td><td>深圳分公司</td><td>小梅</td><td class="n">24,180</td><td class="n">312</td><td class="n">78</td><td class="n">21</td><td class="n">1,151</td><td>—</td></tr>
+          <tr><td>7</td><td><b>东莞南城店</b></td><td><span class="b gray">连锁</span></td><td>东莞分公司</td><td>慧慧</td><td class="n">19,720</td><td class="n">268</td><td class="n">74</td><td class="n">21</td><td class="n">939</td><td>—</td></tr>
+          <tr><td>8</td><td><b>陕西海螺湾</b></td><td><span class="b amber">陪跑</span></td><td>陕西分公司</td><td>夏夏</td><td class="n">11,902</td><td class="n">85</td><td class="n">140</td><td class="n">21</td><td class="n">567</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">退款明细 <span class="tag">14 笔 · 仅全国连锁 · 已从业绩中扣减</span></div>
+    <table>
+      <thead><tr><th>原订单完成日</th><th>门店</th><th>平台</th><th>原订单号</th><th class="n">退款金额</th><th>退款完成时间</th><th>原因</th></tr></thead>
+      <tbody>
+        <tr class="rfr"><td>10-18</td><td>广州天河店</td><td><span class="b dy">抖音</span></td><td>E2026101800342</td><td class="n" style="color:#B42318;font-weight:700">−398</td><td>10-20 09:14</td><td>客户改期</td></tr>
+        <tr class="rfr"><td>10-16</td><td>深圳福田店</td><td><span class="b mt">美团</span></td><td>MT8820261016-77</td><td class="n" style="color:#B42318;font-weight:700">−168</td><td>10-19 16:40</td><td>重复购买</td></tr>
+        <tr class="rfr"><td>10-11</td><td>东莞南城店</td><td><span class="b dy">抖音</span></td><td>E2026101100918</td><td class="n" style="color:#B42318;font-weight:700">−598</td><td>10-17 11:02</td><td>未到店</td></tr>
+        <tr class="rfr"><td>10-09</td><td>中山石岐店</td><td><span class="b mt">美团</span></td><td>MT8820261009-31</td><td class="n" style="color:#B42318;font-weight:700">−268</td><td>10-15 14:22</td><td>重复购买</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="ct">待处理 <span class="tag">4 条</span></div>
+    <table>
+      <tbody>
+        <tr><td style="width:60px"><span class="b red">异常</span></td><td>佛山南海万科店 —— 已连续 3 天零核销，近 4 周日均 ¥1,240</td><td class="n" style="width:90px"><a style="color:var(--blue);font-weight:600;cursor:pointer">去查看</a></td></tr>
+        <tr><td><span class="b red">漏数</span></td><td>10-12 连锁账单未导入，当日大盘缺 82 家门店数据</td><td class="n"><a style="color:var(--blue);font-weight:600;cursor:pointer">去导入</a></td></tr>
+        <tr><td><span class="b amber">待分配</span></td><td>2 个新注册账号等待分配权限（159****3308、136****7742）</td><td class="n"><a style="color:var(--blue);font-weight:600;cursor:pointer">去分配</a></td></tr>
+        <tr><td><span class="b gray">待填</span></td><td>今天还有 3 家直营店未填报（佛山祖庙、佛山星耀、佛山大沥）</td><td class="n"><a style="color:var(--blue);font-weight:600;cursor:pointer">看详情</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 佛山直营 ============ -->
+<div class="page" id="p-direct">
+  <div class="ph"><h2>佛山直营</h2><span class="rt"><button class="btn ghost" onclick="openInnerCheck()">佛山内购核对</button><button class="btn ghost">导出 Excel</button></span></div>
+
+  <div class="fresh"><i></i>今日已填报 <b>7 / 10 家</b> · 最近填报 10-21 22:40<span class="gapwarn">未填：佛山祖庙、佛山星耀、佛山大沥</span></div>
+
+  <div class="filters">
+    <div class="qb"><button>昨日</button><button>近7天</button><button class="on">本月</button><button>上月</button><button>自定义</button></div>
+    <input class="inp" type="date" value="2026-10-01">
+    <span style="color:var(--ink3)">至</span>
+    <input class="inp" type="date" value="2026-10-21">
+    <select class="inp"><option>全部门店</option><option>佛山祖庙店</option><option>佛山星耀店</option><option>佛山高明店</option></select>
+    <span style="margin-left:auto;font-size:12.5px;color:var(--ink3)">数据源：门店每日填报 · 21 天</span>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lab">核销金额合计</div><div class="val">386,420<small>元</small></div><div class="dlt flat">美团 218,340 · 抖音 168,080</div></div>
+    <div class="kpi"><div class="lab">到店客数</div><div class="val">6,214<small>人</small></div><div class="dlt flat">美 3,562 · 抖 2,652</div></div>
+    <div class="kpi"><div class="lab">内购金额</div><div class="val">6,730<small>元</small></div><div class="dlt flat">内购 106 单</div></div>
+    <div class="kpi"><div class="lab">约不上</div><div class="val">42<small>单</small></div><div class="dlt flat">美 26 · 抖 16</div></div>
+  </div>
+
+  <div class="two">
+    <div class="card" style="margin-bottom:0">
+      <div class="ct">平台结构</div>
+      <div class="pfp"><i style="width:56.5%;background:#F97316"></i><i style="width:43.5%;background:#7C5CFF"></i></div>
+      <div class="pfleg">
+        <span class="lg"><span class="dt" style="background:#F97316"></span><span>美团核销</span><span class="amt">218,340</span><span class="pct">56.5%</span></span>
+        <span class="lg"><span class="dt" style="background:#7C5CFF"></span><span>抖音核销</span><span class="amt">168,080</span><span class="pct">43.5%</span></span>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="ct">客数与约不上 <span class="tag">10 家合计</span></div>
+      <div class="pfleg" style="gap:12px">
+        <span class="lg"><span class="dt" style="background:#F97316"></span><span>美团客数</span><span class="amt">3,562</span><span class="pct">57%</span></span>
+        <span class="lg"><span class="dt" style="background:#7C5CFF"></span><span>抖音客数</span><span class="amt">2,652</span><span class="pct">43%</span></span>
+        <span class="lg" style="border-top:1px solid var(--line);padding-top:11px">
+          <span class="dt" style="background:#94A3B8"></span><span>约不上占比</span><span class="amt">15 人 · 1.9%</span><span class="pct">—</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">每日趋势 <span class="tag">核销金额 / 到店客数 / 内购数量</span></div>
+    <div class="legend" style="margin:-4px 0 10px;font-size:12px">
+      <span><b style="background:#007AFF"></b>核销金额（元）</span>
+      <span><b style="background:#10B981"></b>到店客数（人）</span>
+      <span><b style="background:#F5C518"></b>内购数量（单）</span>
+      <span style="margin-left:auto;color:var(--ink3)">10-01 ~ 10-21</span>
+    </div>
+    <div id="dirTrend" style="height:170px"></div>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>门店数据汇总 <span class="tag">点门店看单店每日趋势</span></span>
+      <span class="vtabs" id="dirTabs"><button class="on" data-v="sum">汇总表</button><button data-v="single">单店趋势</button></span>
+    </div>
+
+    <div id="dirSum">
+      <table>
+        <thead><tr><th>门店</th><th class="n">美团</th><th class="n">抖音</th><th class="n">核销合计</th><th class="n">客数</th><th class="n">约不上</th><th class="n">内购金额</th><th class="n">客单价</th><th class="n">日均</th><th>填报</th></tr></thead>
+        <tbody>
+          <tr><td><b>佛山祖庙店</b></td><td class="n">27,540</td><td class="n">20,720</td><td class="n"><b>48,260</b></td><td class="n">742</td><td class="n">2</td><td class="n">1,280</td><td class="n">65</td><td class="n">2,298</td><td><span class="b amber">今日未填</span></td></tr>
+          <tr><td><b>佛山星耀店</b></td><td class="n">23,880</td><td class="n">18,040</td><td class="n"><b>41,920</b></td><td class="n">688</td><td class="n">8</td><td class="n">1,140</td><td class="n">61</td><td class="n">1,997</td><td><span class="b amber">今日未填</span></td></tr>
+          <tr><td><b>佛山高明店</b></td><td class="n">18,620</td><td class="n">14,520</td><td class="n"><b>33,140</b></td><td class="n">566</td><td class="n">4</td><td class="n">720</td><td class="n">59</td><td class="n">1,578</td><td><span class="b green">已填</span></td></tr>
+          <tr><td><b>佛山大沥店</b></td><td class="n">16,940</td><td class="n">12,820</td><td class="n"><b>29,760</b></td><td class="n">498</td><td class="n">6</td><td class="n">640</td><td class="n">60</td><td class="n">1,417</td><td><span class="b amber">今日未填</span></td></tr>
+          <tr><td><b>佛山季华店</b></td><td class="n">15,420</td><td class="n">11,920</td><td class="n"><b>27,340</b></td><td class="n">452</td><td class="n">3</td><td class="n">580</td><td class="n">60</td><td class="n">1,302</td><td><span class="b green">已填</span></td></tr>
+          <tr><td><b>佛山南海万科店</b></td><td class="n">15,180</td><td class="n">11,700</td><td class="n"><b>26,880</b></td><td class="n">412</td><td class="n">7</td><td class="n">860</td><td class="n">65</td><td class="n">1,280</td><td><span class="b green">已填</span> <span class="b amber">特殊 3 天</span></td></tr>
+          <tr><td><b>佛山千灯湖店</b></td><td class="n">14,260</td><td class="n">10,920</td><td class="n"><b>25,180</b></td><td class="n">438</td><td class="n">5</td><td class="n">490</td><td class="n">57</td><td class="n">1,199</td><td><span class="b green">已填</span></td></tr>
+          <tr><td><b>佛山三水店</b></td><td class="n">12,880</td><td class="n">10,060</td><td class="n"><b>22,940</b></td><td class="n">398</td><td class="n">3</td><td class="n">440</td><td class="n">58</td><td class="n">1,092</td><td><span class="b green">已填</span></td></tr>
+          <tr class=""><td colspan="3" style="color:var(--ink3)">其余 2 家（佛山禅城、佛山乐从）</td><td class="n"><b>31,000</b></td><td class="n">560</td><td class="n">4</td><td class="n">1,880</td><td class="n">55</td><td class="n">1,476</td><td><span class="b green">已填</span></td></tr>
+          <tr style="background:#F7FBFF"><td><b>合计</b></td><td class="n"><b>218,340</b></td><td class="n"><b>168,080</b></td><td class="n"><b>386,420</b></td><td class="n"><b>6,214</b></td><td class="n"><b>42</b></td><td class="n"><b>6,730</b></td><td class="n"><b>62</b></td><td class="n"><b>18,401</b></td><td>7 / 10</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="dirSingle" style="display:none">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+        <span class="b blue">佛山祖庙店</span>
+        <span style="font-size:12.5px;color:var(--ink3)">切换门店：</span>
+        <select class="inp"><option>佛山祖庙店</option><option>佛山星耀店</option><option>佛山高明店</option><option>佛山大沥店</option></select>
+      </div>
+      <div class="legend" style="margin:-2px 0 10px;font-size:12px">
+        <span><b style="background:#007AFF"></b>核销金额（元）</span>
+        <span><b style="background:#10B981"></b>到店客数（人）</span>
+        <span><b style="background:#F5C518"></b>内购数量（单）</span>
+      </div>
+      <div id="dirSingleTrend" style="height:170px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>填报 vs 平台真值核对 <span class="tag" style="background:#FEF2F2;color:#B42318">4 家不符 · 1 家未填报</span></span>
+      <span style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:12.5px;color:var(--ink3)">核对日期</span>
+        <input class="inp" type="date" value="2026-10-21" style="width:152px">
+        <button class="btn ghost sm">只看有差异</button>
+        <button class="btn ghost sm">导入平台明细</button>
+        <button class="btn sm">开始核对</button>
+      </span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2">门店</th>
+          <th colspan="3" style="text-align:center">美团核销金</th>
+          <th colspan="3" style="text-align:center">美团客数</th>
+          <th colspan="3" style="text-align:center">抖音核销金</th>
+          <th colspan="3" style="text-align:center">抖音客数</th>
+          <th colspan="3" style="text-align:center">内购金额</th>
+          <th rowspan="2">判定</th>
+          <th rowspan="2">操作</th>
+        </tr>
+        <tr>
+          <th class="n">真值</th><th class="n">填报</th><th class="n">差</th>
+          <th class="n">真值</th><th class="n">填报</th><th class="n">差</th>
+          <th class="n">真值</th><th class="n">填报</th><th class="n">差</th>
+          <th class="n">真值</th><th class="n">填报</th><th class="n">差</th>
+          <th class="n">真值</th><th class="n">填报</th><th class="n">差</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><b>佛山祖庙店</b></td><td class="n">1,340</td><td class="n">1,340</td><td class="n">0</td><td class="n">17</td><td class="n">17</td><td class="n">0</td><td class="n">910</td><td class="n">910</td><td class="n">0</td><td class="n">12</td><td class="n">12</td><td class="n">0</td><td class="n">120</td><td class="n">120</td><td class="n">0</td><td><span class="b green">一致</span></td><td class="nowrap"><a class="lnk">修改</a></td></tr>
+        <tr style="background:#FFFBFB"><td><b>佛山星耀店</b></td><td class="n">1,120</td><td class="n">1,120</td><td class="n">0</td><td class="n">14</td><td class="n">15</td><td class="n" style="color:#B42318;font-weight:700">+1</td><td class="n">760</td><td class="n">760</td><td class="n">0</td><td class="n">10</td><td class="n">10</td><td class="n">0</td><td class="n">60</td><td class="n">60</td><td class="n">0</td><td><span class="b red">不符</span></td><td class="nowrap"><a class="lnk">修改</a></td></tr>
+        <tr><td><b>佛山高明店</b></td><td class="n">1,420</td><td class="n">1,420</td><td class="n">0</td><td class="n">18</td><td class="n">18</td><td class="n">0</td><td class="n">960</td><td class="n">960</td><td class="n">0</td><td class="n">12</td><td class="n">12</td><td class="n">0</td><td class="n">180</td><td class="n">180</td><td class="n">0</td><td><span class="b green">一致</span></td><td class="nowrap"><a class="lnk">修改</a></td></tr>
+        <tr style="background:#FFFBFB"><td><b>佛山千灯湖店</b></td><td class="n">980</td><td class="n">1,160</td><td class="n" style="color:#B42318;font-weight:700">+180</td><td class="n">13</td><td class="n">15</td><td class="n" style="color:#B42318;font-weight:700">+2</td><td class="n">660</td><td class="n">660</td><td class="n">0</td><td class="n">8</td><td class="n">8</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td><span class="b red">不符</span></td><td class="nowrap"><a class="lnk">修改</a></td></tr>
+        <tr><td><b>佛山南海万科店</b></td><td class="n">1,180</td><td class="n">1,180</td><td class="n">0</td><td class="n">15</td><td class="n">15</td><td class="n">0</td><td class="n">800</td><td class="n">800</td><td class="n">0</td><td class="n">10</td><td class="n">10</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td><span class="b green">一致</span></td><td class="nowrap"><a class="lnk">修改</a></td></tr>
+        <tr style="background:#FFFBFB"><td><b>佛山三水店</b></td><td class="n">1,040</td><td class="n">1,040</td><td class="n">0</td><td class="n">13</td><td class="n">13</td><td class="n">0</td><td class="n">700</td><td class="n">700</td><td class="n">0</td><td class="n">9</td><td class="n">9</td><td class="n">0</td><td class="n">60</td><td class="n">0</td><td class="n" style="color:#B42318;font-weight:700">-60</td><td><span class="b red">不符</span></td><td class="nowrap"><a class="lnk">修改</a></td></tr>
+        <tr><td><b>佛山季华店</b></td><td class="n">1,250</td><td class="n">1,250</td><td class="n">0</td><td class="n">16</td><td class="n">16</td><td class="n">0</td><td class="n">850</td><td class="n">850</td><td class="n">0</td><td class="n">11</td><td class="n">11</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td><span class="b green">一致</span></td><td class="nowrap"><a class="lnk">修改</a></td></tr>
+        <tr style="background:#FFFBFB"><td><b>佛山大沥店</b></td><td class="n">860</td><td class="n">860</td><td class="n">0</td><td class="n">11</td><td class="n">11</td><td class="n">0</td><td class="n">580</td><td class="n">620</td><td class="n" style="color:#B42318;font-weight:700">+40</td><td class="n">7</td><td class="n">7</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td><span class="b red">不符</span></td><td class="nowrap"><a class="lnk">修改</a></td></tr>
+        <tr><td><b>佛山里水店</b></td><td class="n">1,080</td><td class="n">1,080</td><td class="n">0</td><td class="n">14</td><td class="n">14</td><td class="n">0</td><td class="n">730</td><td class="n">730</td><td class="n">0</td><td class="n">9</td><td class="n">9</td><td class="n">0</td><td class="n">120</td><td class="n">120</td><td class="n">0</td><td><span class="b green">一致</span></td><td class="nowrap"><a class="lnk">修改</a></td></tr>
+        <tr style="background:#FFFBFB"><td><b>佛山乐从店</b></td><td class="n">730</td><td class="n">—</td><td class="n">—</td><td class="n">9</td><td class="n">—</td><td class="n">—</td><td class="n">450</td><td class="n">—</td><td class="n">—</td><td class="n">6</td><td class="n">—</td><td class="n">—</td><td class="n">0</td><td class="n">—</td><td class="n">—</td><td><span class="b red">未填报</span></td><td class="nowrap"><a class="lnk">去补录</a></td></tr>
+        <tr style="background:#F7FBFF">
+          <td><b>10 家合计</b></td>
+          <td class="n"><b>11,000</b></td><td class="n"><b>10,450</b></td><td class="n" style="color:#B42318;font-weight:700">-550</td>
+          <td class="n"><b>140</b></td><td class="n"><b>134</b></td><td class="n" style="color:#B42318;font-weight:700">-6</td>
+          <td class="n"><b>7,400</b></td><td class="n"><b>6,990</b></td><td class="n" style="color:#B42318;font-weight:700">-410</td>
+          <td class="n"><b>94</b></td><td class="n"><b>88</b></td><td class="n" style="color:#B42318;font-weight:700">-6</td>
+          <td class="n"><b>540</b></td><td class="n"><b>480</b></td><td class="n" style="color:#B42318;font-weight:700">-60</td>
+          <td>—</td><td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div id="confirmBox" style="margin-top:16px">
+      <div style="background:#FFFBF3;border:1px solid #FDE68A;border-radius:10px;padding:13px 15px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="color:#92400E;font-size:13px">⚠️ <b>2026-10-21</b> 直营数据 <b>尚未确认</b>，暂不计入书荀大盘。</span>
+        <button class="btn sm" onclick="doConfirm()">确认该日数据</button>
+        <span style="margin-left:auto;font-size:12px;color:#92400E">建议先把上面 4 家不符 + 1 家未填报处理掉再确认</span>
+      </div>
+    </div>
+
+    <div class="note">金额容差 <b>±1 元</b>算一致；<b>人数差 1 就标红</b>（一人多券、双人套餐核销即 2 人到店，核实后按实际到店数改）。旧系统核对还要额外传「内购登记表」或勾「今日全品牌确无内购」，新系统不用——内购统一由「内购白名单」按商品 ID 自动剔除。</div>
+    <div class="note" style="margin-top:8px">🔴 <b>确认是按天做的，一天一条记录</b>（<code>daily_confirm</code>，<code>form_date</code> 唯一）。没确认的日子不出现在书荀大盘的直营业绩里。这一点跟旧系统完全一致——整月一次性确认行不通，因为事后根本分不清是哪一天被改过。</div>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>数据明细 <span class="tag">逐笔 · 最近 5 条</span></span>
+      <span><button class="btn ghost sm">导出 Excel</button></span>
+    </div>
+    <table>
+      <thead><tr><th>日期</th><th>门店</th><th class="n">美团客数</th><th class="n">美团金额</th><th class="n">抖音客数</th><th class="n">抖音金额</th><th class="n">内购</th><th class="n">约不上</th><th>活动</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td>10-21</td><td>佛山高明店</td><td class="n">29</td><td class="n">1,820</td><td class="n">21</td><td class="n">1,380</td><td class="n">5</td><td class="n">0</td><td>—</td><td>10-21 22:40</td><td><span class="b amber">未确认</span></td><td class="nowrap"><a class="lnk">修改</a> · <a class="lnk">删</a></td></tr>
+        <tr><td>10-21</td><td>佛山季华店</td><td class="n">24</td><td class="n">1,540</td><td class="n">18</td><td class="n">1,180</td><td class="n">3</td><td class="n">1</td><td>会员日</td><td>10-21 22:12</td><td><span class="b amber">未确认</span></td><td class="nowrap"><a class="lnk">修改</a> · <a class="lnk">删</a></td></tr>
+        <tr><td>10-20</td><td>佛山祖庙店</td><td class="n">28</td><td class="n">1,760</td><td class="n">19</td><td class="n">1,280</td><td class="n">4</td><td class="n">0</td><td>—</td><td>10-20 21:15</td><td><span class="b green">已确认</span></td><td class="nowrap"><a class="lnk">修改</a> · <a class="lnk">删</a></td></tr>
+        <tr><td>10-20</td><td>佛山南海万科店</td><td class="n">22</td><td class="n">1,420</td><td class="n">16</td><td class="n">1,060</td><td class="n">2</td><td class="n">2</td><td>—</td><td>10-20 20:48</td><td><span class="b green">已确认</span></td><td class="nowrap"><a class="lnk">修改</a> · <a class="lnk">删</a></td></tr>
+        <tr><td>10-19</td><td>佛山星耀店</td><td class="n">33</td><td class="n">2,080</td><td class="n">25</td><td class="n">1,620</td><td class="n">6</td><td class="n">0</td><td>—</td><td>10-19 22:03</td><td><span class="b green">已确认</span></td><td class="nowrap"><a class="lnk">修改</a> · <a class="lnk">删</a></td></tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">确认<b>不在这里做</b>——确认是整天一起确认的（上方「填报 vs 平台真值核对」选日期 → 确认该日数据）。这张表只能改或删单条填报；门店可改当天与昨天的填报，已确认的日子改完会自动提示重新确认。</div>
+    <div class="note">共 210 条（10 家 × 21 天）。缺填的日期在表里显示为空缺，不会补 0。</div>
+  </div>
+</div>
+
+<!-- ============ 佛山内购核对（运营用，不在导航里） ============ -->
+<div class="page" id="p-innercheck">
+  <div class="ph">
+    <h2>佛山内购核对 <span class="b amber">运营</span></h2>
+    <span class="rt">
+      <button class="btn ghost" onclick="closeInnerCheck()">← 返回佛山直营</button>
+      <button class="btn ghost">导出单日</button>
+      <button class="btn">导出周期明细</button>
+    </span>
+  </div>
+
+  <div class="fresh"><i></i>10-21 已有 <b>7 / 10 家</b> 填了内购 · 共 14 笔 · 待核对 <b>2 家</b><span class="gapwarn">未填内购：佛山南海万科、佛山三水、佛山乐从</span></div>
+
+  <div class="filters">
+    <div class="qb"><button>今日</button><button class="on">昨日</button><button>近7天</button><button>本月</button><button>自定义</button></div>
+    <input class="inp" type="date" value="2026-10-21">
+    <span style="color:var(--ink3)">至</span>
+    <input class="inp" type="date" value="2026-10-21">
+    <select class="inp"><option>全部门店</option><option>佛山祖庙店</option><option>佛山星耀店</option><option>佛山高明店</option><option>佛山千灯湖店</option></select>
+    <select class="inp"><option>全部平台</option><option>美团</option><option>抖音</option></select>
+    <select class="inp"><option>全部状态</option><option>未核对</option><option>已核对</option><option>平台校验异常</option></select>
+    <button class="btn ghost sm" style="margin-left:auto" onclick="icReconAll(this)">全部标为已核对</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lab">内购笔数</div><div class="val">14<small>笔</small></div><div class="dlt flat">美团 8 · 抖音 6</div></div>
+    <div class="kpi"><div class="lab">报销金额合计</div><div class="val">1,246<small>元</small></div><div class="dlt flat">= 客户实付合计</div></div>
+    <div class="kpi"><div class="lab">已核对门店</div><div class="val">2<small>/ 7</small></div><div class="dlt down">还有 2 家待核对</div></div>
+    <div class="kpi"><div class="lab">平台校验异常</div><div class="val">2<small>笔</small></div><div class="dlt down">券码在平台明细里查不到</div></div>
+  </div>
+
+  <div class="card" style="background:#F0F7FF;border-color:#CFE3FF">
+    <div style="display:flex;gap:14px;align-items:flex-start">
+      <span style="font-size:20px;line-height:1">🧾</span>
+      <div style="font-size:12.8px;line-height:1.75">
+        <b>这张表是给财务报销用的。</b>门店在填报页逐笔填的每一张内购券都在这里，
+        你核对一家、点一次「核对本店」，这家就带上核对人和备注、变成「已核对」。
+        核对完点右上 <b>`导出周期明细`</b>（可选单日或任意起止日），导出的表里带
+        <b>核对状态 + 核对人 + 核对时间 + 备注</b>，财务直接照着报销，不用再来问你。
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between;flex-wrap:wrap">
+      <span>佛山祖庙店 <span class="b green">已核对</span> <span class="tag">2 笔 · 报销 268 元</span></span><span style="font-size:12.5px;color:var(--ink3)">10-22 09:12 由崔智颖核对 · 备注：券码已与平台明细逐条对上</span>
+    </div>
+    <table>
+      <thead><tr><th>平台</th><th>项目</th><th>类型</th><th>券码</th><th class="n">报销金额</th><th>填入时间</th><th>平台校验</th></tr></thead>
+      <tbody>
+        <tr><td><span class="b mt">美团</span></td><td>70分钟头疗｜头肩颈按摩｜碳酸泉头疗</td><td><span class="b blue">团购</span></td><td><code>0105853102656</code></td><td class="n" style="font-weight:700">198</td><td>10-21 22:38</td><td><span class="b green">✓ 平台明细已找到</span></td></tr>
+        <tr><td><span class="b dy">抖音</span></td><td>【可重复购】明星同款70分钟碳酸泉减压头疗</td><td><span class="b blue">团购</span></td><td><code>1836407291045533</code></td><td class="n" style="font-weight:700">70</td><td>10-21 22:39</td><td><span class="b green">✓ 平台明细已找到</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="ct" style="justify-content:space-between;flex-wrap:wrap">
+      <span>佛山星耀店 <span class="b green">已核对</span> <span class="tag">1 笔 · 报销 52.35 元</span></span><span style="font-size:12.5px;color:var(--ink3)">10-22 09:14 由崔智颖核对 · 备注：次卡按核销 1 次计，261.75÷5=52.35，与门店填的一致</span>
+    </div>
+    <table>
+      <thead><tr><th>平台</th><th>项目</th><th>类型</th><th>券码</th><th class="n">报销金额</th><th>填入时间</th><th>平台校验</th></tr></thead>
+      <tbody>
+        <tr><td><span class="b mt">美团</span></td><td>5次｜60分钟肩颈+腰背精油SPA｜纯手法</td><td><span class="b amber">次卡</span></td><td><code>0103204156095</code></td><td class="n" style="font-weight:700">52.35</td><td>10-21 22:41</td><td><span class="b green">✓ 平台明细已找到</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="ct" style="justify-content:space-between;flex-wrap:wrap">
+      <span>佛山高明店 <span class="b gray">未核对</span> <span class="tag">3 笔 · 报销 412 元</span></span><span style="display:flex;gap:8px;align-items:center"><input class="inp" style="width:230px" placeholder="备注（可选，如已联系门店改数）"><button class="btn sm" onclick="icRecon(this)">核对本店</button></span>
+    </div>
+    <table>
+      <thead><tr><th>平台</th><th>项目</th><th>类型</th><th>券码</th><th class="n">报销金额</th><th>填入时间</th><th>平台校验</th></tr></thead>
+      <tbody>
+        <tr><td><span class="b mt">美团</span></td><td>70分钟头疗｜头肩颈按摩｜新客必入·碳酸泉减压头疗</td><td><span class="b blue">团购</span></td><td><code>0108486901458</code></td><td class="n" style="font-weight:700">228</td><td>10-21 21:52</td><td><span class="b green">✓ 平台明细已找到</span></td></tr>
+        <tr><td><span class="b mt">美团</span></td><td>3次｜60分钟清洁补水深层补水保湿</td><td><span class="b amber">次卡</span></td><td><code>0108832568080</code></td><td class="n" style="font-weight:700">78.5</td><td>10-21 21:53</td><td><span class="b green">✓ 平台明细已找到</span></td></tr>
+        <tr><td><span class="b dy">抖音</span></td><td>【可重复购】明星同款70分钟碳酸泉头疗·含头皮净澈</td><td><span class="b blue">团购</span></td><td><code>1836407291045877</code></td><td class="n" style="font-weight:700">105.5</td><td>10-21 21:54</td><td><span class="b red">⚠ 平台明细查不到</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="ct" style="justify-content:space-between;flex-wrap:wrap">
+      <span>佛山千灯湖店 <span class="b gray">未核对</span> <span class="tag">2 笔 · 报销 412 元</span></span><span style="display:flex;gap:8px;align-items:center"><input class="inp" style="width:230px" placeholder="备注（可选，如已联系门店改数）"><button class="btn sm" onclick="icRecon(this)">核对本店</button></span>
+    </div>
+    <table>
+      <thead><tr><th>平台</th><th>项目</th><th>类型</th><th>券码</th><th class="n">报销金额</th><th>填入时间</th><th>平台校验</th></tr></thead>
+      <tbody>
+        <tr><td><span class="b mt">美团</span></td><td>60分钟清洁补水深层清洁水润肌素颜</td><td><span class="b blue">团购</span></td><td><code>0109175077161</code></td><td class="n" style="font-weight:700">298</td><td>10-21 22:10</td><td><span class="b green">✓ 平台明细已找到</span></td></tr>
+        <tr><td><span class="b dy">抖音</span></td><td>【9.24门店专属福利】30分钟纯手法肩颈按摩</td><td><span class="b amber">次卡</span></td><td><code>1836407291046112</code></td><td class="n" style="font-weight:700">114</td><td>10-21 22:11</td><td><span class="b red">⚠ 平台明细查不到</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="ct">导出前必看</div>
+    <table>
+      <thead><tr><th>要点</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><b>只导已核对的</b></td><td>默认只导出状态为「已核对」的门店与明细；勾选「含未核对」才会一起导出，并在表里标明未核对，财务可据此退回</td></tr>
+        <tr><td><b>金额口径</b></td><td>报销金额 = 客户实付（不含平台补贴）。<b>团购与次卡一律由门店填</b> —— 次卡也不能自动折算，客户用券后实付会低于「面值 ÷ 次数」；导入平台明细后才回查门店填得对不对</td></tr>
+        <tr><td><b>平台校验那一列</b></td><td>系统拿券码回查当天平台明细：查得到 → 该笔在平台真实发生；查不到 → 可能是门店抄错券码，也可能这笔内购没走平台（线下储值），需要人判断</td></tr>
+        <tr><td><b>周期导出</b></td><td>财务一般按月结，选 10-01 至 10-31 一次导出全月，表内按门店 + 日期排序，末尾自动带合计</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 全国连锁 ============ -->
+<div class="page" id="p-chain">
+  <div class="ph"><h2>全国连锁</h2><span class="rt"><button class="btn ghost">导出为表格</button><button class="btn">＋ 特殊填报</button></span></div>
+
+  <div class="fresh"><i></i>有赞账单已更新至 <b>2026-10-21</b>（10-21 09:12 导入 4,268 笔）<span class="gapwarn">⚠ 10-12 漏导入</span></div>
+
+  <div class="filters">
+    <div class="qb"><button>近7天</button><button class="on">本月</button><button>上月</button><button>自定义</button></div>
+    <select class="inp"><option>全部运营人</option><option>琦琦</option><option>琳琳</option><option>慧慧</option><option>小梅</option><option>夏夏</option></select>
+    <select class="inp"><option>全部城市</option><option>广州</option><option>深圳</option><option>东莞</option><option>中山</option></select>
+    <select class="inp"><option>全部平台</option><option>抖音</option><option>美团</option></select>
+    <span style="margin-left:auto;font-size:12.5px;color:var(--ink3)">数据源：有赞账单 · 2026-10-01 ~ 10-21</span>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lab">核销金额（已扣退款）</div><div class="val">823,590<small>元</small></div><div class="dlt up">↑ 12.6%</div></div>
+    <div class="kpi"><div class="lab">核销单数</div><div class="val">11,936<small>单</small></div><div class="dlt up">↑ 8.3%</div></div>
+    <div class="kpi"><div class="lab">客单价</div><div class="val">69<small>元</small></div><div class="dlt up">↑ 3.9%</div></div>
+    <div class="kpi"><div class="lab">在营门店</div><div class="val">82<small>家</small></div><div class="dlt flat">特殊营业 3 · 待上线 4</div></div>
+  </div>
+
+  <div class="two">
+    <div class="card" style="margin-bottom:0">
+      <div class="ct">平台结构</div>
+      <div class="pfp"><i style="width:58%;background:#7C5CFF"></i><i style="width:42%;background:#F97316"></i></div>
+      <div class="pfleg">
+        <span class="lg"><span class="dt" style="background:#7C5CFF"></span><span>抖音核销 + 记账核销</span><span class="amt">477,682</span><span class="pct">58%</span></span>
+        <span class="lg"><span class="dt" style="background:#F97316"></span><span>美团验券 + 记账核销</span><span class="amt">345,908</span><span class="pct">42%</span></span>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="ct">按运营人对比 <span class="tag">6 人</span></div>
+      <div class="oprow"><div class="nm">琳琳</div><div class="bar"><i style="width:100%"></i></div><div class="val">268,420</div><div class="sub">18 家</div></div>
+      <div class="oprow"><div class="nm">慧慧</div><div class="bar"><i style="width:72%"></i></div><div class="val">193,150</div><div class="sub">15 家</div></div>
+      <div class="oprow"><div class="nm">小梅</div><div class="bar"><i style="width:66%"></i></div><div class="val">176,940</div><div class="sub">14 家</div></div>
+      <div class="oprow"><div class="nm">夏夏</div><div class="bar"><i style="width:41%"></i></div><div class="val">110,280</div><div class="sub">12 家</div></div>
+      <div class="oprow"><div class="nm">小艾</div><div class="bar"><i style="width:33%"></i></div><div class="val">88,760</div><div class="sub">9 家</div></div>
+      <div class="oprow"><div class="nm">琦琦</div><div class="bar"><i style="width:22%"></i></div><div class="val">58,040</div><div class="sub">2 家</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">门店表现 <span class="tag">卡片视图</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      <span class="b blue">全部 82</span>
+      <span class="b green">营业 78</span>
+      <span class="b amber">特殊 3</span>
+      <span class="b new">● 新店 4</span>
+      <span class="b old">● 老店 74</span>
+      <span class="b gray">待上线 4</span>
+    </div>
+    <div class="cards">
+      <div class="sc"><span class="pin old"></span><div class="nm">广州天河店</div><div class="op">琳琳</div><div class="amt">28,640</div><div class="meta"><span>386 单</span><span>21 天</span></div></div>
+      <div class="sc"><span class="pin old"></span><div class="nm">深圳福田店</div><div class="op">小梅</div><div class="amt">24,180</div><div class="meta"><span>312 单</span><span>21 天</span></div></div>
+      <div class="sc"><span class="pin old"></span><div class="nm" onclick="openStore('东莞南城店')" style="cursor:pointer;color:var(--blue)">东莞南城店</div><div class="op">慧慧</div><div class="amt">19,720</div><div class="meta"><span>268 单</span><span>21 天</span></div></div>
+      <div class="sc"><span class="pin new"></span><div class="nm" onclick="openStore('中山石岐店')" style="cursor:pointer;color:var(--blue)">中山石岐店</div><div class="op">琦琦</div><div class="amt">16,450</div><div class="meta"><span>241 单</span><span>21 天</span></div></div>
+      <div class="sc" style="border-color:#FDE68A;background:#FFFDF5"><span class="pin old"></span><div class="nm">广州珠江新城店</div><div class="op">琳琳</div><div class="amt">15,880</div><div class="meta"><span>198 单</span><span><span class="b amber">假日闭店 2 天</span></span></div></div>
+      <div class="sc" style="opacity:.62"><div class="nm">东莞松山湖店</div><div class="op">慧慧</div><div class="amt">—</div><div class="meta"><span>待上线</span><span>—</span></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>周期内特殊门店 <span class="tag">3 家 · 已按可比口径重算日均</span></span>
+      <span><button class="btn ghost sm">＋ 特殊填报</button></span>
+    </div>
+    <table>
+      <thead><tr><th>门店</th><th>特殊类型</th><th>起止日期</th><th class="n">天数</th><th class="n">周期内实际营业</th><th class="n">剔除停业后日均</th><th class="n">不做剔除的日均</th><th>对统计的影响</th></tr></thead>
+      <tbody>
+        <tr><td><b>广州珠江新城店</b></td><td><span class="b amber">假日闭店</span></td><td>10-03 ~ 10-04</td><td class="n">2</td><td class="n">19 天</td><td class="n">836</td><td class="n">756</td><td>按实际营业日算，日均不被拉低</td></tr>
+        <tr><td><b>深圳龙华店</b></td><td><span class="b amber">培训闭店</span></td><td>10-09 ~ 10-11</td><td class="n">3</td><td class="n">18 天</td><td class="n">912</td><td class="n">782</td><td>同上</td></tr>
+        <tr><td><b>东莞虎门店</b></td><td><span class="b amber">装修调整</span></td><td>10-15 ~ 10-18</td><td class="n">4</td><td class="n">17 天</td><td class="n">1,024</td><td class="n">829</td><td>营业日 &lt; 3 时只报合计、不算环比</td></tr>
+      </tbody>
+    </table>
+    <div class="note">这 3 家保留在排名里，但打标签、且日均按「实际营业天数」重算，避免因为停业被误判成下滑。</div>
+  </div>
+
+  <div class="card">
+    <div class="ct">门店明细 <span class="tag">按金额降序</span></div>
+    <table>
+      <thead><tr><th>#</th><th>门店</th><th>城市</th><th>运营人</th><th class="n">核销金额</th><th class="n">退款</th><th class="n">净业绩</th><th class="n">单数</th><th class="n">客单</th><th class="n">营业天</th><th>特殊营业</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>广州天河店</b></td><td>广州</td><td>琳琳</td><td class="n">29,038</td><td class="n" style="color:#B42318">−398</td><td class="n"><b>28,640</b></td><td class="n">386</td><td class="n">74</td><td class="n">21</td><td>—</td></tr>
+        <tr><td>2</td><td><b>深圳福田店</b></td><td>深圳</td><td>小梅</td><td class="n">24,348</td><td class="n" style="color:#B42318">−168</td><td class="n"><b>24,180</b></td><td class="n">312</td><td class="n">78</td><td class="n">21</td><td>—</td></tr>
+        <tr><td>3</td><td><b>东莞南城店</b></td><td>东莞</td><td>慧慧</td><td class="n">20,318</td><td class="n" style="color:#B42318">−598</td><td class="n"><b>19,720</b></td><td class="n">268</td><td class="n">74</td><td class="n">21</td><td>—</td></tr>
+        <tr><td>4</td><td><b>中山石岐店</b></td><td>中山</td><td>琦琦</td><td class="n">16,718</td><td class="n" style="color:#B42318">−268</td><td class="n"><b>16,450</b></td><td class="n">241</td><td class="n">68</td><td class="n">21</td><td>—</td></tr>
+        <tr><td>5</td><td><b>广州珠江新城店</b></td><td>广州</td><td>琳琳</td><td class="n">15,880</td><td class="n">—</td><td class="n"><b>15,880</b></td><td class="n">198</td><td class="n">80</td><td class="n">19</td><td><span class="b amber">假日闭店 2 天</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>周诊断 <span class="tag">周期对比 · 涨跌与预警</span></span>
+      <span style="display:flex;gap:8px;align-items:center">
+        <span class="seg" style="margin:0"><button class="on">近 7 天</button><button>自然周</button></span>
+        <button class="btn ghost sm">导出诊断</button>
+      </span>
+    </div>
+    <div class="note" style="margin:0 0 14px">近 7 天 = 过去 7 个完整日（T-7 ~ T-1，不含今天）；自然周 = 上一个完整周一到周日。环比对比的是上一个同长度周期，上月同期是往前推 28 天。停业店按剔除停业日后的日均重算，营业不足 3 天的只报合计、不进涨跌和预警榜。</div>
+
+    <div class="kpis" style="margin-bottom:16px">
+      <div class="kpi"><div class="lab">周期核销金额</div><div class="val">1,284,600</div><div class="sub"><span class="b green">+6.2%</span> 环比上周</div></div>
+      <div class="kpi"><div class="lab">周期单数</div><div class="val">5,842</div><div class="sub"><span class="b green">+3.1%</span> 环比上周</div></div>
+      <div class="kpi"><div class="lab">客单价</div><div class="val">219.9</div><div class="sub"><span class="b green">+3.0%</span> 环比上周</div></div>
+      <div class="kpi"><div class="lab">有业绩门店</div><div class="val">78 / 82</div><div class="sub"><span class="b red">4 家零单</span></div></div>
+      <div class="kpi"><div class="lab">预警门店</div><div class="val">6</div><div class="sub">跌破自身 1.5σ 下限</div></div>
+    </div>
+
+    <div class="two" style="gap:16px">
+      <div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">涨幅前 5</div>
+        <table>
+          <thead><tr><th>门店</th><th class="n">本期</th><th class="n">环比</th><th>近 8 周期</th></tr></thead>
+          <tbody>
+            <tr><td>广州天河店</td><td class="n">42,180</td><td class="n"><span class="b green">+28.4%</span></td><td><span style="display:inline-block;height:28px;line-height:28px;white-space:nowrap"><i style="display:inline-block;width:7px;height:17px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:19px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:16px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:20px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:19px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:22px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:24px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:26px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i></span></td></tr>
+            <tr><td>深圳福田店</td><td class="n">38,460</td><td class="n"><span class="b green">+19.2%</span></td><td><span style="display:inline-block;height:28px;line-height:28px;white-space:nowrap"><i style="display:inline-block;width:7px;height:17px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:18px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:21px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:18px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:20px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:21px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:23px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:26px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i></span></td></tr>
+            <tr><td>中山石岐店</td><td class="n">21,340</td><td class="n"><span class="b green">+14.6%</span></td><td><span style="display:inline-block;height:28px;line-height:28px;white-space:nowrap"><i style="display:inline-block;width:7px;height:19px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:20px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:17px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:21px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:22px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:21px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:24px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:26px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i></span></td></tr>
+            <tr><td>东莞南城店</td><td class="n">18,720</td><td class="n"><span class="b green">+11.3%</span></td><td><span style="display:inline-block;height:28px;line-height:28px;white-space:nowrap"><i style="display:inline-block;width:7px;height:19px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:18px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:21px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:19px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:22px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:21px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:23px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:26px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i></span></td></tr>
+            <tr><td>珠海香洲店</td><td class="n">16,880</td><td class="n"><span class="b green">+8.9%</span></td><td><span style="display:inline-block;height:28px;line-height:28px;white-space:nowrap"><i style="display:inline-block;width:7px;height:18px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:20px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:18px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:21px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:20px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:23px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:23px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:26px;background:#7c5cff;border-radius:2px;vertical-align:bottom;margin-right:2px"></i></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">跌幅前 5</div>
+        <table>
+          <thead><tr><th>门店</th><th class="n">本期</th><th class="n">环比</th><th>近 8 周期</th></tr></thead>
+          <tbody>
+            <tr><td>广州番禺店</td><td class="n">9,240</td><td class="n"><span class="b red">-31.6%</span></td><td><span style="display:inline-block;height:28px;line-height:28px;white-space:nowrap"><i style="display:inline-block;width:7px;height:26px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:25px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:23px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:22px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:20px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:19px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:17px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:13px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i></span></td></tr>
+            <tr><td>佛山南海店</td><td class="n">11,480</td><td class="n"><span class="b red">-22.4%</span></td><td><span style="display:inline-block;height:28px;line-height:28px;white-space:nowrap"><i style="display:inline-block;width:7px;height:26px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:24px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:26px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:23px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:24px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:21px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:20px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:18px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i></span></td></tr>
+            <tr><td>深圳宝安店</td><td class="n">13,260</td><td class="n"><span class="b red">-15.8%</span></td><td><span style="display:inline-block;height:28px;line-height:28px;white-space:nowrap"><i style="display:inline-block;width:7px;height:26px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:24px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:26px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:24px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:23px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:23px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:21px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:20px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i></span></td></tr>
+            <tr><td>惠州华贸店</td><td class="n">8,640</td><td class="n"><span class="b red">-12.1%</span></td><td><span style="display:inline-block;height:28px;line-height:28px;white-space:nowrap"><i style="display:inline-block;width:7px;height:26px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:24px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:26px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:24px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:22px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:22px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:20px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:20px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i></span></td></tr>
+            <tr><td>江门蓬江店</td><td class="n">10,120</td><td class="n"><span class="b red">-9.4%</span></td><td><span style="display:inline-block;height:28px;line-height:28px;white-space:nowrap"><i style="display:inline-block;width:7px;height:26px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:24px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:26px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:24px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:22px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:22px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:22px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i><i style="display:inline-block;width:7px;height:20px;background:#f97316;border-radius:2px;vertical-align:bottom;margin-right:2px"></i></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="font-size:13px;font-weight:700;margin:20px 0 10px">预警门店 <span class="tag">6 家 · 低于自身近 8 周期均值 1.5σ</span></div>
+    <table>
+      <thead><tr><th>门店</th><th>运营人</th><th>状态</th><th class="n">本期日均</th><th class="n">自身均值</th><th class="n">偏离</th><th>提示</th></tr></thead>
+      <tbody>
+        <tr><td><b>广州番禺店</b></td><td>琳琳</td><td><span class="b green">在营</span></td><td class="n">1,320</td><td class="n">2,240</td><td class="n"><span class="b red">-41%</span></td><td>连续 3 周期下滑，建议线下排查</td></tr>
+        <tr><td><b>佛山南海店</b></td><td>琦琦</td><td><span class="b green">在营</span></td><td class="n">1,640</td><td class="n">2,180</td><td class="n"><span class="b red">-25%</span></td><td>跌幅超自身波动区间</td></tr>
+        <tr><td><b>深圳宝安店</b></td><td>夏夏</td><td><span class="b green">在营</span></td><td class="n">1,894</td><td class="n">2,310</td><td class="n"><span class="b red">-18%</span></td><td>跌幅超自身波动区间</td></tr>
+        <tr><td><b>惠州华贸店</b></td><td>小梅</td><td><span class="b green">在营</span></td><td class="n">1,234</td><td class="n">1,470</td><td class="n"><span class="b red">-16%</span></td><td>新店，样本仅 3 周期</td></tr>
+        <tr><td><b>江门蓬江店</b></td><td>慧慧</td><td><span class="b green">在营</span></td><td class="n">1,446</td><td class="n">1,620</td><td class="n"><span class="b red">-11%</span></td><td>跌幅超自身波动区间</td></tr>
+        <tr><td><b>中山小榄店</b></td><td>小艾</td><td><span class="b amber">特殊期</span></td><td class="n">980</td><td class="n">1,520</td><td class="n"><span class="b red">-36%</span></td><td>已剔除停业 4 天后的可比日均</td></tr>
+      </tbody>
+    </table>
+    <div class="note">阈值用每家店自己近 8 个周期的均值与标准差算（1.5σ）；样本不足 5 个周期时回落到同类门店均值对比，并在提示里标出。</div>
+  </div>
+</div>
+
+<!-- ============ 陪跑门店 ============ -->
+<div class="page" id="p-run">
+  <div class="ph"><h2>陪跑门店</h2></div>
+
+  <div class="fresh"><i></i>美团已更新至 <b>2026-10-21</b>（10-21 10:04 导入 1,204 行） · 抖音已更新至 <b>2026-10-21</b>（10-21 10:11 导入 862 笔）</div>
+
+  <div class="filters">
+    <div class="qb"><button>近7天</button><button class="on">本月</button><button>上月</button><button>自定义</button></div>
+    <select class="inp"><option>全部运营人</option><option>琦琦</option><option>琳琳</option><option>慧慧</option><option>小梅</option><option>夏夏</option></select>
+    <select class="inp"><option>两平台都有</option><option>仅美团有</option><option>仅抖音有</option><option>全部</option></select>
+    <span style="margin-left:auto;font-size:12.5px;color:var(--ink3)">数据源：美团收益明细 + 抖音核销明细 · 2026-10-01 ~ 10-21</span>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lab">合计（到账 + 佣金）</div><div class="val">299,600<small>元</small></div><div class="dlt up">↑ 14.2%</div></div>
+    <div class="kpi"><div class="lab">美团</div><div class="val">174,300<small>元</small></div><div class="dlt flat">1,204 单 · 占 58%</div></div>
+    <div class="kpi"><div class="lab">抖音</div><div class="val">125,300<small>元</small></div><div class="dlt flat">862 笔 · 占 42%</div></div>
+    <div class="kpi"><div class="lab">在营门店</div><div class="val">20<small>家</small></div><div class="dlt flat">两平台都有单 19 家</div></div>
+  </div>
+
+  <div class="two">
+    <div class="card" style="margin-bottom:0">
+      <div class="ct">平台结构</div>
+      <div class="pfp"><i style="width:58%;background:#F97316"></i><i style="width:42%;background:#7C5CFF"></i></div>
+      <div class="pfleg">
+        <span class="lg"><span class="dt" style="background:#F97316"></span><span>美团</span><span class="amt">174,300</span><span class="pct">58%</span></span>
+        <span class="lg"><span class="dt" style="background:#7C5CFF"></span><span>抖音</span><span class="amt">125,300</span><span class="pct">42%</span></span>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="ct">本月内购（不计业绩）</div>
+      <div class="pfleg" style="gap:12px">
+        <span class="lg"><span class="dt" style="background:#F97316"></span><span>美团内购</span><span class="amt">6,180</span><span class="pct">3.4%</span></span>
+        <span class="lg"><span class="dt" style="background:#7C5CFF"></span><span>抖音内购</span><span class="amt">4,320</span><span class="pct">3.3%</span></span>
+        <span class="lg" style="border-top:1px solid var(--line);padding-top:11px">
+          <span class="dt" style="background:#94A3B8"></span><span>平台佣金合计</span><span class="amt">11,240</span><span class="pct">—</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">门店表现 <span class="tag">20 家 · 美团与抖音分开看</span></div>
+    <div class="cards">
+      <div class="sc"><div class="nm">广州和丰店</div><div class="op">夏夏 · 两平台都有</div><div class="amt">32,063</div><div class="split"><div><div class="pl">美团</div><div class="pv" style="color:var(--mt)">14,661</div></div><div><div class="pl">抖音</div><div class="pv" style="color:var(--dy)">17,402</div></div></div></div>
+      <div class="sc"><div class="nm">YSY中关村店</div><div class="op">夏夏 · 两平台都有</div><div class="amt">30,164</div><div class="split"><div><div class="pl">美团</div><div class="pv" style="color:var(--mt)">26,377</div></div><div><div class="pl">抖音</div><div class="pv" style="color:var(--dy)">3,787</div></div></div></div>
+      <div class="sc"><div class="nm">佛山曦合店</div><div class="op">夏夏 · 两平台都有</div><div class="amt">26,902</div><div class="split"><div><div class="pl">美团</div><div class="pv" style="color:var(--mt)">13,423</div></div><div><div class="pl">抖音</div><div class="pv" style="color:var(--dy)">13,479</div></div></div></div>
+      <div class="sc"><div class="nm">YSY昌平万科</div><div class="op">夏夏 · 两平台都有</div><div class="amt">24,292</div><div class="split"><div><div class="pl">美团</div><div class="pv" style="color:var(--mt)">14,072</div></div><div><div class="pl">抖音</div><div class="pv" style="color:var(--dy)">10,220</div></div></div></div>
+      <div class="sc"><div class="nm">大连锦绣店</div><div class="op">夏夏 · 两平台都有</div><div class="amt">19,840</div><div class="split"><div><div class="pl">美团</div><div class="pv" style="color:var(--mt)">14,831</div></div><div><div class="pl">抖音</div><div class="pv" style="color:var(--dy)">5,009</div></div></div></div>
+      <div class="sc"><div class="nm">YSY印象城</div><div class="op">夏夏 · 两平台都有</div><div class="amt">18,673</div><div class="split"><div><div class="pl">美团</div><div class="pv" style="color:var(--mt)">12,325</div></div><div><div class="pl">抖音</div><div class="pv" style="color:var(--dy)">6,348</div></div></div></div>
+      <div class="sc" style="border-color:#FDE68A;background:#FFFDF5"><div class="nm">陕西海螺湾</div><div class="op">夏夏 · 美团几乎无单</div><div class="amt">11,902</div><div class="split"><div><div class="pl">美团</div><div class="pv" style="color:var(--mt)">567</div></div><div><div class="pl">抖音</div><div class="pv" style="color:var(--dy)">11,335</div></div></div></div>
+      <div class="sc" style="border-color:#FDE68A;background:#FFFDF5"><div class="nm">中山龙湖店</div><div class="op">夏夏 · 抖音几乎无单</div><div class="amt">4,914</div><div class="split"><div><div class="pl">美团</div><div class="pv" style="color:var(--mt)">3,829</div></div><div><div class="pl">抖音</div><div class="pv" style="color:var(--dy)">1,085</div></div></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">门店明细 <span class="tag">按金额降序</span></div>
+    <table>
+      <thead><tr><th>#</th><th>门店</th><th>运营人</th><th class="n">美团</th><th class="n">抖音</th><th class="n">合计</th><th class="n">美团单</th><th class="n">抖音笔</th><th class="n">内购</th><th>最近导入</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>广州和丰店</b></td><td>夏夏</td><td class="n">14,661</td><td class="n">17,402</td><td class="n"><b>32,063</b></td><td class="n">96</td><td class="n">112</td><td class="n">980</td><td>10-21</td></tr>
+        <tr><td>2</td><td><b>YSY中关村店</b></td><td>夏夏</td><td class="n">26,377</td><td class="n">3,787</td><td class="n"><b>30,164</b></td><td class="n">214</td><td class="n">33</td><td class="n">1,240</td><td>10-21</td></tr>
+        <tr><td>3</td><td><b>佛山曦合店</b></td><td>夏夏</td><td class="n">13,423</td><td class="n">13,479</td><td class="n"><b>26,902</b></td><td class="n">81</td><td class="n">74</td><td class="n">820</td><td>10-21</td></tr>
+        <tr><td>4</td><td><b>YSY昌平万科</b></td><td>夏夏</td><td class="n">14,072</td><td class="n">10,220</td><td class="n"><b>24,292</b></td><td class="n">94</td><td class="n">76</td><td class="n">740</td><td>10-21</td></tr>
+        <tr><td>5</td><td><b>大连锦绣店</b></td><td>夏夏</td><td class="n">14,831</td><td class="n">5,009</td><td class="n"><b>19,840</b></td><td class="n">99</td><td class="n">41</td><td class="n">560</td><td>10-21</td></tr>
+        <tr><td>6</td><td><b>YSY印象城</b></td><td>夏夏</td><td class="n">12,325</td><td class="n">6,348</td><td class="n"><b>18,673</b></td><td class="n">76</td><td class="n">48</td><td class="n">480</td><td>10-21</td></tr>
+        <tr><td>7</td><td><b>陕西海螺湾</b></td><td>夏夏</td><td class="n" style="color:#B45309">567</td><td class="n">11,335</td><td class="n"><b>11,902</b></td><td class="n">4</td><td class="n">57</td><td class="n">320</td><td>10-21</td></tr>
+        <tr><td>8</td><td><b>中山龙湖店</b></td><td>夏夏</td><td class="n">3,829</td><td class="n" style="color:#5B3FD1">1,085</td><td class="n"><b>4,914</b></td><td class="n">18</td><td class="n">5</td><td class="n">180</td><td>10-21</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 门店填报 ============ -->
+<div class="page" id="p-fill">
+  <div class="ph"><h2>门店填报</h2><span class="b blue">佛山祖庙店</span></div>
+
+  <div class="card">
+    <div class="ct">选择日期</div>
+    <div class="seg">
+      <button class="on">今天 · 10-22</button>
+      <button>昨天 · 10-21</button>
+    </div>
+    <div class="note">只能填今天和昨天，更早的日期请联系运营。</div>
+  </div>
+
+  <div class="card">
+    <div class="ct">10-22 填报</div>
+    <div style="font-weight:700;font-size:13px;color:var(--mt);margin:14px 0 10px">美团</div>
+    <div class="formgrid">
+      <div class="fld"><label>真实到店客数</label><input value="26"><div class="hint">不含内购</div></div>
+      <div class="fld"><label>核销金额</label><input value="1680"><div class="hint">不含内购</div></div>
+      <div class="fld"><label>内购订单数</label><input id="ipMtCnt" value="2" readonly style="background:#F5F7FA;color:var(--ink2)"><div class="hint">自动汇总 · 见下方内购填写</div></div>
+      <div class="fld"><label>内购金额</label><input id="ipMtAmt" value="120" readonly style="background:#F5F7FA;color:var(--ink2)"><div class="hint">自动汇总 · 见下方内购填写</div></div>
+      <div class="fld"><label>约不上人数</label><input value="1"></div>
+    </div>
+    <div style="font-weight:700;font-size:13px;color:var(--dy);margin:20px 0 10px">抖音</div>
+    <div class="formgrid">
+      <div class="fld"><label>真实到店客数</label><input value="18"><div class="hint">不含内购</div></div>
+      <div class="fld"><label>核销金额</label><input value="1240"><div class="hint">不含内购</div></div>
+      <div class="fld"><label>内购订单数</label><input id="ipDyCnt" value="1" readonly style="background:#F5F7FA;color:var(--ink2)"><div class="hint">自动汇总 · 见下方内购填写</div></div>
+      <div class="fld"><label>内购金额</label><input id="ipDyAmt" value="60" readonly style="background:#F5F7FA;color:var(--ink2)"><div class="hint">自动汇总 · 见下方内购填写</div></div>
+      <div class="fld"><label>约不上人数</label><input value="0"></div>
+    </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:13px;font-weight:600">今日店内是否有做品项活动</span>
+        <span class="sw" onclick="this.classList.toggle('on')"><i></i></span>
+      </div>
+      <div class="fld" style="margin-top:12px;max-width:320px"><label>品项活动名称</label><input placeholder="打开开关后填写，如：会员日 / 头皮护理体验"><div class="hint">不填也可提交，填了会进活动效果分析</div></div>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:10px;align-items:center">
+      <button class="btn">提交填报</button>
+      <span style="font-size:12.5px;color:var(--ink3)">提交后今天还可以再改</span>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>内购填写 <span class="tag">10-22 · 逐笔填</span></span>
+      <span style="font-size:12.5px;color:var(--ink3)">填完自动带进上方「内购订单数 / 内购金额」，不用再填 Excel</span>
+    </div>
+
+    <div class="steplab">① 选平台</div>
+    <div class="seg" id="ipPlatBox">
+      <button class="on" onclick="ipPlat('mt',this)">美团</button>
+      <button onclick="ipPlat('dy',this)">抖音</button>
+    </div>
+
+    <div class="steplab">② 选项目 <span class="h2">只能选下面列出的项目；没列出来的就不是内购，按平台业绩正常算</span></div>
+    <div class="ipgrid" id="ipItems"></div>
+
+    <div class="ipform" id="ipForm"></div>
+
+    <div class="ct" style="margin-top:24px;justify-content:space-between">
+      <span>今天已填的内购 <span class="tag" id="ipCntTag">0 笔</span></span>
+      <span style="font-size:12.5px;color:var(--ink3)">核对无误后随填报一起提交</span>
+    </div>
+    <table>
+      <thead><tr><th>平台</th><th>项目</th><th>类型</th><th>券码</th><th class="n">核销次数</th><th class="n">报销金额</th><th>操作</th></tr></thead>
+      <tbody id="ipBody"></tbody>
+    </table>
+    <div class="note">
+      <b>券码逐笔填、金额只填客户实付。</b>团购和次卡<b>都要填</b>报销金额（客户实付，不含平台补贴），次卡另外填核销次数。<b>系统不替你折算金额</b> —— 客户用了券，实付会低于「面值 ÷ 次数」，所以只有门店知道该报多少。导入平台明细后系统会拿券码逐笔回查，填得不对会标出来。
+    </div>
+  </div>
+</div>
+
+<!-- ============ 本月填报记录（门店角色） ============ -->
+<div class="page" id="p-hist">
+  <div class="ph"><h2>本月填报记录</h2><span class="rt"><span class="b blue">佛山祖庙店</span></span></div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lab">本月已填</div><div class="val">19<small>天</small></div><div class="dlt flat">10-01 至今共 22 天</div></div>
+    <div class="kpi"><div class="lab">缺填</div><div class="val">3<small>天</small></div><div class="dlt down">10-03 / 10-04 / 10-12</div></div>
+    <div class="kpi"><div class="lab">内购笔数</div><div class="val">27<small>笔</small></div><div class="dlt flat">美团 16 · 抖音 11</div></div>
+    <div class="kpi"><div class="lab">内购金额</div><div class="val">1,860<small>元</small></div><div class="dlt flat">客户实付 · 财务按此报销</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>10 月每日填报</span>
+      <span class="vtabs"><button class="on">全部</button><button>只看缺填</button><button>只看有内购</button></span>
+    </div>
+    <table>
+      <thead><tr><th>日期</th><th class="n">美团客数</th><th class="n">美团金额</th><th class="n">抖音客数</th><th class="n">抖音金额</th><th class="n">内购笔数</th><th class="n">内购金额</th><th>提交时间</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td>10-21</td><td class="n">31</td><td class="n">1940</td><td class="n">22</td><td class="n">1450</td><td class="n">3</td><td class="n">268</td><td>10-21 22:40</td><td><span class="b amber">待确认</span></td></tr>
+        <tr><td>10-20</td><td class="n">28</td><td class="n">1760</td><td class="n">19</td><td class="n">1280</td><td class="n">2</td><td class="n">196</td><td>10-20 21:15</td><td><span class="b green">已确认</span></td></tr>
+        <tr><td>10-19</td><td class="n">33</td><td class="n">2080</td><td class="n">25</td><td class="n">1620</td><td class="n">0</td><td class="n">0</td><td>10-19 22:03</td><td><span class="b green">已确认</span></td></tr>
+        <tr><td>10-18</td><td class="n">29</td><td class="n">1840</td><td class="n">21</td><td class="n">1390</td><td class="n">4</td><td class="n">312</td><td>10-18 21:48</td><td><span class="b green">已确认</span></td></tr>
+        <tr><td>10-17</td><td class="n">35</td><td class="n">2210</td><td class="n">27</td><td class="n">1740</td><td class="n">1</td><td class="n">78</td><td>10-18 09:12</td><td><span class="b green">已确认</span></td></tr>
+        <tr><td>10-16</td><td class="n">30</td><td class="n">1890</td><td class="n">24</td><td class="n">1560</td><td class="n">2</td><td class="n">156</td><td>10-16 22:20</td><td><span class="b green">已确认</span></td></tr>
+        <tr style="background:#FFFBFB"><td>10-12</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td>—</td><td><span class="b red">缺填</span></td></tr>
+      </tbody>
+    </table>
+    <div class="note">只能补填今天和昨天；更早的日期缺了请联系运营。内购笔数与金额只统计你自己填的内购明细，对账与报销由总部统一处理。</div>
+  </div>
+</div>
+
+<!-- ============ 数据导入 ============ -->
+<div class="page" id="p-import">
+  <div class="ph"><h2>数据导入</h2></div>
+
+  <div class="card">
+    <div class="ct">导入类型</div>
+    <div class="seg" id="impSeg">
+      <button class="on">有赞账单</button>
+      <button>有赞退款明细</button>
+      <button>美团收益明细</button>
+      <button>抖音核销明细</button>
+    </div>
+    <div class="drop">
+      <div class="big">把文件拖到这里，或点击选择</div>
+      <div style="font-size:12.5px">支持 .xls / .xlsx，文件名不用改</div>
+    </div>
+    <div class="note">有赞账单只认「连锁」性质门店；美团 / 抖音明细里的<b>直营门店行</b>会存下来供「佛山直营 · 填报 vs 平台真值核对」使用，<b>陪跑门店行</b>计入陪跑业绩，连锁门店行直接丢弃（连锁走有赞账单，避免重复）。全部按门店 ID 匹配。</div>
+  </div>
+
+  <div class="card">
+    <div class="ct">② 确认识别结果 <span class="tag">还没写入数据库</span></div>
+    <table>
+      <tbody>
+        <tr><td style="width:180px;color:var(--ink2)">识别到的文件</td><td><b>核销明细-核销时间-2026-10-01_2026-10-21.xlsx</b> <span class="b green">格式正确</span></td></tr>
+        <tr><td style="color:var(--ink2)">本文件数据日期范围</td><td><b>2026-10-01 ~ 2026-10-21</b>（21 天 · 与你选的目标区间一致）</td></tr>
+        <tr><td style="color:var(--ink2)">总行数 / 将写入</td><td>6,985 行 → 写入 <b>862 笔</b> · 内购 <b>31 笔</b></td></tr>
+        <tr><td style="color:var(--ink2)">按门店性质分流</td><td>陪跑 862 笔（计入业绩）· 直营 468 笔（供核对）· 连锁 5,655 笔 <span class="b gray">丢弃</span></td></tr>
+        <tr><td style="color:var(--ink2)">未识别门店</td><td><span class="b green">无</span>（20 家陪跑 + 10 家直营全部按门店 ID 匹配成功）</td></tr>
+        <tr><td style="color:var(--ink2)">同券同秒多行</td><td>12 组 · 已按「第几条」各自入库，不合并</td></tr>
+      </tbody>
+    </table>
+    <div class="note">识别结果只是"文件里有什么"。<b>能不能写、要不要清理旧数据，要往下看第 ③ 步的对账预演</b> —— 这一步之前不会写任何数据。</div>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>③ 区间对账预演 <span class="tag" style="background:#FEF2F2;color:#B42318">发现 2 条要从库中清理</span></span>
+      <span style="font-size:12.5px;color:var(--ink3)">比对范围 2026-10-14 ~ 2026-10-22 · 有赞账单 · 真单号制式</span>
+    </div>
+
+    <table>
+      <thead><tr><th>项目</th><th class="n">单数</th><th class="n">金额</th><th>是什么</th></tr></thead>
+      <tbody>
+        <tr><td>本次账单</td><td class="n">4,268</td><td class="n">612,180.00</td><td>刚从文件解析出来、要被写进去的</td></tr>
+        <tr><td>库里原有</td><td class="n">4,270</td><td class="n">612,732.00</td><td>同区间 · 同平台 · 同制式的现有记录</td></tr>
+        <tr><td><span class="b green">新增</span></td><td class="n">0</td><td class="n">0</td><td>库里没有、账单里有 → 插入</td></tr>
+        <tr><td><span class="b blue">修改</span></td><td class="n">1</td><td class="n">—</td><td>单号相同但字段变了 → 按账单覆盖</td></tr>
+        <tr style="background:#FFFBFB"><td><span class="b red">消失</span></td><td class="n" style="font-weight:700;color:var(--red)">2</td><td class="n" style="font-weight:700;color:var(--red)">552.00</td><td><b>库里有、本次账单里没有</b> → 不处理就会一直挂在看板上</td></tr>
+      </tbody>
+    </table>
+
+    <div class="ct" style="margin-top:22px">消失的单 <span class="tag" style="background:#FEF2F2;color:#B42318">确认后按单号精确删除</span></div>
+    <table>
+      <thead><tr><th>单号</th><th>日期</th><th>门店</th><th>原付款方式</th><th>原平台</th><th class="n">原金额</th><th>为什么消失</th></tr></thead>
+      <tbody>
+        <tr><td><code>M20261022191420052302077</code></td><td>10-22</td><td>佛山祖庙店</td><td>抖音核销</td><td><span class="b dy">抖音</span></td><td class="n" style="font-weight:700">196.00</td><td>付款方式已改为「储值消费」，不再是四类业绩</td></tr>
+        <tr><td><code>M20261018100233001188</code></td><td>10-18</td><td>佛山南海万达店</td><td>美团记账核销</td><td><span class="b mt">美团</span></td><td class="n">356.00</td><td>账单里已经没有这单（有赞后台已作废）</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note" style="background:#FFFBEB;border-color:#FDE68A;color:#92400E">
+      <b>三个保护，防止误删：</b>
+      ① 只比<b>本文件出现的平台</b> —— 本次是抖音 + 美团；库里同区间的售卡、充值、储值单本来就不入业绩表，碰不到；
+      ② 只比<b>本文件的日期区间</b> —— 10-14~10-22，区间外一行不动；
+      ③ 只比<b>同一制式</b> —— 真单号只对真单号，绝不碰历史那些 <code>XZ</code> 开头的哈希合并单。
+      <b>删除是按单号精确删这几条，不是按区间清空。</b>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center">
+      <button class="btn" style="background:var(--red)" onclick="alert('原型演示：真实系统会\n①先 upsert 本批 4,268 单\n②再按单号删掉上面那 2 条\n\n两步分开执行，第②步失败也只是多留两条旧单，不会丢数据。')">确认导入并清理 2 条</button>
+      <button class="btn ghost" onclick="alert('原型演示：只写入本批 4,268 单，那 2 条旧单保留在看板上。适合你还不确定该不该删的时候。')">只补新单，保留这 2 条</button>
+      <button class="btn ghost">取消</button>
+    </div>
+    <div class="note">执行顺序固定为<b>先写入、后清理</b>。中途断网失败，最坏结果是多留几条旧单（下次导入会再次列出来），<b>不会出现"删掉了但没写进去"</b>。</div>
+  </div>
+
+  <div class="card">
+    <div class="ct">导入结果 <span class="tag">最近一次</span></div>
+    <table>
+      <tbody>
+        <tr><td style="width:180px;color:var(--ink2)">写入</td><td>862 笔 · 合计 <b>125,300 元</b></td></tr>
+        <tr><td style="color:var(--ink2)">覆盖日期</td><td>2026-10-01 ~ 2026-10-21</td></tr>
+        <tr><td style="color:var(--ink2)">跳过</td><td>5,655 行（连锁门店，走有赞账单）</td></tr>
+        <tr><td style="color:var(--ink2)">按预演清理</td><td><b style="color:var(--red)">2 单</b> · ¥552.00（<code>M20261022191420052302077</code>、<code>M20261018100233001188</code>）</td></tr>
+        <tr><td style="color:var(--ink2)">批次号</td><td><code>IMP-20261021-1011</code> · 含清理清单，可在导入记录里回看</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="ct">最近导入记录</div>
+    <table>
+      <thead><tr><th>时间</th><th>文件</th><th>类型</th><th class="n">有效行数</th><th class="n">覆盖日期</th><th class="n">跳过</th><th>操作人</th><th>结果</th></tr></thead>
+      <tbody>
+        <tr><td>10-21 10:11</td><td>核销明细-核销时间-2026-10-01_2026-10-21.xlsx</td><td><span class="b dy">抖音</span></td><td class="n">862</td><td class="n">10-01 ~ 10-21</td><td class="n">4,918</td><td>崔智颖</td><td><span class="b green">成功</span></td></tr>
+        <tr><td>10-21 10:04</td><td>团购收益明细_20261001~20261021.xlsx</td><td><span class="b mt">美团</span></td><td class="n">1,204</td><td class="n">10-01 ~ 10-21</td><td class="n">6,738</td><td>崔智颖</td><td><span class="b green">成功</span></td></tr>
+        <tr><td>10-21 09:12</td><td>有赞过滤_2026-10-14至2026-10-20.xlsx</td><td><span class="b blue">有赞</span></td><td class="n">4,268</td><td class="n">10-14 ~ 10-20</td><td class="n">31</td><td>崔智颖</td><td><span class="b green">成功</span></td></tr>
+        <tr><td>10-21 09:10</td><td>退款明细_2026-10.xlsx</td><td><span class="b amber">退款</span></td><td class="n">116</td><td class="n">10-01 ~ 10-20</td><td class="n">0</td><td>崔智颖</td><td><span class="b green">成功</span></td></tr>
+        <tr><td>10-14 08:52</td><td>有赞过滤_2026-10-05至2026-10-06.xlsx</td><td><span class="b blue">有赞</span></td><td class="n">0</td><td class="n">—</td><td class="n">—</td><td>小艾</td><td><span class="b red">失败 · 3 家门店未识别</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 内购上翻 ============ -->
+<div class="page" id="p-inner">
+  <div class="ph"><h2>内购上翻</h2></div>
+
+  <div class="filters">
+    <div class="qb"><button class="on">本月</button><button>上月</button><button>近7天</button><button>自定义</button></div>
+    <select class="inp"><option>全部板块</option><option>佛山直营</option><option>全国连锁</option><option>陪跑门店</option></select>
+    <select class="inp"><option>全部平台</option><option>抖音</option><option>美团</option></select>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lab">本月内购金额</div><div class="val">38,420<small>元</small></div><div class="dlt flat">占平台总额 2.5%</div></div>
+    <div class="kpi"><div class="lab">本月内购单数</div><div class="val">598<small>单</small></div><div class="dlt flat">客单 64 元</div></div>
+    <div class="kpi"><div class="lab">涉及门店</div><div class="val">34<small>家</small></div><div class="dlt flat">连锁 22 · 陪跑 8 · 直营 10</div></div>
+    <div class="kpi"><div class="lab">白名单商品</div><div class="val">32<small>个</small></div><div class="dlt flat">本月命中 15 个</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>内购白名单 <span class="tag">32 个 · 本月命中 15 个</span> <span class="tag" style="background:#EFF6FF;color:#1D4ED8">运营维护</span></span>
+      <span style="display:flex;gap:8px">
+        <button class="btn ghost sm">批量导入</button>
+        <button class="btn ghost sm">导出</button>
+        <button class="btn sm">+ 新增商品</button>
+      </span>
+    </div>
+
+    <div class="filters" style="margin-bottom:14px">
+      <input class="inp w240" placeholder="搜索商品 ID / 商品名">
+      <select class="inp"><option>全部平台</option><option>抖音</option><option>美团</option></select>
+      <select class="inp"><option>全部状态</option><option>启用</option><option>停用</option><option>本月有单</option><option>本月零单</option></select>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--ink3)">白名单改完，下一次导入立即生效</span>
+    </div>
+
+    <table>
+      <thead><tr><th>平台</th><th>商品 ID</th><th>商品名称</th><th class="n">面值</th><th>首次命中</th><th class="n">本月命中</th><th class="n">本月内购金额</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td><span class="b dy">抖音</span></td><td><code>1810245175321659</code></td><td>【可重复购】明星同款70分钟碳酸泉减压头疗</td><td class="n">228</td><td>09-03</td><td class="n">186</td><td class="n">12,480</td><td><span class="b green">启用</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a> · <a style="color:var(--ink3);font-weight:600;cursor:pointer">停用</a></td></tr>
+        <tr><td><span class="b dy">抖音</span></td><td><code>1861803054832663</code></td><td>【可重复购】明星同款70分钟碳酸泉头疗·含头皮净澈</td><td class="n">298</td><td>09-03</td><td class="n">142</td><td class="n">9,860</td><td><span class="b green">启用</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a> · <a style="color:var(--ink3);font-weight:600;cursor:pointer">停用</a></td></tr>
+        <tr><td><span class="b dy">抖音</span></td><td><code>1877012065611801</code></td><td>【9.24门店专属福利】30分钟纯手法肩颈按摩（次卡）</td><td class="n">228</td><td>10-08</td><td class="n">31</td><td class="n">3,420</td><td><span class="b green">启用</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a> · <a style="color:var(--ink3);font-weight:600;cursor:pointer">停用</a></td></tr>
+        <tr><td><span class="b dy">抖音</span></td><td><code>1844948880356412</code></td><td>【可重复购】明星同款70分钟碳酸泉减压头疗</td><td class="n">228</td><td>09-11</td><td class="n">22</td><td class="n">1,640</td><td><span class="b green">启用</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a> · <a style="color:var(--ink3);font-weight:600;cursor:pointer">停用</a></td></tr>
+        <tr><td><span class="b mt">美团</span></td><td><code>1636734119</code></td><td>5次｜60分钟肩颈+腰背精油SPA｜纯手法【可重复购】</td><td class="n">368</td><td>09-03</td><td class="n">96</td><td class="n">6,720</td><td><span class="b green">启用</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a> · <a style="color:var(--ink3);font-weight:600;cursor:pointer">停用</a></td></tr>
+        <tr><td><span class="b mt">美团</span></td><td><code>1636664576</code></td><td>5次｜60分钟清洁补水深层清洁水润肌素颜【可复购】</td><td class="n">398</td><td>09-03</td><td class="n">71</td><td class="n">2,840</td><td><span class="b green">启用</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a> · <a style="color:var(--ink3);font-weight:600;cursor:pointer">停用</a></td></tr>
+        <tr><td><span class="b mt">美团</span></td><td><code>2554612974</code></td><td>3次｜60分钟肩颈+背部+腰部精油SPA｜上班族劳累必备</td><td class="n">328</td><td>09-08</td><td class="n">38</td><td class="n">1,260</td><td><span class="b green">启用</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a> · <a style="color:var(--ink3);font-weight:600;cursor:pointer">停用</a></td></tr>
+        <tr><td><span class="b gray">美团</span></td><td><code>1182270753</code></td><td>【全国通用】太极升阳项目限定粉丝套餐</td><td class="n">318</td><td>—</td><td class="n">0</td><td class="n">0</td><td><span class="b gray">停用</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a> · <a style="color:var(--ink3);font-weight:600;cursor:pointer">启用</a></td></tr>
+        <tr><td><span class="b gray">抖音</span></td><td><code>1874484605681664</code></td><td>【可重复购】60分钟元气肩颈（已下架）</td><td class="n">198</td><td>—</td><td class="n">0</td><td class="n">0</td><td><span class="b gray">停用</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a> · <a style="color:var(--ink3);font-weight:600;cursor:pointer">启用</a></td></tr>
+      </tbody>
+    </table>
+    <div class="note">共 32 个商品，此处显示前 9 个。本月零单的商品共 17 个，可按「本月零单」筛选后批量停用。</div>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>未识别商品巡检 <span class="tag red" style="background:#FEF2F2;color:#B42318">5 个商品本月有大额单</span></span>
+      <span style="display:flex;gap:8px;align-items:center">
+        <span class="vtabs"><button class="on">按金额</button><button>按单数</button></span>
+        <button class="btn sm" onclick="alert('重新巡检 10-21 的两个平台明细：\n\n美团 3,284 个商品 → 白名单命中 13 个\n抖音 1,905 个商品 → 白名单命中 5 个\n未识别大额商品 5 个（见下表）')">开始巡检</button>
+      </span>
+    </div>
+    <table>
+      <thead><tr><th>平台</th><th>商品 ID</th><th>商品名称</th><th class="n">本月单数</th><th class="n">本月金额</th><th>建议</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td><span class="b mt">美团</span></td><td><code>1046972290</code></td><td>70分钟头疗｜头肩颈按摩｜新客养生·碳酸泉水循环</td><td class="n">4,557</td><td class="n" style="font-weight:700">387,556</td><td><span class="b red">金额最大 · 建议确认</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">加入白名单</a></td></tr>
+        <tr><td><span class="b dy">抖音</span></td><td><code>1806531014302739</code></td><td>【七夕双人相伴】140分钟双人碳酸泉头疗</td><td class="n">1,617</td><td class="n" style="font-weight:700">255,620</td><td><span class="b amber">活动品 · 建议确认</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">加入白名单</a></td></tr>
+        <tr><td><span class="b dy">抖音</span></td><td><code>1795309480075264</code></td><td>【七夕悦己】镇店招牌70分钟碳酸泉头疗</td><td class="n">2,376</td><td class="n" style="font-weight:700">199,845</td><td><span class="b amber">活动品 · 建议确认</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">加入白名单</a></td></tr>
+        <tr><td><span class="b mt">美团</span></td><td><code>1131977141</code></td><td>140分钟头疗｜头肩颈按摩｜入秋双人相伴·沉浸式版</td><td class="n">1,061</td><td class="n" style="font-weight:700">175,849</td><td><span class="b gray">—</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">加入白名单</a></td></tr>
+        <tr><td><span class="b dy">抖音</span></td><td><code>1797844036701212</code></td><td>【双揽秋时安】120分钟碳酸泉头疗+肩颈+背部</td><td class="n">197</td><td class="n" style="font-weight:700">38,623</td><td><span class="b gray">—</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">加入白名单</a></td></tr>
+      </tbody>
+    </table>
+    <div class="note">点 <b>`开始巡检`</b> 重新扫一遍最近一次导入的两个平台明细，把「不在白名单但本月有量」的商品挑出来。白名单由<b>运营维护</b>：确认某商品属于内购就点「加入白名单」，下次导入立即按内购剔除；已导入的历史数据按商品重算即可，不用重导整月。</div>
+  </div>
+
+  <div class="card">
+    <div class="ct" style="justify-content:space-between">
+      <span>抖音扫码买单 <span class="tag" style="background:#F1EEFF;color:#5B3FD1">仅主账号可见 · 不计业绩</span></span>
+      <span style="display:flex;gap:8px">
+        <div class="qb"><button>今天</button><button>本周</button><button class="on">本月</button><button>本季</button></div>
+        <button class="btn ghost sm">导出</button>
+      </span>
+    </div>
+    <div class="kpis" style="margin-bottom:14px">
+      <div class="kpi"><div class="lab">扫码买单合计</div><div class="val">17,860<small>元</small></div><div class="dlt flat">不计入任何板块业绩</div></div>
+      <div class="kpi"><div class="lab">订单数</div><div class="val">142<small>笔</small></div><div class="dlt flat">客单 126 元</div></div>
+      <div class="kpi"><div class="lab">有单门店</div><div class="val">11<small>家</small></div><div class="dlt flat">连锁 7 · 直营 2 · 陪跑 2</div></div>
+    </div>
+    <table>
+      <thead><tr><th>门店</th><th>板块</th><th class="n">扫码金额</th><th class="n">单数</th><th class="n">客单</th></tr></thead>
+      <tbody>
+        <tr><td><b>广州天河店</b></td><td><span class="b gray">连锁</span></td><td class="n">4,280</td><td class="n">34</td><td class="n">126</td></tr>
+        <tr><td><b>深圳福田店</b></td><td><span class="b gray">连锁</span></td><td class="n">3,140</td><td class="n">25</td><td class="n">126</td></tr>
+        <tr><td><b>佛山祖庙店</b></td><td><span class="b blue">直营</span></td><td class="n">2,860</td><td class="n">22</td><td class="n">130</td></tr>
+        <tr><td><b>YSY中关村店</b></td><td><span class="b amber">陪跑</span></td><td class="n">1,940</td><td class="n">16</td><td class="n">121</td></tr>
+      </tbody>
+    </table>
+    <div class="note">抖音线上/扫码买单属于内购上翻，<b>不计入任何板块的业绩</b>。这里只做金额查看，不参与大盘合计。</div>
+  </div>
+
+  <div class="card">
+    <div class="ct">按门店 <span class="tag">34 家</span></div>
+    <table>
+      <thead><tr><th>门店</th><th>板块</th><th class="n">内购金额</th><th class="n">内购单数</th><th class="n">占该店总额</th><th>主要商品</th></tr></thead>
+      <tbody>
+        <tr><td><b>广州天河店</b></td><td><span class="b gray">连锁</span></td><td class="n">3,860</td><td class="n">52</td><td class="n">13.5%</td><td>5次肩颈SPA 卡</td></tr>
+        <tr><td><b>深圳福田店</b></td><td><span class="b gray">连锁</span></td><td class="n">2,940</td><td class="n">41</td><td class="n">12.2%</td><td>5次肩颈SPA 卡</td></tr>
+        <tr><td><b>YSY中关村店</b></td><td><span class="b amber">陪跑</span></td><td class="n">1,240</td><td class="n">14</td><td class="n">4.1%</td><td>70分钟碳酸泉头疗</td></tr>
+        <tr><td><b>佛山祖庙店</b></td><td><span class="b blue">直营</span></td><td class="n">1,280</td><td class="n">18</td><td class="n">2.7%</td><td>门店自行填报</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 门店档案 ============ -->
+<div class="page" id="p-stores">
+  <div class="ph"><h2>门店档案</h2><span class="rt"><button class="btn ghost">特殊营业期</button><button class="btn">+ 新增门店</button></span></div>
+
+  <div class="seg" style="margin-bottom:16px"><button class="on" onclick="stTab('A',this)">门店主数据 <span class="tag">113</span></button><button onclick="stTab('B',this)">有赞映射复核 <span class="tag">3</span></button><button onclick="stTab('C',this)">待办 <span class="tag">5</span></button></div>
+
+  <div id="st-tabA">
+
+  <div class="filters">
+    <input class="inp w180" placeholder="搜索门店名 / 编码">
+    <select class="inp"><option>全部性质</option><option>直营</option><option>连锁</option><option>陪跑</option></select>
+    <select class="inp"><option>全部状态</option><option>在营</option><option>闭店</option><option>待上线</option></select>
+    <select class="inp"><option>全部运营人</option><option>琦琦</option><option>琳琳</option><option>慧慧</option><option>小梅</option><option>夏夏</option></select>
+    <select class="inp"><option>全部映射</option><option>已配</option><option>未配 3 家</option><option>重名 0 家</option></select>
+    <select class="inp"><option>全部分公司</option><option>佛山分公司</option><option>广州分公司</option><option>深圳分公司</option></select>
+    <label class="chk" style="margin-left:auto"><input type="checkbox" id="colChk">显示全部列</label>
+  </div>
+
+  <div class="card">
+    <div class="ct">门店清单 <span class="tag">113 家</span></div>
+    <table>
+      <thead><tr>
+        <th>门店编码</th><th>标准名称</th><th>分公司</th><th>性质</th><th>省市</th><th>运营人</th><th>上线日期</th><th>状态</th><th>映射</th>
+        <th class="xc">2 字缩写</th><th class="xc">美团门店</th><th class="xc">抖音门店</th><th class="xc">抖音账号</th><th class="xc">有赞账单门店名</th><th class="xc">核对别名</th><th class="xc">kdt_id</th><th class="xc">详细地址</th><th class="xc">闭店日期</th><th class="xc">备注</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><code>SX-FS-001</code></td><td><b>佛山祖庙店</b></td><td>佛山分公司</td><td><span class="b blue">直营</span></td><td>广东省 佛山市 禅城区</td><td>琦琦</td><td>2024-03-15</td><td><span class="b green">在营</span></td><td><span class="b green">已配</span></td>
+          <td class="xc">祖庙</td><td class="xc">佛山祖庙店（8812003）</td><td class="xc">佛山祖庙店（7100458）</td><td class="xc">MS4wLjAB…7f2c1a</td><td class="xc">佛山祖庙店</td><td class="xc">祖庙店</td><td class="xc">148138517</td><td class="xc">广东省佛山市禅城区祖庙路 12 号</td><td class="xc">—</td><td class="xc">—</td>
+          <td class="nowrap"><a class="lnk">改名</a> · <a class="lnk">转移</a> · <a class="lnk">删</a></td>
+        </tr>
+        <tr>
+          <td><code>SX-GZ-014</code></td><td><b>广州天河店</b></td><td>广州分公司</td><td><span class="b gray">连锁</span></td><td>广东省 广州市 天河区</td><td>琳琳</td><td>2024-06-01</td><td><span class="b green">在营</span></td><td><span class="b green">已配</span></td>
+          <td class="xc">天河</td><td class="xc">广州天河店（8812014）</td><td class="xc">广州天河店（7100461）</td><td class="xc">MS4wLjAB…9c4e83</td><td class="xc">广州天河城店</td><td class="xc">天河城店，天河店</td><td class="xc">148138517</td><td class="xc">广东省广州市天河区天河路 208 号</td><td class="xc">—</td><td class="xc">账单显示「天河城店」</td>
+          <td class="nowrap"><a class="lnk">改名</a> · <a class="lnk">转移</a> · <a class="lnk">删</a></td>
+        </tr>
+        <tr>
+          <td><code>SX-SZ-009</code></td><td><b>深圳福田店</b></td><td>深圳分公司</td><td><span class="b gray">连锁</span></td><td>广东省 深圳市 福田区</td><td>小梅</td><td>2023-09-08</td><td><span class="b green">在营</span></td><td><span class="b green">已配</span></td>
+          <td class="xc">福田</td><td class="xc">深圳福田店（8812009）</td><td class="xc">深圳福田店（7100452）</td><td class="xc">MS4wLjAB…1b7d22</td><td class="xc">深圳福田中心店</td><td class="xc">福田中心店</td><td class="xc">148138517</td><td class="xc">广东省深圳市福田区福华三路 88 号</td><td class="xc">—</td><td class="xc">—</td>
+          <td class="nowrap"><a class="lnk">改名</a> · <a class="lnk">转移</a> · <a class="lnk">删</a></td>
+        </tr>
+        <tr>
+          <td><code>SX-GZ-021</code></td><td><b>广州和丰店</b></td><td>广州分公司</td><td><span class="b amber">陪跑</span></td><td>广东省 广州市 海珠区</td><td>夏夏</td><td>2026-05-08</td><td><span class="b green">在营</span></td><td><span class="b green">已配</span></td>
+          <td class="xc">和丰</td><td class="xc">广州和丰店（1492484404）</td><td class="xc">書荀·头疗·美容养生(叠景路店)（7570639288723851264）</td><td class="xc">MS4wLjAB…2e5b90</td><td class="xc">—</td><td class="xc">叠景路店</td><td class="xc">—</td><td class="xc">广东省广州市海珠区叠景路</td><td class="xc">—</td><td class="xc">陪跑 · 两平台归集</td>
+          <td class="nowrap"><a class="lnk">改名</a> · <a class="lnk">转移</a> · <a class="lnk">删</a></td>
+        </tr>
+        <tr>
+          <td><code>SX-FS-006</code></td><td><b>佛山南海万科店</b></td><td>佛山分公司</td><td><span class="b blue">直营</span></td><td>广东省 佛山市 南海区</td><td>琳琳</td><td>2026-09-26</td><td><span class="b green">在营</span></td><td><span class="b green">已配</span></td>
+          <td class="xc">万科</td><td class="xc">佛山南海万科店（8812026）</td><td class="xc">佛山南海万科店（7100470）</td><td class="xc">MS4wLjAB…4a9f10</td><td class="xc">佛山南海万科店</td><td class="xc">—</td><td class="xc">148138517</td><td class="xc">广东省佛山市南海区桂澜路 6 号</td><td class="xc">—</td><td class="xc">新店</td>
+          <td class="nowrap"><a class="lnk">改名</a> · <a class="lnk">转移</a> · <a class="lnk">删</a></td>
+        </tr>
+        <tr>
+          <td><code>SX-DG-006</code></td><td><b>东莞松山湖店</b></td><td>东莞分公司</td><td><span class="b gray">连锁</span></td><td>广东省 东莞市 松山湖</td><td>慧慧</td><td>—</td><td><span class="b gray">待上线</span></td><td><span class="b red">未配</span></td>
+          <td class="xc">松湖</td><td class="xc">—</td><td class="xc">—</td><td class="xc">—</td><td class="xc">—</td><td class="xc">—</td><td class="xc">148138517</td><td class="xc">广东省东莞市松山湖园区</td><td class="xc">—</td><td class="xc">待配抖音/美团门店 ID</td>
+          <td class="nowrap"><a class="lnk">改名</a> · <a class="lnk">转移</a> · <a class="lnk">删</a></td>
+        </tr>
+        <tr>
+          <td><code>SX-FS-002</code></td><td><b>佛山彩虹店</b></td><td>佛山分公司</td><td><span class="b blue">直营</span></td><td>广东省 佛山市 南海区</td><td>—</td><td>2023-11-20</td><td><span class="b red">闭店</span></td><td><span class="b green">已配</span></td>
+          <td class="xc">彩虹</td><td class="xc">佛山彩虹店（8812002）</td><td class="xc">佛山彩虹店（7100448）</td><td class="xc">—</td><td class="xc">佛山彩虹店</td><td class="xc">—</td><td class="xc">148138517</td><td class="xc">广东省佛山市南海区桂城街道</td><td class="xc">2026-06-30</td><td class="xc">已闭店，仅留历史</td>
+          <td class="nowrap"><a class="lnk">改名</a> · <a class="lnk">转移</a> · <a class="lnk">删</a></td>
+        </tr>
+        <tr>
+          <td><code>SX-ZS-003</code></td><td><b>中山石岐店</b></td><td>中山分公司</td><td><span class="b gray">连锁</span></td><td>广东省 中山市 石岐区</td><td>琦琦</td><td>2025-04-12</td><td><span class="b green">在营</span></td><td><span class="b green">已配</span></td>
+          <td class="xc">石岐</td><td class="xc">中山石岐店（8812033）</td><td class="xc">中山石岐店（7100466）</td><td class="xc">MS4wLjAB…8d1c47</td><td class="xc">中山石岐大信店</td><td class="xc">石岐大信店</td><td class="xc">148138517</td><td class="xc">广东省中山市石岐区大信南路 3 号</td><td class="xc">—</td><td class="xc">—</td>
+          <td class="nowrap"><a class="lnk">改名</a> · <a class="lnk">转移</a> · <a class="lnk">删</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  </div><!-- /tabA · 门店主数据 -->
+
+  <div id="st-tabB" style="display:none">
+    <div class="card">
+      <div class="ct" style="justify-content:space-between">
+        <span>有赞账单门店名复核 <span class="tag">待确认 3 家</span></span>
+        <span><button class="btn sm">全部确认</button></span>
+      </div>
+      <div class="note" style="margin:0 0 14px">导入有赞账单时，系统用「有赞账单门店名」原值反查门店。下面这些名字在账单里出现过，但跟档案里的写法对不上，需要你确认一次，确认后写回档案，下次导入就不会再问。</div>
+      <table>
+        <thead><tr><th>账单里的门店名</th><th>建议匹配到</th><th>依据</th><th class="n">近 30 天单数</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td><code>佛山祖庙分店</code></td><td><b>佛山祖庙店</b></td><td>名称相似 92%</td><td class="n">186</td><td><span class="b amber">待确认</span></td><td class="nowrap"><a class="lnk">采纳</a> · <a class="lnk">改选</a> · <a class="lnk">忽略</a></td></tr>
+          <tr><td><code>广州天河城店</code></td><td><b>广州天河店</b></td><td>别名已收录</td><td class="n">243</td><td><span class="b amber">待确认</span></td><td class="nowrap"><a class="lnk">采纳</a> · <a class="lnk">改选</a> · <a class="lnk">忽略</a></td></tr>
+          <tr><td><code>中山石岐大信店</code></td><td><b>中山石岐店</b></td><td>名称相似 88%</td><td class="n">97</td><td><span class="b amber">待确认</span></td><td class="nowrap"><a class="lnk">采纳</a> · <a class="lnk">改选</a> · <a class="lnk">忽略</a></td></tr>
+          <tr><td><code>东莞南城店</code></td><td><b>—</b></td><td>档案里没有这家</td><td class="n">0</td><td><span class="b gray">已忽略</span></td><td class="nowrap"><a class="lnk">恢复</a></td></tr>
+        </tbody>
+      </table>
+      <div class="note">采纳后即写入「门店主数据」的「有赞账单门店名」列，一格可存多个名字（用逗号隔开）。</div>
+    </div>
+  </div><!-- /tabB · 有赞映射复核 -->
+
+  <div id="st-tabC" style="display:none">
+    <div class="card">
+      <div class="ct">新店认领 <span class="tag">2 家</span></div>
+      <div class="note" style="margin:0 0 14px">有赞账单里出现了档案中没有的 kdt_id。认领后自动建店，并把这批业绩挂到新店名下；选「忽略」则这批单不计入任何门店。</div>
+      <table>
+        <thead><tr><th>kdt_id</th><th>账单里的店名</th><th class="n">单数</th><th class="n">金额</th><th>最近出现</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td><code>192837461</code></td><td>珠海拱北口岸店</td><td class="n">58</td><td class="n">42,180</td><td>2026-10-21</td><td class="nowrap"><button class="btn sm">✓ 认领建店</button> <a class="lnk">忽略（弃用）</a></td></tr>
+          <tr><td><code>192837503</code></td><td>惠州华贸店</td><td class="n">31</td><td class="n">23,460</td><td>2026-10-20</td><td class="nowrap"><button class="btn sm">✓ 认领建店</button> <a class="lnk">忽略（弃用）</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="ct">资料待补齐 <span class="tag">3 家</span></div>
+      <table>
+        <thead><tr><th>门店</th><th>缺什么</th><th>影响</th><th>操作</th></tr></thead>
+        <tbody>
+          <tr><td><b>佛山印象城店</b></td><td>抖音账号 sec_uid</td><td>抖音监控采不到这家</td><td><a class="lnk">去补齐</a></td></tr>
+          <tr><td><b>佛山星耀店</b></td><td>美团门店 ID</td><td>平台核对时这家的行匹配不上</td><td><a class="lnk">去补齐</a></td></tr>
+          <tr><td><b>中山石岐店</b></td><td>详细地址</td><td>不影响业绩，只影响档案完整度</td><td><a class="lnk">去补齐</a></td></tr>
+        </tbody>
+      </table>
+      <div class="note">陪跑门店不要求 kdt_id（不走有赞），闭店门店不参与待办检查。</div>
+    </div>
+  </div><!-- /tabC · 待办 -->
+</div>
+
+<!-- ============ 成员权限 ============ -->
+<div class="page" id="p-member">
+  <div class="ph"><h2>成员权限</h2><span class="rt"><button class="btn">+ 新增成员</button></span></div>
+
+  <div class="card">
+    <div class="ct">成员列表 <span class="tag">7 人</span></div>
+    <table>
+      <thead><tr><th>姓名</th><th>手机号</th><th>角色</th><th>负责门店</th><th>最近登录</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td><b>崔智颖</b></td><td>138****0314</td><td><span class="b red">所有者</span></td><td>全部</td><td>10-22 09:41</td><td><span class="b green">正常</span></td><td>—</td></tr>
+        <tr><td><b>小艾</b></td><td>159****7530</td><td><span class="b blue">管理员</span></td><td>全部</td><td>10-22 08:57</td><td><span class="b green">正常</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a></td></tr>
+        <tr><td>琦琦</td><td>137****4699</td><td><span class="b gray">运营</span></td><td>直营 4 家 · 连锁 2 家</td><td>10-21 22:10</td><td><span class="b green">正常</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a></td></tr>
+        <tr><td>琳琳</td><td>135****7385</td><td><span class="b gray">运营</span></td><td>直营 2 家 · 连锁 18 家</td><td>10-22 09:02</td><td><span class="b green">正常</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a></td></tr>
+        <tr><td>慧慧</td><td>136****2244</td><td><span class="b gray">运营</span></td><td>直营 2 家 · 连锁 15 家</td><td>10-21 19:33</td><td><span class="b green">正常</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a></td></tr>
+        <tr><td>小梅</td><td>158****9012</td><td><span class="b gray">运营</span></td><td>直营 1 家 · 连锁 14 家</td><td>10-21 20:45</td><td><span class="b green">正常</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a></td></tr>
+        <tr><td>夏夏</td><td>139****2280</td><td><span class="b gray">运营</span></td><td>陪跑 20 家 · 连锁 12 家</td><td>10-22 08:30</td><td><span class="b green">正常</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a></td></tr>
+        <tr><td>佛山祖庙店</td><td>138****6612</td><td><span class="b amber">门店号</span></td><td>佛山祖庙店</td><td>10-21 22:40</td><td><span class="b green">正常</span></td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">编辑</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="ct">待分配 <span class="tag">2 人</span></div>
+    <table>
+      <thead><tr><th>手机号</th><th>注册时间</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td>159****3308</td><td>10-21 14:20</td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">分配权限 →</a></td></tr>
+        <tr><td>136****7742</td><td>10-20 09:05</td><td><a style="color:var(--blue);font-weight:600;cursor:pointer">分配权限 →</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="ct">操作日志</div>
+    <div class="filters" style="margin-bottom:12px">
+      <select class="inp"><option>全部类型</option><option>改门店档案</option><option>改成员权限</option><option>删数据</option><option>导入</option></select>
+      <select class="inp"><option>全部操作人</option><option>崔智颖</option><option>小艾</option></select>
+      <input class="inp" type="date" value="2026-10-15">
+      <span style="color:var(--ink3)">至</span>
+      <input class="inp" type="date" value="2026-10-22">
+    </div>
+    <table>
+      <thead><tr><th>时间</th><th>谁</th><th>做了什么</th><th>对象</th><th>详情</th></tr></thead>
+      <tbody>
+        <tr><td>10-22 09:36</td><td>崔智颖</td><td><span class="b green">导入</span></td><td>抖音核销明细 · 10-01~10-21</td><td>862 笔 · 跳过 4,918 行（非陪跑门店）· 0 家未识别</td></tr>
+        <tr><td>10-22 09:30</td><td>崔智颖</td><td><span class="b blue">改成员权限</span></td><td>夏夏</td><td>陪跑门店 20 家划入名下</td></tr>
+        <tr><td>10-21 21:14</td><td>崔智颖</td><td><span class="b red">删数据</span></td><td>全国连锁 · 2026-10-08</td><td>删除 3 笔重复订单</td></tr>
+        <tr><td>10-21 18:02</td><td>崔智颖</td><td><span class="b blue">改成员权限</span></td><td>琳琳</td><td>名下门店 +2 家（广州天河、广州珠江新城）</td></tr>
+        <tr><td>10-21 15:40</td><td>小艾</td><td><span class="b amber">改门店档案</span></td><td>东莞松山湖店</td><td>运营人：— → 慧慧</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============ 单店经营详情（不在导航里，点门店进） ============ -->
+<div class="page" id="p-store">
+  <div class="ph">
+    <button class="btn ghost sm" onclick="closeStore()">← 返回</button>
+    <h2 id="stName">佛山祖庙店</h2>
+    <span class="b blue">直营</span><span class="b old">老店</span>
+    <span style="font-size:12.5px;color:var(--ink3);margin-left:4px">SX-FS-001 · 琦琦 · 广东省佛山市禅城区 · 上线 2024-03-15</span>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="lab">本月核销（月初至今）</div><div class="val">48,260<small>元</small></div><div class="dlt up">↑ 9.4%</div></div>
+    <div class="kpi"><div class="lab">上月合计</div><div class="val">44,120<small>元</small></div><div class="dlt flat">30 天</div></div>
+    <div class="kpi"><div class="lab">环比上月同期</div><div class="val" style="color:var(--red)">↑ 9.4<small>%</small></div><div class="dlt flat">同月龄对比</div></div>
+    <div class="kpi"><div class="lab">近 7 天</div><div class="val">12,880<small>元</small></div><div class="dlt flat">日均 1,840</div></div>
+    <div class="kpi"><div class="lab">近 12 个月合计</div><div class="val">512,640<small>元</small></div><div class="dlt flat">月均 42,720</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">逐月核销履历 <span class="tag">近 12 个月 · 橙=美团 紫=抖音 灰=其他</span></div>
+    <div id="stChart" style="display:flex;align-items:flex-end;gap:6px;height:150px;margin-top:6px"></div>
+    <div class="legend" style="margin-top:10px;font-size:12px">
+      <span><b style="background:#F97316"></b>美团</span>
+      <span><b style="background:#7C5CFF"></b>抖音</span>
+      <span><b style="background:#CBD5E1"></b>其他渠道</span>
+      <span style="margin-left:auto;color:var(--ink3)">格内为该月核销金额（元）</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">月度明细</div>
+    <table>
+      <thead><tr><th>月份</th><th class="n">核销金额</th><th class="n">单数</th><th class="n">美团</th><th class="n">抖音</th><th class="n">其他</th><th class="n">环比</th><th>特殊营业</th></tr></thead>
+      <tbody>
+        <tr><td>2026-10（到 21 日）</td><td class="n"><b>48,260</b></td><td class="n">742</td><td class="n">27,540</td><td class="n">20,720</td><td class="n">0</td><td class="n" style="color:#B42318">↑ 9.4%</td><td>—</td></tr>
+        <tr><td>2026-09</td><td class="n"><b>44,120</b></td><td class="n">688</td><td class="n">25,180</td><td class="n">18,940</td><td class="n">0</td><td class="n" style="color:#047857">↓ 2.1%</td><td>—</td></tr>
+        <tr><td>2026-08</td><td class="n"><b>45,060</b></td><td class="n">701</td><td class="n">25,720</td><td class="n">19,340</td><td class="n">0</td><td class="n" style="color:#B42318">↑ 4.8%</td><td>—</td></tr>
+        <tr><td>2026-07</td><td class="n"><b>42,980</b></td><td class="n">672</td><td class="n">24,560</td><td class="n">18,420</td><td class="n">0</td><td class="n" style="color:#B42318">↑ 3.2%</td><td>—</td></tr>
+        <tr><td>2026-06</td><td class="n"><b>41,680</b></td><td class="n">658</td><td class="n">23,880</td><td class="n">17,800</td><td class="n">0</td><td class="n" style="color:#047857">↓ 1.4%</td><td>—</td></tr>
+        <tr><td>2026-05</td><td class="n"><b>42,240</b></td><td class="n">664</td><td class="n">24,120</td><td class="n">18,120</td><td class="n">0</td><td class="n" style="color:#B42318">↑ 6.1%</td><td>—</td></tr>
+        <tr><td>2026-04</td><td class="n"><b>39,810</b></td><td class="n">631</td><td class="n">22,740</td><td class="n">17,070</td><td class="n">0</td><td class="n" style="color:#047857">↓ 3.6%</td><td><span class="b amber">培训闭店 3 天</span></td></tr>
+        <tr><td>2026-03</td><td class="n"><b>41,290</b></td><td class="n">648</td><td class="n">23,580</td><td class="n">17,710</td><td class="n">0</td><td class="n" style="color:#B42318">↑ 2.7%</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="note">口径与板块一致：业绩 = 平台账单 / 填报（不含抖音线上买单、二维码收款、充值、售卡、兑付）。环比同月龄对比：本月 1 日至今日 vs 上月 1 日至同一天，避免「本月还没过完」造成假跌。此处显示最近 8 个月，共 12 个月可导出。</div>
+  </div>
+</div>
+
+</div>
+
+<div class="foot">书荀互联网运营工作区 · v11d 预览版 · 10-23</div>
+
+<script>
+(function(){
+  var NAV = [
+    {k:'dash',   n:'书荀大盘', roles:['owner','admin','ops']},
+    {k:'direct', n:'佛山直营', roles:['owner','admin','ops']},
+    {k:'chain',  n:'全国连锁', roles:['owner','admin','ops']},
+    {k:'run',    n:'陪跑门店', roles:['owner','admin','ops']},
+    {k:'fill',   n:'门店填报', roles:['store'], badge:1},
+    {k:'hist',   n:'本月填报记录', roles:['store']},
+    {k:'import', n:'数据导入', roles:['owner','admin']},
+    {k:'inner',  n:'内购上翻', roles:['owner','admin','ops']},
+    {k:'stores', n:'门店档案', roles:['owner','admin','ops']},
+    {k:'member', n:'成员权限', roles:['owner','admin']}
+  ];
+  var LAND = {owner:'dash', admin:'dash', ops:'dash', store:'fill'};
+  var WHO = {owner:['崔智颖','崔'],admin:['小艾','艾'],ops:['琳琳','琳'],store:['佛山祖庙店','祖']};
+  var cur = 'owner';
+
+  function render(){
+    var nav = document.getElementById('nav');
+    nav.innerHTML = '';
+    var visible = NAV.filter(function(x){ return x.roles.indexOf(cur) >= 0; });
+    visible.forEach(function(x){
+      var a = document.createElement('a');
+      a.textContent = x.n;
+      if(x.badge && cur === 'store'){ var d = document.createElement('span'); d.className='dot'; a.appendChild(d); }
+      a.dataset.k = x.k;
+      a.onclick = function(){ go(x.k); };
+      nav.appendChild(a);
+    });
+    var w = WHO[cur];
+    document.getElementById('whoName').textContent = w[0];
+    document.getElementById('whoAv').textContent = w[1];
+    var land = LAND[cur];
+    var has = visible.some(function(x){ return x.k === land; });
+    go(has ? land : visible[0].k);
+  }
+  function go(k){
+    Array.prototype.forEach.call(document.querySelectorAll('.page'), function(p){
+      p.classList.toggle('on', p.id === 'p-' + k);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#nav a'), function(a){
+      a.classList.toggle('on', a.dataset.k === k);
+    });
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#roles button'), function(b){
+    b.onclick = function(){
+      Array.prototype.forEach.call(document.querySelectorAll('#roles button'), function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      cur = b.dataset.r;
+      render();
+    };
+  });
+  window.pkJump = function(id){
+    var el = document.getElementById(id);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('#perfTabs button'), function(b){
+    b.onclick = function(){
+      Array.prototype.forEach.call(document.querySelectorAll('#perfTabs button'), function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      var v = b.dataset.v;
+      document.getElementById('perfCard').style.display  = (v === 'card')  ? '' : 'none';
+      document.getElementById('perfTable').style.display = (v === 'table') ? '' : 'none';
+    };
+  });
+  /* ---- 单店详情 ---- */
+  var BACK = 'chain';
+  window.doConfirm = function(){
+    var box = document.getElementById('confirmBox');
+    if(!box) return;
+    if(!confirm('确认 2026-10-21 的直营数据？\n\n确认后这一天的直营数据才计入书荀大盘。\n（若确认后还有门店改填报，这里会点名提醒重新确认）')) return;
+    box.innerHTML =
+      '<div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:13px 15px">' +
+        '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+          '<span style="color:#15803D;font-size:13px">✅ <b>2026-10-21</b> 直营数据已于 2026-10-22 20:35 由 <b>崔智颖</b> 确认，已计入书荀大盘。</span>' +
+          '<button class="btn ghost sm" onclick="doConfirm()">重新确认 / 更新时间</button>' +
+        '</div>' +
+        '<div style="margin-top:9px;font-size:12.5px;color:#92400E">⚠️ <b>确认之后</b>这些门店的填报又被修改过：<b>佛山千灯湖店、佛山乐从店</b>——数据已变，建议点「重新确认」更新闸门</div>' +
+      '</div>';
+  };
+  window.stTab = function(k,btn){
+    ["A","B","C"].forEach(function(x){
+      var el=document.getElementById("st-tab"+x); if(el) el.style.display = (x===k?"":"none");
+    });
+    var p=btn.parentNode;
+    Array.prototype.forEach.call(p.children,function(b){b.classList.remove("on")});
+    btn.classList.add("on");
+  };
+  window.openStore = function(name){
+    var on = document.querySelector('.page.on');
+    if(on && on.id !== 'p-store') BACK = on.id.replace('p-','');
+    var el = document.getElementById('stName');
+    if(el) el.textContent = name || '佛山祖庙店';
+    Array.prototype.forEach.call(document.querySelectorAll('.page'), function(p){ p.classList.toggle('on', p.id === 'p-store'); });
+    Array.prototype.forEach.call(document.querySelectorAll('#nav a'), function(a){ a.classList.remove('on'); });
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+  window.closeStore = function(){ go(BACK); };
+
+  /* ================= v11：内购填写 ================= */
+  var IPPLAT = 'mt';
+  var IP_SEL = null;
+  var IP_ROWS = [
+    {plat:'mt', nm:'70分钟头疗｜头肩颈按摩｜碳酸泉头疗', t:'团购', code:'0105853102656', cnt:1, amt:198},
+    {plat:'mt', nm:'5次｜60分钟肩颈+腰背精油SPA｜纯手法', t:'次卡', code:'0103204156095', cnt:1, amt:52.35}
+  ];
+  var IP_DATA = {
+    mt: [
+      {id:'1178127488', n:'70分钟头疗｜头肩颈按摩｜碳酸泉头疗【可重复购】', f:198, t:'团购'},
+      {id:'1616206261', n:'60分钟清洁补水深层清洁水润肌素颜【可复购】', f:398, t:'团购'},
+      {id:'1182270753', n:'60分钟肩颈+腰背精油SPA｜纯手法【可重复购】', f:398, t:'团购'},
+      {id:'1077298817', n:'【新人专享】头皮深度高清检测', f:39, t:'团购'},
+      {id:'1636734119', n:'5次｜60分钟肩颈+腰背精油SPA｜纯手法', f:261.75, t:'次卡', cnt:5},
+      {id:'1636664576', n:'5次｜60分钟清洁补水深层清洁水润肌素颜', f:261.75, t:'次卡', cnt:5},
+      {id:'2554612974', n:'3次｜60分钟肩颈+背部+腰部精油SPA', f:235.5, t:'次卡', cnt:3},
+      {id:'2554603966', n:'3次｜60分钟清洁补水深层补水保湿', f:235.5, t:'次卡', cnt:3},
+      {id:'1627762091', n:'【镇店招牌3次卡】70分钟沉浸碳酸泉头疗+肩颈按摩', f:180.5, t:'次卡', cnt:3}
+    ],
+    dy: [
+      {id:'1810245175321659', n:'【可重复购】明星同款70分钟碳酸泉减压头疗', f:198, t:'团购'},
+      {id:'1861803054832663', n:'【可重复购】明星同款70分钟碳酸泉头疗·含头皮净澈', f:198, t:'团购'},
+      {id:'1844948880356412', n:'【可重复购】明星同款70分钟碳酸泉减压头疗', f:198, t:'团购'},
+      {id:'1858273392742419', n:'【可重复购】60分钟水嫩素颜深层清洁补水', f:114, t:'团购'},
+      {id:'1847828409544720', n:'【可重复购】60分钟纯手工深度精油肩颈按摩SPA', f:114, t:'团购'},
+      {id:'1877012065611801', n:'【9.24门店专属福利】30分钟纯手法肩颈按摩', f:228, t:'次卡', cnt:2}
+    ]
+  };
+  window.ipPlat = function(p, btn){
+    IPPLAT = p; IP_SEL = null;
+    Array.prototype.forEach.call(btn.parentNode.children, function(b){ b.classList.remove('on'); });
+    btn.classList.add('on');
+    ipRender();
+  };
+  window.ipPick = function(i){
+    IP_SEL = IPPLAT + '_' + i;
+    ipRender();
+  };
+  function ipRender(){
+    var box = document.getElementById('ipItems');
+    if(!box) return;
+    var arr = IP_DATA[IPPLAT] || [], h = '';
+    arr.forEach(function(x, i){
+      var on = (IP_SEL === IPPLAT + '_' + i) ? ' on' : '';
+      h += '<div class="ipitem' + on + '" onclick="ipPick(' + i + ')">'
+         +   '<div class="nm">' + x.n + '</div>'
+         +   '<div class="ml">'
+         +     '<span class="b ' + (x.t === '次卡' ? 'amber' : 'blue') + '">' + x.t + (x.cnt ? ' · ' + x.cnt + '次' : '') + '</span>'
+         +     (x.f != null ? '<span>面值 ' + x.f + ' 元</span>' : '')
+         +   '</div></div>';
+    });
+    box.innerHTML = h;
+    ipForm();
+    ipRows();
+  }
+  function ipForm(){
+    var box = document.getElementById('ipForm');
+    if(!box) return;
+    if(IP_SEL == null){
+      box.innerHTML = '<div style="font-size:12.5px;color:var(--ink3)">↑ 先选一个项目，这里会出现填写框</div>';
+      return;
+    }
+    var i = parseInt(IP_SEL.split('_')[1], 10);
+    var x = IP_DATA[IPPLAT][i];
+    var h = '<div style="font-weight:700;font-size:13px;margin-bottom:12px">③ 填这一笔 · ' + x.n + '</div><div class="formgrid">';
+    h += '<div class="fld"><label>券码</label><input id="ipCode" placeholder="'
+       + (IPPLAT === 'mt' ? '美团券号 13 位' : '抖音券码 15 位')
+       + '"><div class="hint">照抄顾客券码，别手打错</div></div>';
+    if(x.t === '次卡'){
+      h += '<div class="fld"><label>本次核销次数</label><input id="ipTimes" value="1"><div class="hint">' + (x.cnt || 1) + ' 次卡，核销几次填几</div></div>';
+      h += '<div class="fld"><label>本次报销金额（客户实付）</label><input id="ipAmt" placeholder="填顾客实际付的钱"><div class="hint">按顾客实付填；用券后低于面值 ' + x.f + '</div></div>';
+    }else{
+      h += '<div class="fld"><label>报销金额（客户实付）</label><input id="ipAmt" placeholder="填客户实际付的钱"><div class="hint">不含平台补贴 · 财务按这个数报销</div></div>';
+    }
+    h += '</div><div style="margin-top:14px"><button class="btn sm" onclick="ipAdd()">加入本店内购清单</button></div>';
+    box.innerHTML = h;
+  }
+  window.ipAdd = function(){
+    if(IP_SEL == null) return;
+    var i = parseInt(IP_SEL.split('_')[1], 10);
+    var x = IP_DATA[IPPLAT][i];
+    var ce = document.getElementById('ipCode');
+    var code = ce ? ce.value.trim() : '';
+    if(!code){ alert('请先填券码'); return; }
+    var cnt = 1, amt = 0;
+    if(x.t === '次卡'){
+      var te = document.getElementById('ipTimes');
+      cnt = parseInt(te && te.value ? te.value : '1', 10) || 1;
+    }
+    var ae = document.getElementById('ipAmt');
+    var v = ae ? parseFloat(ae.value) : 0;
+    if(!v || v <= 0){ alert('请填报销金额（客户实付）'); return; }
+    amt = Math.round(v * 100) / 100;
+    IP_ROWS.push({plat:IPPLAT, nm:x.n, t:x.t, code:code, cnt:cnt, amt:amt});
+    IP_SEL = null;
+    ipRender();
+  };
+  window.ipDel = function(i){
+    IP_ROWS.splice(i, 1);
+    ipRender();
+  };
+  function ipRows(){
+    var tb = document.getElementById('ipBody');
+    if(!tb) return;
+    var h = '', nMt = 0, aMt = 0, nDy = 0, aDy = 0;
+    IP_ROWS.forEach(function(r, i){
+      var pz = r.plat === 'mt' ? '<span class="b mt">美团</span>' : '<span class="b dy">抖音</span>';
+      var ty = r.t === '次卡' ? '<span class="b amber">次卡</span>' : '<span class="b blue">团购</span>';
+      h += '<tr><td>' + pz + '</td><td>' + r.nm + '</td><td>' + ty + '</td><td><code>' + r.code + '</code></td>'
+        +  '<td class="n">' + r.cnt + '</td><td class="n" style="font-weight:700">' + r.amt.toFixed(2) + '</td>'
+        +  '<td><a style="color:var(--red);font-weight:600;cursor:pointer" onclick="ipDel(' + i + ')">删</a></td></tr>';
+      if(r.plat === 'mt'){ nMt += r.cnt; aMt += r.amt; } else { nDy += r.cnt; aDy += r.amt; }
+    });
+    if(!h) h = '<tr><td colspan="7" style="text-align:center;color:var(--ink3);padding:22px">今天还没有填内购。有内购就按上面的三步填，没有就留空。</td></tr>';
+    tb.innerHTML = h;
+    var tg = document.getElementById('ipCntTag');
+    if(tg) tg.textContent = IP_ROWS.length + ' 笔';
+    var a1 = document.getElementById('ipMtCnt'), a2 = document.getElementById('ipMtAmt');
+    var a3 = document.getElementById('ipDyCnt'), a4 = document.getElementById('ipDyAmt');
+    if(a1) a1.value = nMt;
+    if(a2) a2.value = aMt.toFixed(2);
+    if(a3) a3.value = nDy;
+    if(a4) a4.value = aDy.toFixed(2);
+  }
+  ipRender();
+
+  /* ================= v11：佛山内购核对 ================= */
+  var BACK2 = 'direct';
+  window.openInnerCheck = function(){
+    var on = document.querySelector('.page.on');
+    if(on && on.id !== 'p-innercheck') BACK2 = on.id.replace('p-', '');
+    Array.prototype.forEach.call(document.querySelectorAll('.page'), function(p){ p.classList.toggle('on', p.id === 'p-innercheck'); });
+    Array.prototype.forEach.call(document.querySelectorAll('#nav a'), function(a){ a.classList.remove('on'); });
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+  window.closeInnerCheck = function(){ go(BACK2); };
+  window.icRecon = function(btn){
+    var ct = btn.parentNode.parentNode;
+    var wrap = ct.querySelector('span');
+    var inp = ct.querySelector('input');
+    var note = (inp && inp.value.trim()) ? inp.value.trim() : '';
+    var head = wrap.innerHTML.replace('未核对', '已核对').replace('b gray', 'b green');
+    ct.innerHTML = '<span>' + head + '</span>'
+      + '<span style="font-size:12.5px;color:var(--ink3)">10-22 23:45 由崔智颖核对'
+      + (note ? ' · 备注：' + note : ' · 无备注') + '</span>';
+  };
+  window.icReconAll = function(btn){
+    if(!confirm('把当前日期所有未核对的门店一次标为已核对？\n\n已填但没有平台校验异常的门店会一起标记，备注统一写「批量核对」。')) return;
+    Array.prototype.forEach.call(document.querySelectorAll('#p-innercheck .card .ct'), function(ct){
+      if(!ct.querySelector('input')) return;
+      var wrap = ct.querySelector('span');
+      if(!wrap || wrap.innerHTML.indexOf('未核对') < 0) return;
+      var head = wrap.innerHTML.replace('未核对', '已核对').replace('b gray', 'b green');
+      ct.innerHTML = '<span>' + head + '</span>'
+        + '<span style="font-size:12.5px;color:var(--ink3)">10-22 23:45 由崔智颖核对 · 备注：批量核对</span>';
+    });
+  };
+
+  /* 12 个月堆叠柱 */
+  (function(){
+    var box = document.getElementById('stChart');
+    if(!box) return;
+    var MON = ['25-11','25-12','26-01','26-02','26-03','26-04','26-05','26-06','26-07','26-08','26-09','26-10'];
+    var MT  = [39800,41200,38600,34100,23580,22740,24120,23880,24560,25720,25180,27540];
+    var DY  = [28600,29800,27400,24300,17710,17070,18120,17800,18420,19340,18940,20720];
+    var OT  = [0,0,0,0,0,0,0,0,0,0,0,0];
+    var max = 0;
+    for(var i=0;i<MON.length;i++){ max = Math.max(max, MT[i]+DY[i]+OT[i]); }
+    var h = '';
+    for(var i=0;i<MON.length;i++){
+      var tot = MT[i]+DY[i]+OT[i];
+      var hh = tot / max * 100;
+      h += '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;align-items:center">'+
+           '<div style="width:100%;display:flex;flex-direction:column;justify-content:flex-end;height:'+hh+'%">'+
+           (OT[i] ? '<div style="height:'+(OT[i]/tot*100)+'%;background:#CBD5E1;border-radius:3px 3px 0 0"></div>' : '')+
+           '<div style="height:'+(DY[i]/tot*100)+'%;background:#7C5CFF"></div>'+
+           '<div style="height:'+(MT[i]/tot*100)+'%;background:#F97316;border-radius:3px 3px 0 0"></div>'+
+           '</div>'+
+           '<div style="font-size:9.5px;color:#93A2BF;margin-top:4px;white-space:nowrap">'+MON[i]+'</div>'+
+           '</div>';
+    }
+    box.innerHTML = h;
+  })();
+  Array.prototype.forEach.call(document.querySelectorAll('#dirTabs button'), function(b){
+    b.onclick = function(){
+      Array.prototype.forEach.call(document.querySelectorAll('#dirTabs button'), function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      var v = b.dataset.v;
+      document.getElementById('dirSum').style.display    = (v === 'sum')    ? '' : 'none';
+      document.getElementById('dirSingle').style.display = (v === 'single') ? '' : 'none';
+    };
+  });
+  /* ---- 简易三线趋势图（SVG，不依赖外部库） ---- */
+  function lineChart(el, labels, series, opts){
+    if(!el) return;
+    opts = opts || {};
+    var W = el.clientWidth || 900, H = el.clientHeight || 170;
+    var PL = 46, PR = 46, PT = 12, PB = 22;
+    var iw = W - PL - PR, ih = H - PT - PB;
+    var maxA = Math.max.apply(null, series[0].data) * 1.15 || 1;
+    var maxB = 1;
+    for(var k=1;k<series.length;k++){ maxB = Math.max(maxB, Math.max.apply(null, series[k].data)); }
+    maxB = maxB * 1.2;
+    var n = labels.length;
+    function xp(i){ return PL + (n<=1 ? iw/2 : iw*i/(n-1)); }
+    function yp(v, ax){ var m = ax ? maxB : maxA; return PT + ih - ih*(v/m); }
+    var g = '';
+    // 网格 + 左轴刻度
+    for(var r=0;r<=4;r++){
+      var yy = PT + ih*r/4;
+      g += '<line x1="'+PL+'" y1="'+yy+'" x2="'+(PL+iw)+'" y2="'+yy+'" stroke="#EEF4FD" stroke-width="1"/>';
+      g += '<text x="'+(PL-8)+'" y="'+(yy+4)+'" text-anchor="end" font-size="10" fill="#93A2BF">'+
+           Math.round(maxA*(1-r/4)/1000)+'k</text>';
+    }
+    // 折线
+    series.forEach(function(s, si){
+      var pts = s.data.map(function(v,i){ return xp(i)+','+yp(v, si>0); }).join(' ');
+      g += '<polyline points="'+pts+'" fill="none" stroke="'+s.color+'" stroke-width="'+(si===0?2.2:1.6)+
+           '" stroke-linejoin="round" stroke-linecap="round" opacity="'+(si===0?1:.85)+'"/>';
+      s.data.forEach(function(v,i){
+        g += '<circle cx="'+xp(i)+'" cy="'+yp(v, si>0)+'" r="2.6" fill="#fff" stroke="'+s.color+'" stroke-width="1.6"/>';
+      });
+    });
+    // X 轴日期
+    labels.forEach(function(lb,i){
+      if(n > 12 && i % 3 !== 0 && i !== n-1) return;
+      g += '<text x="'+xp(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10" fill="#93A2BF">'+lb+'</text>';
+    });
+    el.innerHTML = '<svg width="100%" height="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="overflow:visible">'+g+'</svg>';
+  }
+  var DAYS = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21'];
+  lineChart(document.getElementById('dirTrend'), DAYS, [
+    {color:'#007AFF', data:[19200,18600,21400,15200,19800,18900,20600,19400,18800,22100,16300,17400,20100,19800,18200,17900,21400,19600,20400,17100,19300]},
+    {color:'#10B981', data:[318,296,352,248,326,308,341,322,310,364,268,288,332,326,300,294,352,320,338,282,318]},
+    {color:'#F5C518', data:[6,5,8,3,7,6,9,7,6,10,4,5,8,7,6,5,9,7,8,4,6]}
+  ]);
+  lineChart(document.getElementById('dirSingleTrend'), DAYS, [
+    {color:'#007AFF', data:[2280,2160,2540,1820,2380,2240,2460,2320,2260,2640,1940,2080,2420,2380,2180,2140,2560,2340,2440,2020,2300]},
+    {color:'#10B981', data:[36,34,40,28,37,35,39,37,36,42,30,33,38,37,34,33,40,37,39,32,36]},
+    {color:'#F5C518', data:[1,1,2,0,1,1,2,1,1,2,0,1,2,1,1,0,2,1,1,1,1]}
+  ]);
+  var _rsz = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(_rsz);
+    _rsz = setTimeout(function(){
+      lineChart(document.getElementById('dirTrend'), DAYS, [
+        {color:'#007AFF', data:[19200,18600,21400,15200,19800,18900,20600,19400,18800,22100,16300,17400,20100,19800,18200,17900,21400,19600,20400,17100,19300]},
+        {color:'#10B981', data:[318,296,352,248,326,308,341,322,310,364,268,288,332,326,300,294,352,320,338,282,318]},
+        {color:'#F5C518', data:[6,5,8,3,7,6,9,7,6,10,4,5,8,7,6,5,9,7,8,4,6]}
+      ]);
+    }, 200);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#impSeg button'), function(b){
+    b.onclick = function(){
+      Array.prototype.forEach.call(document.querySelectorAll('#impSeg button'), function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+    };
+  });
+  var cc = document.getElementById('colChk');
+  if(cc){
+    cc.onchange = function(){ document.body.classList.toggle('allcols', cc.checked); };
+  }
+  render();
+})();
+</script>
+</body>
+</html>
