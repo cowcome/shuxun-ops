@@ -983,13 +983,30 @@ async function saveStore(){
     const saved = await r.json().catch(()=>[]);
     const savedId = id || (saved[0] && saved[0].id) || null;
     if(yzKdt && /^\d+$/.test(yzKdt)){
-      const mr = await sb('/rest/v1/yz_shop_map?on_conflict=kdt_id', {
-        method:'POST',
-        headers:{ 'Prefer':'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify([{ kdt_id: parseInt(yzKdt,10), store_id: savedId }])
-      });
-      if(mr.ok) kdtMapRows = kdtMapRows.filter(m=>m.kdt_id!==parseInt(yzKdt,10)).concat([{kdt_id:parseInt(yzKdt,10), store_id:savedId}]);
-      else msg('⚠️ 门店已保存，但有赞映射写入失败（HTTP '+mr.status+'），请截图反馈','err');
+      /* 🔴 yz_shop_map 的 std_name / store_type 是 NOT NULL（2026-09-16 建表）。
+         2026-10-23 修：旧代码只传 kdt_id + store_id，首次插入新 kdt 时被库拒绝（23502）→ 页面报 HTTP 400。
+         走 merge-duplicates 只有命中已有 kdt 才不报错，所以只有“表里还没有的店”才会失败。 */
+      if(!savedId){
+        msg('⚠️ 门店已保存，但拿不到门店 id，有赞 kdt 未写入，请重开弹窗再填一次','err');
+      }else{
+        const kdtNum = parseInt(yzKdt,10);
+        const mr = await sb('/rest/v1/yz_shop_map?on_conflict=kdt_id', {
+          method:'POST',
+          headers:{ 'Prefer':'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify([{
+            kdt_id: kdtNum,
+            store_id: savedId,
+            std_name: body.std_name || '',
+            store_type: body.store_type || '连锁'
+          }])
+        });
+        if(mr.ok) kdtMapRows = kdtMapRows.filter(m=>m.kdt_id!==kdtNum).concat([{kdt_id:kdtNum, store_id:savedId}]);
+        else{
+          let why = '';
+          try{ why = (await mr.text()).slice(0,200); }catch(e){}
+          msg('⚠️ 门店已保存，但有赞映射写入失败（HTTP '+mr.status+'）'+(why?'：'+esc(why):''),'err');
+        }
+      }
     }
     if(pendingClaimKdt && savedId){
       await sb('/rest/v1/yz_pending_kdts?kdt_id=eq.'+pendingClaimKdt, {
