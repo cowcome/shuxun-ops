@@ -253,7 +253,7 @@
           <input type="text" id="stSearch" oninput="renderStores()" placeholder="如：顺联 / 十亩地" />
         </div>
         <div style="flex:0 0 auto; display:flex; gap:8px; align-items:flex-end">
-          <button onclick="loadStores()">刷新</button>
+          <button onclick="loadStores();loadKdtMap()">刷新</button>
           <button class="primary" id="btnAddStore" onclick="openStoreEdit()" style="display:none">+ 新增</button>
         </div>
       </div>
@@ -802,11 +802,29 @@ function fillOpFilter(){
   sel.innerHTML = '<option value="">全部</option>' + names.map(n=>'<option'+(n===cur?' selected':'')+'>'+esc(n)+'</option>').join('');
 }
 let kdtMapRows = [];
-async function loadKdtMap(){
+async function loadKdtMap(tryN){
+  tryN = tryN || 0;
+  let got = false, why = '';
   try{
     const r = await sb('/rest/v1/yz_shop_map?select=kdt_id,store_id&limit=2000');
-    if(r.ok) kdtMapRows = await r.json();
-  }catch(e){ kdtMapRows = []; }
+    if(r.ok){
+      const rows = await r.json();
+      if(rows.length){ kdtMapRows = rows; got = true; }
+      else why = '返回 0 行';
+    }else{ why = 'HTTP ' + r.status; }
+  }catch(e){ why = (e && e.message) || '网络异常'; }
+  /* 2026-10-23：读取失败或返回空表时自动重试。
+     旧版只在进页面时读一次、失败就静默丢下空数组 → 整列 kdt 全变“—”，看上去像数据丢了。 */
+  if(!got && tryN < 2){
+    console.warn('[kdt] 映射表读取未成功（' + why + '），1 秒后重试第 ' + (tryN+1) + ' 次');
+    setTimeout(function(){ loadKdtMap(tryN+1); }, 1000);
+    return;
+  }
+  if(!got){
+    kdtMapRows = [];
+    console.warn('[kdt] 映射表最终读取失败：' + why);
+    msg('⚠️ 有赞 kdt 映射表读取未成功（' + esc(why) + '），所以 kdt 列显示为空——这是页面没读到，不代表数据丢了。请重新加载页面再试。','err');
+  }
   /* kdt 映射到位后重算：主数据橙点 + 待办角标（loadStores/loadKdtMap 并发，谁后到谁刷） */
   if(storeRows.length){
     $('stBody').innerHTML = renderStores();
@@ -1018,7 +1036,7 @@ async function saveStore(){
     }
     const yzChanged = id && (((storeRows.find(x=>x.id===id)||{}).yz_bill_name||null) !== body.yz_bill_name);
     editingStoreId = null;
-    closeStoreEdit(); await loadStores();
+    closeStoreEdit(); await loadStores(); loadKdtMap();
     msg((id?'门店已更新（已写入操作日志）':'门店已新增（已写入操作日志）'+(yzKdt?'，有赞映射已自动写入':''))
       +(yzChanged?'；「有赞账单门店名」已改，重导账单或跑挂接后归因生效':'')+regionWarn,'ok');
   }catch(err){ msg(esc(err.message),'err'); }
